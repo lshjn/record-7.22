@@ -1,0 +1,389 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config EXAMPLES_WAVE_RECORD
+	bool "wave record app"
+	default n
+	---help---
+		Enable wave record app
+
+
+if EXAMPLES_WAVE_RECORD
+
+config EXAMPLES_WAVE_RECORD_PROGNAME
+	string "Program name"
+	default "wave_record"
+	depends on BUILD_KERNEL
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_WAVE_RECORD_PRIORITY
+	int "task_main priority"
+	default 100
+
+config EXAMPLES_WAVE_RECORD_STACKSIZE
+	int "stack_mian size"
+	default 2048
+
+#monitor
+config EXAMPLES_WAVE_RECORD_MONITOR
+	bool "monitor task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the monitor task
+
+if EXAMPLES_WAVE_RECORD_MONITOR
+
+config EXAMPLES_MONITOR_PRIORITY
+	int "monitor task priority"
+	default 100
+
+config EXAMPLES_MONITOR_STACKSIZE
+	int "monitor stack size"
+	default 2048
+	
+endif #monitor
+
+#4G
+config EXAMPLES_WAVE_RECORD_4G
+	bool "4G task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the 4G task
+
+if EXAMPLES_WAVE_RECORD_4G
+
+config EXAMPLES_4G_PRIORITY
+	int "4G task priority"
+	default 100
+
+config EXAMPLES_4G_STACKSIZE
+	int "4G stack size"
+	default 2048
+
+config EXAMPLES_4G_DEVPATH
+	string "4G device path"
+	default "/dev/ttyS4"
+	
+endif #4G
+
+#gprs
+config EXAMPLES_MASTER_GPRS
+	bool "gprs task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the gprs task
+
+if EXAMPLES_MASTER_GPRS
+
+config EXAMPLES_GPRS_PRIORITY
+	int "GPRS task priority"
+	default 100
+
+config EXAMPLES_GPRS_STACKSIZE
+	int "gprs stack size"
+	default 2048
+
+config EXAMPLES_GPRS_DEVPATH
+	string "gprs device path"
+	default "/dev/ttyS1"
+	
+endif # EXAMPLES_GPRS
+
+#gps
+config EXAMPLES_MASTER_GPS
+	bool "gps task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the gps task
+
+if EXAMPLES_MASTER_GPS
+
+config EXAMPLES_GPS_PRIORITY
+	int "GPS task priority"
+	default 100
+
+config EXAMPLES_GPS_STACKSIZE
+	int "gps stack size"
+	default 2048
+
+config EXAMPLES_GPS_DEVPATH
+	string "gps device path"
+	default "/dev/ttyS1"
+	
+endif # EXAMPLES_GPS
+
+#eth
+config EXAMPLES_MASTER_ETH
+	bool "ETH task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the ETH task
+
+if EXAMPLES_MASTER_ETH
+
+config EXAMPLES_ETH_PRIORITY
+	int "ETH task priority"
+	default 100
+
+config EXAMPLES_ETH_STACKSIZE
+	int "ETH stack size"
+	default 2048
+
+config EXAMPLES_ETH_DEVPATH
+	string "ETH device path"
+	default "/dev/ttyS1"
+	
+endif # EXAMPLES_ETH
+
+#bluetooth
+config EXAMPLES_MASTER_BLUETOOTH
+	bool "bluetooth task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the bluetooth task
+
+if EXAMPLES_MASTER_BLUETOOTH
+
+config EXAMPLES_BLUETOOTH_PRIORITY
+	int "bluetooth app task priority"
+	default 100
+
+config EXAMPLES_BLUETOOTH_STACKSIZE
+	int "bluetooth app stack size"
+	default 2048
+
+config EXAMPLES_BLUETOOTH_DEVPATH
+	string "bluetooth device path"
+	default "/dev/ttyS3"
+	
+endif # EXAMPLES_BLUETOOTH
+
+
+#433M
+config EXAMPLES_MASTER_433M
+	bool "433M task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the 433M task
+
+if EXAMPLES_MASTER_433M
+
+config EXAMPLES_433M_PRIORITY
+	int "433M app task priority"
+	default 100
+
+config EXAMPLES_433M_STACKSIZE
+	int "433M app stack size"
+	default 2048
+
+config EXAMPLES_433M_DEVPATH
+	string "433M device path"
+	default "/dev/ttyS3"
+	
+endif # EXAMPLES_433M
+
+
+#flash
+config EXAMPLES_FLASH
+	bool "flash task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the flash task
+
+if EXAMPLES_FLASH
+
+config EXAMPLES_FLASH_PRIORITY
+	int "flash task priority"
+	default 100
+
+config EXAMPLES_FLASH_STACKSIZE
+	int "flash stack size"
+	default 2048
+
+config EXAMPLES_FLASH_DEVPATH
+	string "flash device path"
+	default "/dev/mtdblock0"
+	
+endif #flash
+
+#rtc
+config EXAMPLES_RTC
+	bool "RTC task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the RTC task
+
+if EXAMPLES_RTC
+
+config EXAMPLES_RTC_PRIORITY
+	int "RTC task priority"
+	default 100
+
+config EXAMPLES_RTC_STACKSIZE
+	int "RTC stack size"
+	default 2048
+
+config EXAMPLES_RTC_DEVPATH
+	string "RTC device path"
+	default "/dev/rtc0"
+	
+endif #RTC
+
+#Temperature and humidity
+config EXAMPLES_SENSOR
+	bool "SENSOR task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the SENSOR task
+
+if EXAMPLES_SENSOR
+
+config EXAMPLES_SENSOR_PRIORITY
+	int "SENSOR task priority"
+	default 100
+
+config EXAMPLES_SENSOR_STACKSIZE
+	int "SENSOR stack size"
+	default 2048
+
+config EXAMPLES_SENSOR_DEVPATH
+	string "SENSOR device path"
+	default "/dev/i2c0"
+	
+endif #SENSOR
+
+#ADC
+config EXAMPLES_WAVE_RECORD_ADC
+	bool "adc task"
+	default n
+	depends on ADC && LIB_BOARDCTL && EXAMPLES_WAVE_RECORD
+	select BOARDCTL_ADCTEST
+	---help---
+		Enable the adc task
+
+if EXAMPLES_WAVE_RECORD_ADC
+
+config EXAMPLES_ADC_PRIORITY
+	int "adc task priority"
+	default 100
+
+config EXAMPLES_ADC_STACKSIZE
+	int "adc stack size"
+	default 2048
+
+config EXAMPLES_ADC_DEVPATH
+	string "ADC device path"
+	default "/dev/adc0"
+	---help---
+		The default path to the ADC device. Default: /dev/adc0
+
+config EXAMPLES_ADC_NSAMPLES
+	int "Number of Sample Groups"
+	default 0
+	depends on !NSH_BUILTIN_APPS
+	---help---
+		If NSH_BUILTIN_APPS is defined, then the number of samples is provided
+		on the command line and this value is ignored.  Otherwise, this number
+		of samples is collected and the program terminates.  Default:  0 (samples
+		are collected indefinitely).
+
+config EXAMPLES_ADC_GROUPSIZE
+	int "Number of Samples per Group"
+	default 7
+	---help---
+		The number of samples to read at once. Default: 4
+
+config EXAMPLES_ADC_SWTRIG
+	bool "Use software trigger"
+	default n
+	---help---
+		Some ADCs may be configured so there is no automatic or periodic
+		conversion of samples.  Rather, the ADC sampling must be trigger by
+		software via an ioctl command.  Select this option only if
+		applicable for your ADC configuration.  In this case, the test will
+		issue the software trigger ioctl before attempting to read from the
+		ADC.
+
+endif #adc
+
+#TMP431
+config EXAMPLES_WAVE_RECORD_TMP431
+	bool "tmp431 task"
+	default n
+
+if EXAMPLES_WAVE_RECORD_TMP431
+
+config EXAMPLES_TMP431_PRIORITY
+	int "tmp431 task priority"
+	default 100
+
+config EXAMPLES_TMP431_STACKSIZE
+	int "tmp431 stack size"
+	default 2048
+
+config EXAMPLES_TMP431_DEVPATH
+	string "TMP431 device path"
+	default "/dev/i2c1"
+	---help---
+		The default path to the ADC device. Default: /dev/i2c0
+
+config TMP431_ADDR
+	hex "TMP431 I2C address"
+	default 0x4c
+	range 0x20 0x78
+
+config TMP431_FREQUENCY
+	int "TMP431 I2C bus frequency"
+	default 100000
+
+endif #TMP431
+
+
+#DS1338
+config EXAMPLES_WAVE_RECORD_DS1338
+	bool "ds1338 task"
+	default n
+
+if EXAMPLES_WAVE_RECORD_DS1338
+
+config EXAMPLES_DS1338_PRIORITY
+	int "ds1338 task priority"
+	default 100
+
+config EXAMPLES_DS1338_STACKSIZE
+	int "ds1338 stack size"
+	default 2048
+
+config EXAMPLES_DS1338_DEVPATH
+	string "DS1338 device path"
+	default "/dev/i2c1"
+	---help---
+		The default path to the ADC device. Default: /dev/i2c0
+
+config DS1338_ADDR
+	hex "DS1338 I2C address"
+	default 0x68
+	range 0x20 0x78
+
+config DS1338_FREQUENCY
+	int "DS1338 I2C bus frequency"
+	default 100000
+
+endif #DS1338
+
+
+endif # EXAMPLES_WAVE_RECORD
