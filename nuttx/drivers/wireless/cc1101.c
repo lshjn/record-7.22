@@ -1025,6 +1025,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	uint8_t nbytes;
 	uint8_t addr;
 	int status = 0;
+	int crc = 0;
 	int temp = 0;
 
 	cc1101_interrupt++;
@@ -1045,15 +1046,27 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			cc1101_rxtx_status.rx_len = nbytes;
 			//nbytes += 2;
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (nbytes > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : nbytes);
-     
-			//add by liushuhe 2017.12.04	  
-			cc1101_receive((FAR struct cc1101_dev_s *)arg);
+
+			//crc
+			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &crc, 1);
+			if(crc&0x80)
+			{
+				spierr("crc ok\n");
+			}
+			else
+			{
+				spierr("crc error\n");
+			}
+	 
 			
 	        int i=0;
 			for(i=0;i<nbytes;i++)
 			{
 				spierr("[%d]=%d     \n",i,cc1101_rxtx_status.rxbuf[i]);
 			}
+
+			//add by liushuhe 2017.12.04	  
+			cc1101_receive((FAR struct cc1101_dev_s *)arg);
 			
 			cc1101_rxtx_status.rx_status = SUCCESS;
 
@@ -1070,6 +1083,12 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)
 	{		
+		//wait untill txbyte ok
+		while(cc1101_strobe(dev, CC1101_TXBYTES))
+		{
+			usleep(200);
+		}
+
 		cc1101_rxtx_status.workmode = CC1101_MODE_RX;
 		cc1101_rxtx_status.tx_status = SUCCESS;
 		spierr("cc1101 <%d> TX int....\n",cc1101_interrupt);
