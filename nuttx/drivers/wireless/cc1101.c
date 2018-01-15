@@ -308,7 +308,7 @@ FAR struct cc1101_upperhalf_s *cc1101_fd;
 #define FAIL                      			 0
 
 
-/*
+
 uint8_t PA_table[8] = {0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60};
 
 struct c1101_rfsettings_s rfSettings = {
@@ -376,7 +376,7 @@ struct c1101_rfsettings_s rfSettings = {
 			
 };
 
-*/
+
 
 /*
 lhc old
@@ -513,7 +513,7 @@ struct c1101_rfsettings_s rfSettings = {
 };
 */
 
-
+/*
 
 //lhc new2
 uint8_t PA_table[8] = {0x60,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
@@ -567,7 +567,7 @@ struct c1101_rfsettings_s rfSettings = {
 	.TEST0  =0x09, // TEST0 Various test settings.};
 };
 
-
+*/
 
 /****************************************************************************
  * Private Data Types
@@ -1084,10 +1084,6 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)
 	{		
 		//wait untill txbyte ok
-		while(cc1101_strobe(dev, CC1101_TXBYTES))
-		{
-			usleep(200);
-		}
 
 		cc1101_rxtx_status.workmode = CC1101_MODE_RX;
 		cc1101_rxtx_status.tx_status = SUCCESS;
