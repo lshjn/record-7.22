@@ -1472,14 +1472,16 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 	  packetlen = size;
 	}
 
+	do
+	{
+		cc1101_strobe(dev, CC1101_SIDLE);
+		cc1101_strobe(dev, CC1101_SFTX);
 
-	cc1101_strobe(dev, CC1101_SIDLE);
-	cc1101_strobe(dev, CC1101_SFTX);
-
-	cc1101_access(dev, CC1101_MARCSTATE, (FAR uint8_t *)&ttttt, -1);
-	spierr("CC1101_MARCSTATE=%x\n",ttttt);
-	ttttt = cc1101_strobe(dev, CC1101_TXBYTES);
-	spierr("CC1101_TXBYTES=%x\n",ttttt);
+		ttttt = cc1101_strobe(dev, CC1101_MARCSTATE);
+		spierr("CC1101_MARCSTATE=%x\n",ttttt);
+		ttttt = cc1101_strobe(dev, CC1101_TXBYTES);
+		spierr("CC1101_TXBYTES=%x\n",ttttt);
+	}while(cc1101_strobe(dev, CC1101_TXBYTES));
 
 	//len
 	cc1101_access(dev, CC1101_TXFIFO, &packetlen, -1);
