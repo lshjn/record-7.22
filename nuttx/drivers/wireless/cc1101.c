@@ -1051,9 +1051,17 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			spierr("cc1101  status=%d\n",status);
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &nbytes, 1);
 			spierr("cc1101  nbytes=%d\n",nbytes);
-			
+
 	    	//nbytes
-			cc1101_rxtx_status.rx_len = nbytes;
+			if(nbytes > CC1101_PACKET_MAXTOTALLEN)
+			{
+				cc1101_rxtx_status.rx_len = 61;
+			}
+			else
+			{
+				cc1101_rxtx_status.rx_len = nbytes;
+			}
+			
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);
 
 			//crc
