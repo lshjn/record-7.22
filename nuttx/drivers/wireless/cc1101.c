@@ -137,8 +137,11 @@ FAR struct cc1101_upperhalf_s *cc1101_fd;
 #define CC1101_GDO2_TX  0x02
 #define CC1101_GDO2_RX  0x00
 
+//#define CC1101_GDO2_TX  0x06
+//#define CC1101_GDO2_RX  0x06
+
 #define CC1101_THER_TX  0x07
-#define CC1101_THER_RX  0x07
+#define CC1101_THER_RX  0x00
 
 /****************************************************************************
  * Chipcon CC1101 Internal Registers
@@ -313,8 +316,7 @@ FAR struct cc1101_upperhalf_s *cc1101_fd;
 #define SUCCESS                      		 1
 #define FAIL                      			 0
 
-
-
+/*
 uint8_t PA_table[8] = {0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60};
 
 struct c1101_rfsettings_s rfSettings = {
@@ -387,7 +389,7 @@ struct c1101_rfsettings_s rfSettings = {
 			
 };
 
-
+*/
 
 /*
 lhc old
@@ -579,6 +581,64 @@ struct c1101_rfsettings_s rfSettings = {
 };
 
 */
+
+
+
+//lhc new3
+uint8_t PA_table[8] = {0x60,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+struct c1101_rfsettings_s rfSettings = {
+    .IOCFG2 = 0x06,    // GDO2 output pin configuration
+    .IOCFG1 = 0x2e,    // GDO0 output pin configuration
+    .IOCFG0 = 0x0e,    // GDO0 output pin configuration
+    .FIFOTHR = 0x07,    // FIFOTHR
+	.SYNC1 = 0x9b,      // Frequency control word, middle byte. 
+	.SYNC0 = 0xad,      // Frequency control word, low byte.
+    .PKTLEN = 0xff,    // Packet length.
+    .PKTCTRL1 = 0x04,  // Packet automation control.
+    .PKTCTRL0 = 0x05,  // Packet automation control.
+    .ADDR = 0xff,      // Device address.
+	.CHANNR = 0x00,     // Channel number
+	.FSCTRL1 = 0x0f,    // Frequency synthesizer control. 
+	.FSCTRL0 = 0x00,    // Frequency synthesizer control. 
+	.FREQ2 = 0x10,      // Frequency control word, high byte. 
+	.FREQ1 = 0xa7,      // Frequency control word, middle byte. 
+	.FREQ0 = 0x62,      // Frequency control word, low byte. 
+	.MDMCFG4 =0x1e,    // Modem configuration. 
+	.MDMCFG3 =0x3b,    // Modem configuration. 
+	.MDMCFG2 =0x73,    // Modem configuration. 
+	.MDMCFG1 =0x42,    // Modem configuration. 
+	.MDMCFG0 =0xf8,    // Modem configuration. 
+	.DEVIATN = 0x44,    // Modem deviation setting (when FSK modulation is enabled). 
+	.MCSM2 = 0x07,     // Main Radio Control State Machine configuration.
+	.MCSM1 = 0x03,     // Main Radio Control State Machine configuration.
+	.MCSM0 = 0x18,     // Main Radio Control State Machine configuration.
+	.FOCCFG = 0x16,     // Frequency Offset Compensation Configuration. 
+	.BSCFG = 0x6c,      // Bit synchronization Configuration. 
+	.AGCCTRL2 = 0x45,   // AGC control. 
+	.AGCCTRL1 = 0x40,   // AGC control. 
+	.AGCCTRL0 =0x91,   // AGC control. 
+	.WOREVT1 = 0x28,
+	.WOREVT0 = 0xa0,	
+	.WORCTRL = 0x38,
+	.FREND1 = 0x56,     // Front end RX configuration. 
+	.FREND0 = 0x10,
+	.FSCAL3 = 0xea,     // Frequency synthesizer calibration. 
+	.FSCAL2 = 0x2a,     // Frequency synthesizer calibration. 
+	.FSCAL1 = 0x00,     // Frequency synthesizer calibration. 
+	.FSCAL0 = 0x1f,    // Frequency synthesizer calibration. 
+    .RCCTRL1 = 0x41,
+    .RCCTRL1 = 0x00,
+	.FSTEST =0x59, // FSTEST Frequency synthesizer calibration.
+	.PTEST  =0x7f,
+	.AGCTEST=0x3f,
+	.TEST2  =0x88, // TEST2 Various test settings.
+	.TEST1  =0x31, // TEST1 Various test settings.
+	.TEST0  =0x09, // TEST0 Various test settings.};
+};
+
+
+
+
 
 /****************************************************************************
  * Private Data Types
@@ -1048,9 +1108,9 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 		status = cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_RXBYTES);
 	    if(status&0x7f)
 	    {
-			spierr("cc1101  status=%d\n",status);
+			spierr("status=%d\n",status);
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &nbytes, 1);
-			spierr("cc1101  nbytes=%d\n",nbytes);
+			spierr("nbytes=%d\n",nbytes);
 
 	    	//nbytes
 			if(nbytes > CC1101_PACKET_MAXTOTALLEN)
@@ -1076,13 +1136,6 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 				crcerror++;
 			}
 	 
-			/*
-	        int i=0;
-			for(i=0;i<nbytes;i++)
-			{
-				spierr("[%d]=%d     \n",i,cc1101_rxtx_status.rxbuf[i]);
-			}
-			*/
 			
 			//add by liushuhe 2017.12.04	  
 			cc1101_receive((FAR struct cc1101_dev_s *)arg);
@@ -1097,7 +1150,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			cc1101_receive((FAR struct cc1101_dev_s *)arg);
 			spierr("Error: cc1101 <%d> RX int status=%d  nbytes=%d\n",cc1101_interrupt,status,nbytes);
 		}
-		spierr("cc1101 <%d> RX int crcerror:<%d>\n",cc1101_interrupt,crcerror);
+		//spierr("cc1101 <%d> RX int crcerror:<%d>\n",cc1101_interrupt,crcerror);
 	}
 	
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)
@@ -1254,8 +1307,8 @@ int cc1101_setrf(FAR struct cc1101_dev_s *dev, const struct c1101_rfsettings_s *
 	ASSERT(settings);
 
 
-    //if(cc1101_access(dev, CC1101_IOCFG2, (FAR uint8_t *)&settings->IOCFG2, -39) < 0)
-    if(cc1101_access(dev, CC1101_IOCFG2, (FAR uint8_t *)&settings->IOCFG2, -47) < 0)
+    if(cc1101_access(dev, CC1101_IOCFG2, (FAR uint8_t *)&settings->IOCFG2, -39) < 0)
+    //if(cc1101_access(dev, CC1101_IOCFG2, (FAR uint8_t *)&settings->IOCFG2, -47) < 0)
     {
 		return ERROR;
     }
