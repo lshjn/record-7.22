@@ -104,12 +104,13 @@ int hello_main(int argc, char *argv[])
 	{
 		while(1)
 		{
+			sleep(5);
 			printf("write  data to cc1101\n");
 		
 			for(i=0;i<TX_BUF;i++)
 			{
 				txbuff[i]=i;
-				printf("<%d>=%d\n",i,txbuff[i]);				
+				//printf("<%d>=%d\n",i,txbuff[i]);				
 			}
 			
 		    iBytes = write(fd ,txbuff,sizeof(txbuff));
@@ -119,7 +120,6 @@ int hello_main(int argc, char *argv[])
 			}
 
 			
-			sleep(3);
 		}
 	}
 	else if(strcmp(argv[1],"r") == 0)
@@ -179,24 +179,24 @@ int hello_main(int argc, char *argv[])
 						{
 							printf("<%d>=%d\n",i,rxbuff[i]);
 						}
-                    /******************************************************************
+						//printf("rcv bytes=<%d>......................................................\n",iBytes);
+                    /******************************************************************/
 					//ACK
 						usleep(300*1000L);                                     //sleep 100ms
-						printf("write ack to cc1101\n");
-						for(i=0;i<10;i++)
+						printf("write ack bytes=<35> to cc1101......................................................\n");
+						for(i=0;i<35;i++)
 						{
 							txbuff[i]=10+i;
-							printf("<%d>=%d\n",i,txbuff[i]);				
+							//printf("<%d>=%d\n",i,txbuff[i]);	
 						}
 						
-					    iBytes = write(fd ,txbuff,10);
+					    iBytes = write(fd ,txbuff,35);
 						if(iBytes == -1)
 						{
 							printf("Error:write  Data to cc1101\n");
 						}
 					
-
-					*******************************************************************/
+					/*******************************************************************/
 
 						
 					}

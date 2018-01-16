@@ -1472,10 +1472,6 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 	  packetlen = size;
 	}
 
-	cc1101_access(dev, CC1101_MARCSTATE, (FAR uint8_t *)&ttttt, -1);
-	spierr("CC1101_MARCSTATE=%x\n",ttttt);
-	ttttt = cc1101_strobe(dev, CC1101_TXBYTES);
-	spierr("CC1101_TXBYTES=%x\n",ttttt);
 
 	cc1101_strobe(dev, CC1101_SIDLE);
 	cc1101_strobe(dev, CC1101_SFTX);
@@ -1498,15 +1494,20 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 int cc1101_send(FAR struct cc1101_dev_s *dev)
 {
 	int cnt=0;
-
+	int bytes=0;
+	
 	ASSERT(dev);
 
-	//cc1101_interrupt = 0;
 	cc1101_strobe(dev, CC1101_STX);
 
-    //wait send ok
+	//wait untill txbyte ok
+	do
+	{
+		bytes = cc1101_strobe(dev, CC1101_TXBYTES);
+	}while((bytes &0x7F) != 0);
+	
 
-	cc1101_rxtx_status.tx_status = SUCCESS;
+	cc1101_rxtx_status.tx_status = FAIL;
 	//goto recv
 	cc1101_receive(dev);
 
