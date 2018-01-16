@@ -134,6 +134,12 @@
 FAR struct cc1101_upperhalf_s *cc1101_fd;
 
 
+#define CC1101_GDO2_TX  0x02
+#define CC1101_GDO2_RX  0x00
+
+#define CC1101_THER_TX  0x07
+#define CC1101_THER_RX  0x07
+
 /****************************************************************************
  * Chipcon CC1101 Internal Registers
  ****************************************************************************/
@@ -312,11 +318,11 @@ FAR struct cc1101_upperhalf_s *cc1101_fd;
 uint8_t PA_table[8] = {0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60};
 
 struct c1101_rfsettings_s rfSettings = {
-	.IOCFG2 = 0x00,    // GDO2 output pin configuration 00
+	.IOCFG2 = CC1101_GDO2_RX,    // GDO2 output pin configuration 00
 	.IOCFG1 = 0x2e,    // GDO0 output pin configuration
-	.IOCFG0 = 0x00,    // GDO0 output pin configuration
+	.IOCFG0 = CC1101_GDO2_RX,    // GDO0 output pin configuration
 
-	.FIFOTHR = 0x0a,    // FIFOTHR 60
+	.FIFOTHR = CC1101_THER_RX,    // FIFOTHR 60
 
 	.SYNC1 = 0xd3,      // Frequency control word, middle byte. 
 	.SYNC0 = 0x91,      // Frequency control word, low byte.
@@ -369,7 +375,12 @@ struct c1101_rfsettings_s rfSettings = {
 	.FSCAL1 =0x00, // FSCAL1 Frequency synthesizer calibration.
 	.FSCAL0 =0x11, // FSCAL0 Frequency synthesizer calibration.
 
+    .RCCTRL1 = 0x41,
+    .RCCTRL1 = 0x00,
 	.FSTEST =0x59, // FSTEST Frequency synthesizer calibration.
+	.PTEST  =0x7f,
+	.AGCTEST=0x3f,
+	
 	.TEST2  =0x81, // TEST2 Various test settings.
 	.TEST1  =0x35, // TEST1 Various test settings.
 	.TEST0  =0x09, // TEST0 Various test settings.
