@@ -1054,7 +1054,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			
 	    	//nbytes
 			cc1101_rxtx_status.rx_len = nbytes;
-			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (nbytes > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : nbytes);
+			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);
 
 			//crc
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, crc, 2);
@@ -1095,9 +1095,6 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)
 	{		
 		//wait untill txbyte ok
-
-		cc1101_rxtx_status.workmode = CC1101_MODE_RX;
-		cc1101_rxtx_status.tx_status = SUCCESS;
 		spierr("cc1101 <%d> TX int\n",cc1101_interrupt);
 	}
 	else
@@ -1141,7 +1138,6 @@ int cc1101_init(FAR struct cc1101_dev_s *dev)
 {
 
   ASSERT(dev->spi);
-  /* Reset chip, check status bytes */
 
   if (cc1101_reset(dev) < 0)
     {
@@ -1151,7 +1147,6 @@ int cc1101_init(FAR struct cc1101_dev_s *dev)
       return -errno;
     }
 
-  /* Check part compatibility */
 
   if (cc1101_checkpart(dev) < 0)
     {
@@ -1160,38 +1155,13 @@ int cc1101_init(FAR struct cc1101_dev_s *dev)
       return -errno;
     }
 
-  /* Configure CC1101:
-   *  - disable GDOx for best performance
-   *  - load RF
-   *  - and packet control
-   */
-
-  //cc1101_setgdo(dev, CC1101_PIN_GDO0, CC1101_GDO_HIZ);
-  //cc1101_setgdo(dev, CC1101_PIN_GDO1, CC1101_GDO_HIZ);
-  //cc1101_setgdo(dev, CC1101_PIN_GDO2, CC1101_GDO_HIZ);
   
   cc1101_setrf(dev, dev->rfsettings);
 
-  /* Set the ISR to be triggerred on falling edge of the:
-   *
-   * 6 (0x06) Asserts when sync word has been sent / received, and
-   * de-asserts at the end of the packet. In RX, the pin will de-assert
-   * when the optional address check fails or the RX FIFO overflows.
-   * In TX the pin will de-assert if the TX FIFO underflows.
-   */
-
-  //cc1101_setgdo(dev, dev->isrpin, CC1101_GDO_SYNC);
-
-  /* Configure to receive interrupts on the external GPIO interrupt line.
-   *
-   * REVISIT:  There is no MCU-independent way to do this in this
-   * context.
-   */
   //add by liushuhe 2017.11.19
   //register isr pin  pin_int=GPIO_GDO2_C1100
   stm32_configgpio(dev->pin_int);
   stm32_gpiosetevent(dev->pin_int, true, false, true, cc1101_eventcb, dev); 
-  //stm32l4_gpiosetevent(dev->pin_int, false, true, true, cc1101_eventcb, NULL); 
 
   read_cc1101_setrf(dev, dev->rfsettings);
 
@@ -1424,19 +1394,50 @@ int cc1101_calcRSSIdBm(int rssi)
 
 int cc1101_receive(FAR struct cc1101_dev_s *dev)
 {
-  ASSERT(dev);
-  cc1101_rxtx_status.workmode = CC1101_MODE_RX;
+	ASSERT(dev);
 
-  cc1101_strobe(dev, CC1101_SIDLE);
-  cc1101_strobe(dev, CC1101_SFRX);
+	cc1101_strobe(dev, CC1101_SIDLE);
+	cc1101_strobe(dev, CC1101_SFRX);
 
-  cc1101_strobe(dev, CC1101_SRX | CC1101_READ_SINGLE);
-  
-  //add by liushuhe 2018.01.04
-  cc1101_rxtx_status.workmode = CC1101_MODE_RX;
-  	
-  return 0;
+	cc1101_strobe(dev, CC1101_SRX | CC1101_READ_SINGLE);
+
+	//add by liushuhe 2018.01.04
+	cc1101_rxtx_status.workmode = CC1101_MODE_RX;
+	rfSettings.IOCFG2 = CC1101_GDO2_RX;
+    if(cc1101_access(dev, CC1101_IOCFG2, (FAR uint8_t *)&rfSettings.IOCFG2, -1) < 0)
+    {
+		spierr("cc1101 Rx gdo init error\n");
+    }
+	rfSettings.FIFOTHR = CC1101_THER_RX;
+    if(cc1101_access(dev, CC1101_FIFOTHR, (FAR uint8_t *)&rfSettings.FIFOTHR, -1) < 0)
+    {
+		spierr("cc1101 Rx FIFOTHR init error\n");
+    }
+	return 0;
 }
+
+int cc1101_sendmode(FAR struct cc1101_dev_s *dev)
+{
+	ASSERT(dev);
+
+	cc1101_strobe(dev, CC1101_SIDLE);
+	cc1101_strobe(dev, CC1101_SFTX);
+
+    cc1101_rxtx_status.workmode = CC1101_MODE_TX;
+	rfSettings.IOCFG2 = CC1101_GDO2_TX;
+    if(cc1101_access(dev, CC1101_IOCFG2, (FAR uint8_t *)&rfSettings.IOCFG2, -1) < 0)
+    {
+		spierr("cc1101 tx gdo init error\n");
+    }
+	rfSettings.FIFOTHR = CC1101_THER_TX;
+    if(cc1101_access(dev, CC1101_FIFOTHR, (FAR uint8_t *)&rfSettings.FIFOTHR, -1) < 0)
+    {
+		spierr("cc1101 tx FIFOTHR init error\n");
+    }
+	return 0;
+}
+
+
 
 int cc1101_read(FAR struct cc1101_dev_s *dev, uint8_t * buf, size_t size)
 {
@@ -1444,88 +1445,72 @@ int cc1101_read(FAR struct cc1101_dev_s *dev, uint8_t * buf, size_t size)
 
 	ASSERT(dev);
 
-	while(cc1101_rxtx_status.rx_status != SUCCESS)
-	{
-		usleep(1*1000);
-	}
+    memcpy(buf,cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
 
 	cc1101_rxtx_status.rx_status = FAIL;
-    //memcpy(buf,cc1101_rxtx_status.rxbuf,strlen(cc1101_rxtx_status.rxbuf));
     
-    memcpy(buf,cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
-	
 	return cc1101_rxtx_status.rx_len;
 }
 
 int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 {
-  uint8_t packetlen;
-  int ret;
-  int ttttt;
+	uint8_t packetlen;
+	int ret;
+	int ttttt;
 
-  ASSERT(dev);
-  ASSERT(buf);
+	ASSERT(dev);
+	ASSERT(buf);
 
-  /* Present limit */
+	/* Present limit */
 
-  if (size > CC1101_PACKET_MAXDATALEN)
-    {
-      packetlen = CC1101_PACKET_MAXDATALEN;
-    }
-  else
-    {
-      packetlen = size;
-    }
+	if (size > CC1101_PACKET_MAXDATALEN)
+	{
+	  packetlen = CC1101_PACKET_MAXDATALEN;
+	}
+	else
+	{
+	  packetlen = size;
+	}
 
-
-  	cc1101_access(dev, CC1101_MARCSTATE, (FAR uint8_t *)&ttttt, -1);
-    spierr("CC1101_MARCSTATE=%x\n",ttttt);
-
-
+	cc1101_access(dev, CC1101_MARCSTATE, (FAR uint8_t *)&ttttt, -1);
+	spierr("CC1101_MARCSTATE=%x\n",ttttt);
 	ttttt = cc1101_strobe(dev, CC1101_TXBYTES);
-    spierr("CC1101_TXBYTES=%x\n",ttttt);
+	spierr("CC1101_TXBYTES=%x\n",ttttt);
 
+	cc1101_strobe(dev, CC1101_SIDLE);
+	cc1101_strobe(dev, CC1101_SFTX);
 
-  cc1101_strobe(dev, CC1101_SIDLE);
-  cc1101_strobe(dev, CC1101_SFTX);
-  
-  //len
-  cc1101_access(dev, CC1101_TXFIFO, &packetlen, -1);
-  //addr                                     
-  //cc1101_access(dev, CC1101_TXFIFO, (FAR uint8_t *)&dev->rfsettings->ADDR, -1);
-  //data
-  ret = cc1101_access(dev, CC1101_TXFIFO, (FAR uint8_t *)buf, -(size));
+	cc1101_access(dev, CC1101_MARCSTATE, (FAR uint8_t *)&ttttt, -1);
+	spierr("CC1101_MARCSTATE=%x\n",ttttt);
+	ttttt = cc1101_strobe(dev, CC1101_TXBYTES);
+	spierr("CC1101_TXBYTES=%x\n",ttttt);
 
+	//len
+	cc1101_access(dev, CC1101_TXFIFO, &packetlen, -1);
+	//data
+	ret = cc1101_access(dev, CC1101_TXFIFO, (FAR uint8_t *)buf, -(packetlen));
 
-  cc1101_rxtx_status.tx_len = ret;
-  	
-  return ret;
+	cc1101_rxtx_status.tx_len = ret;
+		
+	return ret;
 }
 
 int cc1101_send(FAR struct cc1101_dev_s *dev)
 {
-  int cnt=0;
-  
-  ASSERT(dev);
+	int cnt=0;
 
-  cc1101_interrupt = 0;
+	ASSERT(dev);
 
-  
-  cc1101_strobe(dev, CC1101_STX);
-  
-  //add by liushuhe 2017.12.01
-  while (cc1101_rxtx_status.tx_status != SUCCESS)
-  {
-      usleep(1*1000);
-	  cnt++;
-	  if(cnt > 500)
-	  {
-		  cnt = 0;
-		  break;
-	  }
-  }
-  
-  return cc1101_rxtx_status.tx_len;
+	//cc1101_interrupt = 0;
+	cc1101_strobe(dev, CC1101_STX);
+
+    //wait send ok
+
+	cc1101_rxtx_status.tx_status = SUCCESS;
+	//goto recv
+	cc1101_receive(dev);
+
+	return cc1101_rxtx_status.tx_len;
 }
 
 int cc1101_idle(FAR struct cc1101_dev_s *dev)
@@ -1641,7 +1626,7 @@ static ssize_t fs_read(FAR struct file *filep, FAR char *buffer, size_t buflen)
 	/* TODO: Should we check permissions here? */
 	/* Audio read operations get passed directly to the lower-level */
 
-	cc1101_rxtx_status.workmode = CC1101_MODE_RX;
+	cc1101_receive(lower->c1101_dev);
 	
 	//start rx
 	if (lower->ops->setmode_receive != NULL)
@@ -1671,7 +1656,7 @@ static ssize_t fs_write(FAR struct file *filep, FAR const char *buffer, size_t b
 
 	/* Audio write operations get passed directly to the lower-level */
 
-    cc1101_rxtx_status.workmode = CC1101_MODE_TX;
+	cc1101_sendmode(lower->c1101_dev);
 
 	//set data to fifo
 	if (lower->ops->write != NULL)
