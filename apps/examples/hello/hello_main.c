@@ -80,6 +80,7 @@ int hello_main(int argc, char *argv[])
 	struct timeval timeout;
 	fd_set 	rfds;	
 
+	int cnt=0;
 
     boardctl(BOARDIOC_433_PWRON, 0);
 
@@ -152,7 +153,7 @@ int hello_main(int argc, char *argv[])
 			timeout.tv_sec = 10;
 			timeout.tv_usec = 0;
 			iRet = select(fd+1, &rfds, NULL, NULL, &timeout);  	//recv-timeout
-
+			cnt++;
 			if (iRet < 0) 
 			{
 				printf("select error!!!\n");
@@ -165,7 +166,7 @@ int hello_main(int argc, char *argv[])
 			{
 				if(FD_ISSET(fd, &rfds)) 
 				{
-					usleep(300*1000L);                                     //sleep 100ms
+					//usleep(300*1000L);                                     //sleep 100ms
 					memset(rxbuff, 0, sizeof(rxbuff));
 				    iBytes = read(fd ,rxbuff,sizeof(rxbuff));
 					if(iBytes == -1)
@@ -174,11 +175,15 @@ int hello_main(int argc, char *argv[])
 					}
 		            else
 		           	{
-						printf("read  data from cc1101\n");
+						//printf("read  data from cc1101\n");
+						printf("num%d\n",cnt);
+			
+						
 						for(i=0;i<iBytes;i++)
 						{
 							printf("<%d>=%d\n",i,rxbuff[i]);
 						}
+						
 						//printf("rcv bytes=<%d>......................................................\n",iBytes);
                     /******************************************************************
 					//ACK

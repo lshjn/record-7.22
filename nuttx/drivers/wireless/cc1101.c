@@ -134,14 +134,14 @@
 FAR struct cc1101_upperhalf_s *cc1101_fd;
 
 
-#define CC1101_GDO2_TX  0x02
-#define CC1101_GDO2_RX  0x00
+//#define CC1101_GDO2_TX  0x02
+//#define CC1101_GDO2_RX  0x00
 
-//#define CC1101_GDO2_TX  0x06
-//#define CC1101_GDO2_RX  0x06
+#define CC1101_GDO2_TX  0x06
+#define CC1101_GDO2_RX  0x06
 
 #define CC1101_THER_TX  0x07
-#define CC1101_THER_RX  0x00
+#define CC1101_THER_RX  0x07
 
 /****************************************************************************
  * Chipcon CC1101 Internal Registers
@@ -808,6 +808,8 @@ void cc1101_access_end(FAR struct cc1101_dev_s *dev)
  *   OK on success or errno is set.
  */
 
+
+
 int cc1101_access(FAR struct cc1101_dev_s *dev, uint8_t addr,
                   FAR uint8_t *buf, int length)
 {
@@ -827,8 +829,14 @@ int cc1101_access(FAR struct cc1101_dev_s *dev, uint8_t addr,
 
   cc1101_access_begin(dev);
 
+
+ //usleep(2);
   //add by liushuhe 2017.12.03
-  while(stm32_gpioread(dev->pin_miso));
+  //while(stm32_gpioread(dev->pin_miso));
+
+int i=0;
+ for(i=0;i<168*2;i++);
+
 
 
   if (length > 1 || length < -1)
@@ -950,8 +958,13 @@ inline uint8_t cc1101_strobe(FAR struct cc1101_dev_s *dev, uint8_t command)
   cc1101_access_begin(dev);
   SPI_SETFREQUENCY(dev->spi, CC1101_SPIFREQ_SINGLE);
 
+
+ //usleep(2);
   //add by liushuhe 2017.12.03
-  while(stm32_gpioread(dev->pin_miso));
+  //while(stm32_gpioread(dev->pin_miso));
+
+int i=0;
+ for(i=0;i<168*2;i++);
 
   status = SPI_SEND(dev->spi, command);
 
@@ -1108,9 +1121,9 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 		status = cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_RXBYTES);
 	    if(status&0x7f)
 	    {
-			spierr("status=%d\n",status);
+			//spierr("status=%d\n",status);
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &nbytes, 1);
-			spierr("nbytes=%d\n",nbytes);
+			//spierr("nbytes=%d\n",nbytes);
 
 	    	//nbytes
 			if(nbytes > CC1101_PACKET_MAXTOTALLEN)
@@ -1128,27 +1141,34 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, crc, 2);
 			if(crc[1]&0x80)
 			{
-				spierr("crc ok\n");
+				//spierr("crc ok<%d>\n",cc1101_interrupt);
 			}
 			else
 			{
-				spierr("crc error\n");
+				//spierr("crc error<%d>\n",cc1101_interrupt);
 				crcerror++;
 			}
 	 
-			
 			//add by liushuhe 2017.12.04	  
 			cc1101_receive((FAR struct cc1101_dev_s *)arg);
 			
 			cc1101_rxtx_status.rx_status = SUCCESS;
 
 			CC1101_pollnotify(cc1101_fd);
+
+			/*
+	        int i=0;
+			for(i=0;i<cc1101_rxtx_status.rx_len;i++)
+			{
+				spierr("[%d]=%d\n",i,cc1101_rxtx_status.rxbuf[i]);
+			}
+			*/
 		}
 		else
 		{
 			//add by liushuhe 2017.12.04	  
 			cc1101_receive((FAR struct cc1101_dev_s *)arg);
-			spierr("Error: cc1101 <%d> RX int status=%d  nbytes=%d\n",cc1101_interrupt,status,nbytes);
+			//spierr("Error: cc1101 <%d> RX int status=%d  nbytes=%d\n",cc1101_interrupt,status,nbytes);
 		}
 		//spierr("cc1101 <%d> RX int crcerror:<%d>\n",cc1101_interrupt,crcerror);
 	}
@@ -1156,11 +1176,12 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)
 	{		
 		//wait untill txbyte ok
-		spierr("cc1101 <%d> TX int\n",cc1101_interrupt);
+		//spierr("cc1101 <%d> TX int\n",cc1101_interrupt);
 	}
 	else
 	{
-		spierr("cc1101_rxtx_status int  error\n");
+		//spierr("cc1101_rxtx_status int  error<%d>\n",cc1101_interrupt);
+		cc1101_receive((FAR struct cc1101_dev_s *)arg);
 	}
 	
 	
@@ -1222,7 +1243,8 @@ int cc1101_init(FAR struct cc1101_dev_s *dev)
   //add by liushuhe 2017.11.19
   //register isr pin  pin_int=GPIO_GDO2_C1100
   stm32_configgpio(dev->pin_int);
-  stm32_gpiosetevent(dev->pin_int, true, false, true, cc1101_eventcb, dev); 
+  //stm32_gpiosetevent(dev->pin_int, true, false, true, cc1101_eventcb, dev); 
+  stm32_gpiosetevent(dev->pin_int, false, true, true, cc1101_eventcb, dev); 
 
   read_cc1101_setrf(dev, dev->rfsettings);
 
@@ -1457,11 +1479,14 @@ int cc1101_receive(FAR struct cc1101_dev_s *dev)
 {
 	ASSERT(dev);
 
-	cc1101_strobe(dev, CC1101_SIDLE);
+	//cc1101_strobe(dev, CC1101_SIDLE);
 	cc1101_strobe(dev, CC1101_SFRX);
 
-	cc1101_strobe(dev, CC1101_SRX | CC1101_READ_SINGLE);
+	//cc1101_strobe(dev, CC1101_SRX | CC1101_READ_SINGLE);
+	cc1101_strobe(dev, CC1101_SRX);
+	cc1101_rxtx_status.workmode = CC1101_MODE_RX;
 
+/*
 	//add by liushuhe 2018.01.04
 	cc1101_rxtx_status.workmode = CC1101_MODE_RX;
 	rfSettings.IOCFG2 = CC1101_GDO2_RX;
@@ -1474,6 +1499,7 @@ int cc1101_receive(FAR struct cc1101_dev_s *dev)
     {
 		spierr("cc1101 Rx FIFOTHR init error\n");
     }
+   */
 	return 0;
 }
 
