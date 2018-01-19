@@ -267,6 +267,9 @@ int stm32_bringup(void)
 #endif
 
 
+//add by liushuhe 2018.01.18
+stm32_timer_driver_setup("/dev/timer2_gps",2);
+
 
 #ifdef HAVE_RTC_DRIVER
   /* Instantiate the STM32 lower-half RTC driver */

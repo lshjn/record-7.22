@@ -126,7 +126,31 @@ static void stm32_setcallback(FAR struct timer_lowerhalf_s *lower,
  * Private Data
  ****************************************************************************/
 /* "Lower half" driver methods */
+//add by liushuhe 2018.01.18
+static int mytimer_ioctl(FAR struct timer_lowerhalf_s *lower, int cmd,unsigned long arg)
+{
+	FAR struct stm32_lowerhalf_s *priv = (FAR struct stm32_lowerhalf_s *)lower;
 
+	int ret=0;
+	
+	switch (cmd)
+	{
+		case TCIOC_SETCOUNTER:
+			{
+				STM32_TIM_SETCOUNTER(priv->tim,(uint32_t)(arg));
+				ret = OK;
+			}
+		break;
+		case TCIOC_GETCOUNTER:
+			{
+				*((uint32_t *)arg) = STM32_TIM_GETCOUNTER(priv->tim);
+				ret = OK;
+			}
+		break;
+	}
+
+	return ret;
+}
 static const struct timer_ops_s g_timer_ops =
 {
   .start       = stm32_start,
@@ -134,7 +158,7 @@ static const struct timer_ops_s g_timer_ops =
   .getstatus   = NULL,
   .settimeout  = stm32_settimeout,
   .setcallback = stm32_setcallback,
-  .ioctl       = NULL,
+  .ioctl       = mytimer_ioctl,
 };
 
 #ifdef CONFIG_STM32_TIM1

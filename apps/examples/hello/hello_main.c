@@ -60,6 +60,7 @@
 #include <strings.h>
 
 #include <sys/boardctl.h>
+#include <nuttx/timers/timer.h>
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -68,6 +69,59 @@
  * hello_main
  ****************************************************************************/
  #define TX_BUF 60
+#  define CONFIG_EXAMPLES_TIMER_DEVNAME "/dev/timer2_gps"
+#  define CONFIG_EXAMPLES_TIMER_INTERVAL 1000000
+#  define CONFIG_EXAMPLES_TIMER_SIGNO 17
+
+int timer2(int argc, char *argv[])
+{
+	struct timer_notify_s notify;
+	int fd_timer;
+	int ret;
+
+	fd_timer = open(CONFIG_EXAMPLES_TIMER_DEVNAME, O_RDWR);
+	if (fd_timer < 0)
+	{
+		printf("ERROR: Failed to open %s: %d\n",CONFIG_EXAMPLES_TIMER_DEVNAME, errno);
+	}
+	
+
+
+	ret = ioctl(fd_timer, TCIOC_SETTIMEOUT, CONFIG_EXAMPLES_TIMER_INTERVAL);
+	if (ret < 0)
+	{
+		printf("ERROR: Failed to set the timer interval: %d\n", errno);
+	}
+	
+	notify.arg   = NULL;
+	notify.pid   = getpid();
+	notify.signo = CONFIG_EXAMPLES_TIMER_SIGNO;
+	
+	ret = ioctl(fd_timer, TCIOC_NOTIFICATION, (unsigned long)((uintptr_t)&notify));
+	if (ret < 0)
+	{
+		printf("ERROR: Failed to set the timer handler: %d\n", errno);
+	}
+  
+	ret = ioctl(fd_timer, TCIOC_START, 0);
+	if (ret < 0)
+	{
+		printf("ERROR: Failed to start the timer: %d\n", errno);
+	}
+
+	while(1)
+	{
+				int timercnt1=0;
+				
+				ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt1));
+				printf("sleep--timer2--cnt<%d>\n",timercnt1);
+		usleep(500*1000);                                     //sleep 100ms
+	}
+    
+	
+  return 0;
+
+}
 
 
 #ifdef CONFIG_BUILD_KERNEL
@@ -76,16 +130,27 @@ int main(int argc, FAR char *argv[])
 int hello_main(int argc, char *argv[])
 #endif
 {
+	//task_create("timer2", 100,2048, timer2,NULL);
+
 
 	struct timeval timeout;
 	fd_set 	rfds;	
+
+	struct timer_notify_s notify;
+	
+	int fd_timer;
+	int ret;
+
+
 
 	int cnt=0;
 
     boardctl(BOARDIOC_433_PWRON, 0);
 
     printf("Hello, World!!\n");
+	
 	int fd;
+	
 	int i=0;
 	int data=0;
     char txbuff[TX_BUF]={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
@@ -99,6 +164,34 @@ int hello_main(int argc, char *argv[])
 		printf("open cc1101 error:\n");
 	}
 
+	fd_timer = open(CONFIG_EXAMPLES_TIMER_DEVNAME, O_RDWR);
+	if (fd_timer < 0)
+	{
+		printf("ERROR: Failed to open %s: %d\n",CONFIG_EXAMPLES_TIMER_DEVNAME, errno);
+	}
+
+	ret = ioctl(fd_timer, TCIOC_SETTIMEOUT, CONFIG_EXAMPLES_TIMER_INTERVAL);
+	if (ret < 0)
+	{
+		printf("ERROR: Failed to set the timer interval: %d\n", errno);
+	}
+
+	
+	notify.arg   = NULL;
+	notify.pid   = getpid();
+	notify.signo = CONFIG_EXAMPLES_TIMER_SIGNO;
+	
+	ret = ioctl(fd_timer, TCIOC_NOTIFICATION, (unsigned long)((uintptr_t)&notify));
+	if (ret < 0)
+	{
+		printf("ERROR: Failed to set the timer handler: %d\n", errno);
+	}
+  
+	ret = ioctl(fd_timer, TCIOC_START, 0);
+	if (ret < 0)
+	{
+		printf("ERROR: Failed to start the timer: %d\n", errno);
+	}
 	
 	
 	if(strcmp(argv[1],"t") == 0)
@@ -124,43 +217,25 @@ int hello_main(int argc, char *argv[])
 		}
 	}
 	else if(strcmp(argv[1],"r") == 0)
-	{
-	/*
+	{	
 		while(1)
 		{
-		    iBytes = read(fd ,rxbuff,sizeof(rxbuff));
-			if(iBytes == -1)
-			{
-				printf("Error:read  Data from cc1101\n");
-			}
-            else
-           	{
-				printf("read  data from cc1101\n");
-				for(i=0;i<iBytes;i++)
-				{
-					printf("<%d>=%d\n",i,rxbuff[i]);
-				}
-			}
-			sleep(3);
-		}
-		*/
-	
-		while(1)
-		{
-			printf("select-----\n");
 			FD_ZERO(&rfds);											
-			FD_SET(fd, &rfds);									
-			timeout.tv_sec = 10;
-			timeout.tv_usec = 0;
+			FD_SET(fd, &rfds);
+			timeout.tv_sec = 5;
+			timeout.tv_usec = 0;			
 			iRet = select(fd+1, &rfds, NULL, NULL, &timeout);  	//recv-timeout
-			cnt++;
 			if (iRet < 0) 
 			{
-				printf("select error!!!\n");
+				//add by liushuhe 2018.01.19
+				//error unless timer2 int
+				if(errno != EINTR)
+				{
+					printf("select error!!!<%d>\n",errno);
+				}
 			}
 			else if(iRet == 0)
 			{
-				printf("cc1101 rcv timeout!!!\n");
 			}
 			else
 			{
@@ -185,7 +260,11 @@ int hello_main(int argc, char *argv[])
 						}
 						
 						//printf("rcv bytes=<%d>......................................................\n",iBytes);
-                    /******************************************************************
+						int timercnt1=0;
+						ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt1));
+						printf("timer2--cnt<%d>\n",timercnt1);
+
+						/******************************************************************
 					//ACK
 						usleep(300*1000L);                                     //sleep 100ms
 						printf("write ack bytes=<35> to cc1101......................................................\n");

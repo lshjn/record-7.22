@@ -56,8 +56,13 @@
 #include <nuttx/signal.h>
 #include <nuttx/fs/fs.h>
 #include <nuttx/timers/timer.h>
+#include <poll.h>
 
 #ifdef CONFIG_TIMER
+
+
+//add by liushuhe 2018.01.19
+#define CONFIG_TIMER_NPOLLWAITERS 2
 
 /****************************************************************************
  * Private Type Definitions
@@ -72,6 +77,11 @@ struct timer_upperhalf_s
   pid_t     pid;           /* The ID of the task/thread to receive the signal */
   FAR void *arg;           /* An argument to pass with the signal */
   FAR char *path;          /* Registration path */
+
+  //add by liushuhe 2018.01.19
+	sem_t devsem;
+	struct pollfd *fds[CONFIG_TIMER_NPOLLWAITERS];
+
 
   /* The contained lower-half driver */
 
@@ -92,6 +102,9 @@ static ssize_t timer_write(FAR struct file *filep, FAR const char *buffer,
 static int     timer_ioctl(FAR struct file *filep, int cmd,
                  unsigned long arg);
 
+//add by liushuhe 2018.01.19
+static int timer_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup);
+
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -105,12 +118,89 @@ static const struct file_operations g_timerops =
   NULL,        /* seek */
   timer_ioctl  /* ioctl */
 #ifndef CONFIG_DISABLE_POLL
-  , NULL       /* poll */
+  , timer_poll       /* poll */
 #endif
 #ifndef CONFIG_DISABLE_PSEUDOFS_OPERATIONS
   , NULL       /* unlink */
 #endif
 };
+
+//add by liushuhe 2018.01.08
+static int timer_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup)
+{
+  FAR struct inode *inode;
+  FAR struct timer_upperhalf_s *priv;
+  
+  uint32_t flags;
+  int ret;
+  int i;
+
+  DEBUGASSERT(filep && fds);
+  inode = filep->f_inode;
+
+  DEBUGASSERT(inode && inode->i_private);
+  priv = (FAR struct timer_upperhalf_s *)inode->i_private;
+  /* Get exclusive access */
+  do
+    {
+      ret = nxsem_wait(&priv->devsem);
+      /* The only case that an error should occur here is if the wait was
+       * awakened by a signal.
+       */
+
+      DEBUGASSERT(ret == OK || ret == -EINTR);
+    }
+  while (ret == -EINTR);
+  if (setup)
+    {
+      /* Ignore waits that do not include POLLIN */
+
+      if ((fds->events & POLLIN) == 0)
+        {
+          ret = -EDEADLK;
+          goto out;
+        }
+      /* This is a request to set up the poll.  Find an available slot for
+       * the poll structure reference.
+       */
+
+      for (i = 0; i < CONFIG_TIMER_NPOLLWAITERS; i++)
+        {
+          /* Find an available slot */
+
+          if (!priv->fds[i])
+            {
+              /* Bind the poll structure and this slot */
+              priv->fds[i] = fds;
+              fds->priv = &priv->fds[i];
+              break;
+            }
+        }
+      if (i >= CONFIG_TIMER_NPOLLWAITERS)
+        {
+          fds->priv = NULL;
+          ret = -EBUSY;
+          goto out;
+        }
+
+    }
+  else if (fds->priv)
+    {
+      /* This is a request to tear down the poll. */
+      struct pollfd **slot = (struct pollfd **)fds->priv;
+      DEBUGASSERT(slot != NULL);
+      /* Remove all memory of the poll setup */
+
+      *slot = NULL;
+      fds->priv = NULL;
+    }
+out:
+  nxsem_post(&priv->devsem);
+  return ret;
+}
+
+
+
 
 /****************************************************************************
  * Private Functions
@@ -136,6 +226,7 @@ static bool timer_notifier(FAR uint32_t *next_interval_us, FAR void *arg)
   DEBUGASSERT(upper != NULL);
 
   /* Signal the waiter.. if there is one */
+
 
 #ifdef CONFIG_CAN_PASS_STRUCTS
   value.sival_ptr = upper->arg;
@@ -350,7 +441,6 @@ static int timer_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
     case TCIOC_SETTIMEOUT:
       {
         /* Set a new timeout value (and reset the timer) */
-
         if (lower->ops->settimeout) /* Optional */
           {
             ret = lower->ops->settimeout(lower, (uint32_t)arg);
@@ -480,8 +570,12 @@ FAR void *timer_register(FAR const char *path,
       goto errout_with_upper;
     }
 
-  /* Register the timer device */
+  //add by liushuhe 2018.01.19
+  nxsem_init(&upper->devsem, 0, 1);
 
+
+  /* Register the timer device */
+  
   ret = register_driver(path, &g_timerops, 0666, upper);
   if (ret < 0)
     {

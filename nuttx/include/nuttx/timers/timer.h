@@ -94,6 +94,11 @@
 #define TCIOC_SETTIMEOUT   _TCIOC(0x0004)
 #define TCIOC_NOTIFICATION _TCIOC(0x0005)
 
+//add by liushuhe 2018.01.18
+#define TCIOC_SETCOUNTER   _TCIOC(0x0006)
+#define TCIOC_GETCOUNTER   _TCIOC(0x0007)
+
+
 /* Bit Settings *************************************************************/
 /* Bit settings for the struct timer_status_s flags field */
 
