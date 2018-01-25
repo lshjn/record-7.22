@@ -73,6 +73,60 @@
 #  define CONFIG_EXAMPLES_TIMER_INTERVAL 1000000
 #  define CONFIG_EXAMPLES_TIMER_SIGNO 17
 
+//readn
+int myreadn(int fd,char* rxbuff[],int max_len,int * timeout,int * ready)
+{
+	ssize_t nbytes = 0;
+	int read_loops = 0;
+	int bytes_left = 0;
+
+	read_loops = max_len;
+	bytes_left = max_len;
+	
+	/* In any event, read until the pipe is empty */
+	  do
+	    {
+	      nbytes = read(fd, rxbuff, max_len);
+	      if (nbytes <= 0)
+	        {
+	          if (nbytes == 0 || errno == EAGAIN)
+	            {
+	              if (*ready)
+	                {
+	                  printf("myreadn: ERROR no read data\n");
+	                }
+	            }
+	          else if (errno != EINTR)
+	            {
+	              printf("myreadn: read failed: %d\n", errno);
+	            }
+	          nbytes = 0;
+			  read_loops--;
+	        }
+	      else
+	        {
+	          if (*timeout)
+	            {
+	              printf("myreadn: ERROR? Poll timeout, but data read\n");
+	              printf("               (might just be a race condition)\n");
+	            }
+
+				read_loops -= nbytes; 
+				bytes_left -= nbytes; 
+				rxbuff += nbytes; 
+				
+				printf("myreadn: Read <%ld bytes> %s\n", (long)nbytes,rxbuff);
+	        }
+
+
+	      *timeout = false;
+	      *ready   = false;
+	    }
+	  while (read_loops > 0);
+	  
+	return (max_len-bytes_left) ;	  
+}
+
 int timer2(int argc, char *argv[])
 {
 	struct timer_notify_s notify;
@@ -158,6 +212,11 @@ int hello_main(int argc, char *argv[])
 	int  	iRet = 0;
 	int  	iBytes = 0;
 
+	int timeout_f = 0;
+	int ready_f = 0;
+
+
+
 	fd = open("/dev/cc1101", O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
 	if (fd < 0)
 	{
@@ -187,7 +246,7 @@ int hello_main(int argc, char *argv[])
 		printf("ERROR: Failed to set the timer handler: %d\n", errno);
 	}
   
-	ret = ioctl(fd_timer, TCIOC_START, 0);
+	//ret = ioctl(fd_timer, TCIOC_START, 0);
 	if (ret < 0)
 	{
 		printf("ERROR: Failed to start the timer: %d\n", errno);
@@ -222,7 +281,7 @@ int hello_main(int argc, char *argv[])
 		{
 			FD_ZERO(&rfds);											
 			FD_SET(fd, &rfds);
-			timeout.tv_sec = 5;
+			timeout.tv_sec = 2;
 			timeout.tv_usec = 0;			
 			iRet = select(fd+1, &rfds, NULL, NULL, &timeout);  	//recv-timeout
 			if (iRet < 0) 
@@ -236,64 +295,40 @@ int hello_main(int argc, char *argv[])
 			}
 			else if(iRet == 0)
 			{
+				//cnt = 0;
+				timeout_f = true;
 			}
 			else
 			{
+				if (ret != 1)
+				{
+					printf("my_read: ERROR poll reported: %d\n", ret);
+				}
+				else
+				{
+					ready_f = true;
+				}
+			
 				if(FD_ISSET(fd, &rfds)) 
 				{
-					//usleep(300*1000L);                                     //sleep 100ms
+					cnt++;
+					//usleep(50*1000L);                                     //sleep 100ms
 					memset(rxbuff, 0, sizeof(rxbuff));
-				    iBytes = read(fd ,rxbuff,sizeof(rxbuff));
-					if(iBytes == -1)
+
+					iBytes = myreadn(fd,rxbuff,sizeof(rxbuff),&timeout_f,&ready_f);
+
+					printf("num%d\n",cnt);
+
+					for(i=0;i<iBytes;i++)
 					{
-						printf("Error:read  Data from cc1101\n");
+						printf("<%d>=%d\n",i,rxbuff[i]);
 					}
-		            else
-		           	{
-						//printf("read  data from cc1101\n");
-						printf("num%d\n",cnt);
-			
 						
-						for(i=0;i<iBytes;i++)
-						{
-							printf("<%d>=%d\n",i,rxbuff[i]);
-						}
-						
-						//printf("rcv bytes=<%d>......................................................\n",iBytes);
-						int timercnt1=0;
-						ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt1));
-						printf("timer2--cnt<%d>\n",timercnt1);
-
-						/******************************************************************
-					//ACK
-						usleep(300*1000L);                                     //sleep 100ms
-						printf("write ack bytes=<35> to cc1101......................................................\n");
-						for(i=0;i<35;i++)
-						{
-							txbuff[i]=10+i;
-							//printf("<%d>=%d\n",i,txbuff[i]);	
-						}
-						
-					    iBytes = write(fd ,txbuff,35);
-						if(iBytes == -1)
-						{
-							printf("Error:write  Data to cc1101\n");
-						}
-					
-					*******************************************************************/
-
-						
-					}
 				    tcflush(fd, TCIFLUSH);
-					/*************************************************************************************/
-					//printf("rcv gps <%d> bytes msg:%s\n",iBytes,cArray);
-					/*************************************************************************************/
 				}
 			}
-	}
-	    
+		}    
 	}
 
-	
   return 0;
 }

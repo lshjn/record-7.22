@@ -403,10 +403,6 @@
 
 #if defined(CONFIG_STM32F4DISBB) && defined(CONFIG_STM32_ETHMAC)
 
-//#  define GPIO_EMAC_NINT  (GPIO_INPUT|GPIO_PULLUP|GPIO_EXTI|\
-//                           GPIO_PORTA|GPIO_PIN1)
-//#  define GPIO_EMAC_NRST  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
-//                          GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN2)
 //add by liushuhe 2017.11.08
 #  define GPIO_EMAC_NINT  (GPIO_INPUT|GPIO_PULLUP|GPIO_EXTI|\
                            GPIO_PORTA|GPIO_PIN1)
@@ -812,7 +808,6 @@ int stm32f407vg_at24c08_automount(struct i2c_master_s *i2c);
 
 #ifdef CONFIG_ADC
 //add by liushue 2017.09.08
-//int stm32l4_adc_setup(void);
 int stm32_adc_setup(void);
 #endif
 

@@ -596,7 +596,7 @@ struct c1101_rfsettings_s rfSettings = {
     .PKTLEN = 0xff,    // Packet length.
     .PKTCTRL1 = 0x04,  // Packet automation control.
     .PKTCTRL0 = 0x05,  // Packet automation control.
-    .ADDR = 0xff,      // Device address.
+    .ADDR = 0x12,      // Device address.
 	.CHANNR = 0x00,     // Channel number
 	.FSCTRL1 = 0x0f,    // Frequency synthesizer control. 
 	.FSCTRL0 = 0x00,    // Frequency synthesizer control. 
@@ -741,13 +741,76 @@ static const struct file_operations g_cc1101_drvrops =
   0,      			/* unlink */
 };
 
+struct ring_buf
+{
+	char	*g_Buf;
+	int		g_iReadPos;
+	int		g_iWritePos;
+};
+
+#define CC1101_BUF_SIZE   (1024)
+
+struct ring_buf cc1101_buf;
 /****************************************************************************
  * Private Data
  ****************************************************************************/
 
 static volatile int cc1101_interrupt = 0;
 
+/************************************************************************************/
+//环形缓冲区
+static int isFull(void)
+{
+	return (((cc1101_buf.g_iWritePos + 1) % CC1101_BUF_SIZE) == cc1101_buf.g_iReadPos);
+}
 
+
+static int isEmpty(void)
+{
+	return (cc1101_buf.g_iWritePos == cc1101_buf.g_iReadPos);
+}
+
+static int PutData(uint8_t cVal)
+{
+	if (isFull())
+		return -1;
+	else
+	{
+		cc1101_buf.g_Buf[cc1101_buf.g_iWritePos] = cVal;
+		cc1101_buf.g_iWritePos = (cc1101_buf.g_iWritePos + 1) % CC1101_BUF_SIZE;
+		return 0;
+	}	
+}
+
+static int GetData(char *pcVal)
+{
+	if (isEmpty())
+		return -1;
+	else
+	{
+		*pcVal = cc1101_buf.g_Buf[cc1101_buf.g_iReadPos];
+		cc1101_buf.g_iReadPos = (cc1101_buf.g_iReadPos + 1) % CC1101_BUF_SIZE;
+		return 0;
+	}
+}
+
+
+static int DatePrint(uint8_t *strData,int len)
+{
+	/* 把数据放入环形缓冲区 */
+	int i;
+	
+	for (i = 0; i < len; i++)
+	{
+		if (0 != PutData(strData[i]))
+			break;
+	}	
+	return i;	
+}
+
+
+
+/************************************************************************************/
 
 /*********************************************************************************/
 //add by liushuhe 2017.11.30
@@ -830,14 +893,13 @@ int cc1101_access(FAR struct cc1101_dev_s *dev, uint8_t addr,
   cc1101_access_begin(dev);
 
 
- //usleep(2);
+#if 0
   //add by liushuhe 2017.12.03
-  //while(stm32_gpioread(dev->pin_miso));
-
-int i=0;
+  while(stm32_gpioread(dev->pin_miso));
+#else if
+ int i=0;
  for(i=0;i<168*2;i++);
-
-
+#endif
 
   if (length > 1 || length < -1)
     {
@@ -1105,26 +1167,23 @@ void cc1101_setpacketctrl(FAR struct cc1101_dev_s *dev)
  **/
 int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 {
-   FAR struct cc1101_dev_s *cdev = (FAR struct cc1101_dev_s *)arg;
+    //FAR struct cc1101_dev_s *cdev = (FAR struct cc1101_dev_s *)arg;
 	uint8_t nbytes;
-	uint8_t addr;
 	int status = 0;
 	uint8_t crc[2];
 	int temp = 0;
 	static int crcerror = 0;
 
-	cc1101_interrupt++;
 	
 	//add by liushuhe 2017.11.30
 	if(cc1101_rxtx_status.workmode == CC1101_MODE_RX)
 	{
+		cc1101_interrupt++;
 		status = cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_RXBYTES);
 	    if(status&0x7f)
 	    {
-			//spierr("status=%d\n",status);
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &nbytes, 1);
 			//spierr("nbytes=%d\n",nbytes);
-
 	    	//nbytes
 			if(nbytes > CC1101_PACKET_MAXTOTALLEN)
 			{
@@ -1135,12 +1194,12 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 				cc1101_rxtx_status.rx_len = nbytes;
 			}
 			
-			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);
-
+			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);	
 			//crc
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, crc, 2);
 			if(crc[1]&0x80)
 			{
+				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
 				//spierr("crc ok<%d>\n",cc1101_interrupt);
 			}
 			else
@@ -1148,21 +1207,14 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 				//spierr("crc error<%d>\n",cc1101_interrupt);
 				crcerror++;
 			}
-	 
-			//add by liushuhe 2017.12.04	  
-			cc1101_receive((FAR struct cc1101_dev_s *)arg);
 			
 			cc1101_rxtx_status.rx_status = SUCCESS;
+			
+			//add by liushuhe 2017.12.04	  
+			cc1101_receive((FAR struct cc1101_dev_s *)arg);
+			//CC1101_pollnotify(cc1101_fd);
 
-			CC1101_pollnotify(cc1101_fd);
 
-			/*
-	        int i=0;
-			for(i=0;i<cc1101_rxtx_status.rx_len;i++)
-			{
-				spierr("[%d]=%d\n",i,cc1101_rxtx_status.rxbuf[i]);
-			}
-			*/
 		}
 		else
 		{
@@ -1170,17 +1222,14 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			cc1101_receive((FAR struct cc1101_dev_s *)arg);
 			//spierr("Error: cc1101 <%d> RX int status=%d  nbytes=%d\n",cc1101_interrupt,status,nbytes);
 		}
-		//spierr("cc1101 <%d> RX int crcerror:<%d>\n",cc1101_interrupt,crcerror);
 	}
 	
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)
 	{		
 		//wait untill txbyte ok
-		//spierr("cc1101 <%d> TX int\n",cc1101_interrupt);
 	}
 	else
 	{
-		//spierr("cc1101_rxtx_status int  error<%d>\n",cc1101_interrupt);
 		cc1101_receive((FAR struct cc1101_dev_s *)arg);
 	}
 	
@@ -1528,15 +1577,20 @@ int cc1101_sendmode(FAR struct cc1101_dev_s *dev)
 
 int cc1101_read(FAR struct cc1101_dev_s *dev, uint8_t * buf, size_t size)
 {
-	int cnt=0;
+	char cVal;
+	int i=0;
 
 	ASSERT(dev);
 
-    memcpy(buf,cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
-
-	cc1101_rxtx_status.rx_status = FAIL;
-    
-	return cc1101_rxtx_status.rx_len;
+	/* 把环形缓冲区的数据取出来, 最多取255字节 */
+	while ((i < size) && (0 == GetData(&cVal)))
+	{
+		buf[i] = cVal;
+		i++;
+	}
+			
+	return i;
+	
 }
 
 int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
@@ -1582,7 +1636,6 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 
 int cc1101_send(FAR struct cc1101_dev_s *dev)
 {
-	int cnt=0;
 	int bytes=0;
 	
 	ASSERT(dev);
@@ -1716,17 +1769,19 @@ static ssize_t fs_read(FAR struct file *filep, FAR char *buffer, size_t buflen)
 	/* TODO: Should we check permissions here? */
 	/* Audio read operations get passed directly to the lower-level */
 
-	cc1101_receive(lower->c1101_dev);
-	
-	//start rx
-	if (lower->ops->setmode_receive != NULL)
-	{
-		lower->ops->setmode_receive(lower->c1101_dev);
-	}
-
 	if (lower->ops->read != NULL)
 	{
 		ret = lower->ops->read(lower->c1101_dev, (_uint8_t *)buffer, buflen);
+	}
+	
+	if((cc1101_buf.g_iReadPos == cc1101_buf.g_iWritePos)&&(cc1101_interrupt<=0))
+	{
+		//start rx
+		if (lower->ops->setmode_receive != NULL)
+		{
+			lower->ops->setmode_receive(lower->c1101_dev);
+		}
+
 	}
 
 	return ret;
@@ -1769,7 +1824,6 @@ static int fs_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup)
 {
   FAR struct inode *inode;
   FAR struct cc1101_upperhalf_s *priv;
-  uint32_t flags;
   int ret;
   int i;
 
@@ -1820,9 +1874,15 @@ static int fs_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup)
           ret = -EBUSY;
           goto out;
         }
-      if (cc1101_rxtx_status.rx_status == SUCCESS)
+      if ((cc1101_interrupt >0)&&(cc1101_rxtx_status.rx_status == SUCCESS)&&(cc1101_buf.g_iReadPos != cc1101_buf.g_iWritePos))
         {
-          CC1101_pollnotify(priv);
+        	cc1101_interrupt--;
+        	if((cc1101_buf.g_iReadPos == cc1101_buf.g_iWritePos)&&(cc1101_interrupt<=0))
+        	{
+        		cc1101_interrupt = 0;
+				cc1101_rxtx_status.rx_status = FAIL;
+			}
+            CC1101_pollnotify(priv);
         }
 
     }
@@ -1867,11 +1927,17 @@ int cc1101_register(struct cc1101_lowerhalf_s *dev)
   
   /* Allocate the upper-half data structure */
 
+	cc1101_buf.g_Buf = kmm_zalloc(CC1101_BUF_SIZE);
+    cc1101_buf.g_iReadPos  = 0;
+    cc1101_buf.g_iWritePos = 0;
+		
   upper = (FAR struct cc1101_upperhalf_s *)kmm_zalloc(sizeof(struct cc1101_upperhalf_s));
   if (upper == NULL)
     {
       return -ENOMEM;
     }
+
+  
  cc1101_fd = upper;
  
   /* Initialize the Audio device structure (it was already zeroed by kmm_zalloc()) */
