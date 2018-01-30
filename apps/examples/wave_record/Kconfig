@@ -168,32 +168,6 @@ config EXAMPLES_BLUETOOTH_DEVPATH
 	
 endif # EXAMPLES_BLUETOOTH
 
-
-#433M
-config EXAMPLES_MASTER_433M
-	bool "433M task"
-	default n
-	depends on EXAMPLES_WAVE_RECORD
-	---help---
-		Enable the 433M task
-
-if EXAMPLES_MASTER_433M
-
-config EXAMPLES_433M_PRIORITY
-	int "433M app task priority"
-	default 100
-
-config EXAMPLES_433M_STACKSIZE
-	int "433M app stack size"
-	default 2048
-
-config EXAMPLES_433M_DEVPATH
-	string "433M device path"
-	default "/dev/ttyS3"
-	
-endif # EXAMPLES_433M
-
-
 #flash
 config EXAMPLES_FLASH
 	bool "flash task"
@@ -385,5 +359,25 @@ config DS1338_FREQUENCY
 
 endif #DS1338
 
+#cc1101
+config EXAMPLES_CC1101
+	bool "cc1101 task"
+	default n
+	depends on EXAMPLES_WAVE_RECORD
+	---help---
+		Enable the SENSOR task
+
+if EXAMPLES_CC1101
+
+config EXAMPLES_CC1101_PRIORITY
+	int "EXAMPLES_CC1101 task priority"
+	default 100
+
+config EXAMPLES_CC1101_STACKSIZE
+	int "EXAMPLES_CC1101 stack size"
+	default 2048
+
+	
+endif #EXAMPLES_CC1101
 
 endif # EXAMPLES_WAVE_RECORD

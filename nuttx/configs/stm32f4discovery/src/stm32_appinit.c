@@ -162,6 +162,18 @@ int board_ioctl(unsigned int cmd, uintptr_t arg)
 				stm32_configgpio(GPIO_LED6);
 				stm32_gpiowrite(GPIO_LED6,true);
 				break;
+
+		//led6
+		case BOARDIOC_TIME2_PPS_INIT:
+				stm32_configgpio(GPIO_LED6);
+				stm32_gpiowrite(GPIO_LED6,false);
+				break;
+		case BOARDIOC_TIME2_PPS_UP:
+				stm32_gpiowrite(GPIO_LED6,true);
+				break;
+		case BOARDIOC_TIME2_PPS_DOWN:
+				stm32_gpiowrite(GPIO_LED6,false);
+				break;
 		/*********************************************************/
 		//master
         //bluetooth   		

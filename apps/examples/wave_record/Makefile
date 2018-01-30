@@ -51,7 +51,7 @@ STACKSIZE = $(CONFIG_EXAMPLES_WAVE_RECORD_STACKSIZE)
 
 ASRCS =
 CSRCS =
-MAINSRC = wave_record.c task_4g.c task_433M.c task_bluetooth.c task_eth.c task_flash.c task_gprs.c task_gps.c  task_i2c_sensor.c  task_monitor.c  task_rtc.c task_sdcard.c task_adc.c tmp431.c ds1338.c
+MAINSRC = wave_record.c task_4g.c task_bluetooth.c task_eth.c task_flash.c task_gprs.c task_gps.c  task_i2c_sensor.c  task_monitor.c  task_rtc.c task_sdcard.c task_adc.c tmp431.c ds1338.c task_cc1101.c
 		   
 CONFIG_EXAMPLES_WAVE_RECORD_PROGNAME ?= wave_record$(EXEEXT)
 PROGNAME = $(CONFIG_EXAMPLES_WAVE_RECORD_PROGNAME)

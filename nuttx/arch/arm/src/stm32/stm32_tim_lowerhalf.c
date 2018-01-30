@@ -52,6 +52,8 @@
 
 #include <arch/board/board.h>
 
+#include <sys/boardctl.h>
+
 #include "stm32_tim.h"
 
 #if defined(CONFIG_TIMER) && \
@@ -296,6 +298,9 @@ static int stm32_timer_handler(int irq, void * context, void * arg)
 
   STM32_TIM_ACKINT(lower->tim, 0);
 
+  //add by liushuhe 2018.01.25
+  boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+
   if (lower->callback(&next_interval_us, lower->arg))
     {
       if (next_interval_us > 0)
@@ -307,7 +312,12 @@ static int stm32_timer_handler(int irq, void * context, void * arg)
     {
       stm32_stop((struct timer_lowerhalf_s *)lower);
     }
+  
+  int i_delay=0;
+  for(i_delay=0;i_delay<5000;i_delay++);
 
+  //add by liushuhe 2018.01.25
+  boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
   return OK;
 }
 
@@ -587,6 +597,9 @@ int stm32_timer_initialize(FAR const char *devpath, int timer)
    * timer_register is a handle that could be used with timer_unregister().
    * REVISIT: The returned handle is discard here.
    */
+
+
+
 
   FAR void *drvr = timer_register(devpath,
                                   (FAR struct timer_lowerhalf_s *)lower);

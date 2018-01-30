@@ -75,6 +75,7 @@
 #include "task_monitor.h"
 #include "task_flash.h"
 #include "task_adc.h"
+#include "task_cc1101.h"
 #include "tmp431.h"
 #include "ds1338.h"
 
@@ -175,6 +176,15 @@ int wave_record_main(int argc, FAR char *argv[])
       return EXIT_FAILURE;
     }
 
+  ret = task_create("master_cc1101", CONFIG_EXAMPLES_CC1101_PRIORITY,
+                    CONFIG_EXAMPLES_CC1101_STACKSIZE, master_cc1101,
+                    NULL);
+  if (ret < 0)
+    {
+      int errcode = errno;
+      printf("master_CC1101: ERROR: Failed to start CC1101: %d\n",errcode);
+      return EXIT_FAILURE;
+    }
 
   while(1)	
   {

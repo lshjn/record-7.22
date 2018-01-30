@@ -184,6 +184,11 @@
 //4g
 #define 	BOARDIOC_4G_PWRON						BOARDIOC_USER + 32
 #define 	BOARDIOC_4G_PWROFF						BOARDIOC_USER + 33
+
+//timer2
+#define 	BOARDIOC_TIME2_PPS_INIT               BOARDIOC_USER + 34
+#define 	BOARDIOC_TIME2_PPS_UP            		BOARDIOC_USER + 35
+#define 	BOARDIOC_TIME2_PPS_DOWN            	BOARDIOC_USER + 36
 /****************************************************************************
  * Public Type Definitions
  ****************************************************************************/

@@ -169,7 +169,7 @@ int timer2(int argc, char *argv[])
 				
 				ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt1));
 				printf("sleep--timer2--cnt<%d>\n",timercnt1);
-		usleep(500*1000);                                     //sleep 100ms
+		usleep(1000*1000);                                     //sleep 100ms
 	}
     
 	
@@ -190,7 +190,7 @@ int hello_main(int argc, char *argv[])
 	struct timeval timeout;
 	fd_set 	rfds;	
 
-	struct timer_notify_s notify;
+	struct timer_notify_s notify1;
 	
 	int fd_timer;
 	int ret;
@@ -199,6 +199,7 @@ int hello_main(int argc, char *argv[])
 
 	int cnt=0;
 
+    boardctl(BOARDIOC_TIME2_PPS_INIT, 0);
     boardctl(BOARDIOC_433_PWRON, 0);
 
     printf("Hello, World!!\n");
@@ -236,17 +237,17 @@ int hello_main(int argc, char *argv[])
 	}
 
 	
-	notify.arg   = NULL;
-	notify.pid   = getpid();
-	notify.signo = CONFIG_EXAMPLES_TIMER_SIGNO;
+	notify1.arg   = NULL;
+	notify1.pid   = getpid();
+	notify1.signo = CONFIG_EXAMPLES_TIMER_SIGNO;
 	
-	ret = ioctl(fd_timer, TCIOC_NOTIFICATION, (unsigned long)((uintptr_t)&notify));
+	ret = ioctl(fd_timer, TCIOC_NOTIFICATION, (unsigned long)((uintptr_t)&notify1));
 	if (ret < 0)
 	{
 		printf("ERROR: Failed to set the timer handler: %d\n", errno);
 	}
   
-	//ret = ioctl(fd_timer, TCIOC_START, 0);
+	ret = ioctl(fd_timer, TCIOC_START, 0);
 	if (ret < 0)
 	{
 		printf("ERROR: Failed to start the timer: %d\n", errno);
@@ -292,6 +293,12 @@ int hello_main(int argc, char *argv[])
 				{
 					printf("select error!!!<%d>\n",errno);
 				}
+				else
+				{
+					int timercnt1=0;
+					ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt1));
+					printf("sleep--timer2--cnt<%d>\n",timercnt1);
+				}
 			}
 			else if(iRet == 0)
 			{
@@ -316,8 +323,11 @@ int hello_main(int argc, char *argv[])
 					memset(rxbuff, 0, sizeof(rxbuff));
 
 					iBytes = myreadn(fd,rxbuff,sizeof(rxbuff),&timeout_f,&ready_f);
+					
+					int timercnt2=0;
+					ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt2));
 
-					printf("num%d\n",cnt);
+					printf("num%d,timercnt2=%d\n",cnt,timercnt2);
 
 					for(i=0;i<iBytes;i++)
 					{
