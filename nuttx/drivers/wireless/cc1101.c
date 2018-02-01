@@ -321,6 +321,7 @@ FAR struct cc1101_upperhalf_s *cc1101_fd;
 
 typedef struct _timemsg{
 	uint8_t  start_flag;
+	uint8_t  msglen;
 	uint8_t  type;
 	uint8_t  dist;
 	uint8_t  src;
@@ -628,7 +629,8 @@ struct c1101_rfsettings_s rfSettings = {
 	.MDMCFG0 =0xf8,    // Modem configuration. 
 	.DEVIATN = 0x44,    // Modem deviation setting (when FSK modulation is enabled). 
 	.MCSM2 = 0x07,     // Main Radio Control State Machine configuration.
-	.MCSM1 = 0x03,     // Main Radio Control State Machine configuration.
+	//.MCSM1 = 0x03,     // Main Radio Control State Machine configuration.
+	.MCSM1 = 0x0f,     // Main Radio Control State Machine configuration.
 	.MCSM0 = 0x18,     // Main Radio Control State Machine configuration.
 	.FOCCFG = 0x16,     // Frequency Offset Compensation Configuration. 
 	.BSCFG = 0x6c,      // Bit synchronization Configuration. 
@@ -916,7 +918,7 @@ int cc1101_access(FAR struct cc1101_dev_s *dev, uint8_t addr,
   while(stm32_gpioread(dev->pin_miso));
 #else if
  int i=0;
- for(i=0;i<168*2;i++);
+ for(i=0;i<168*10;i++);
 #endif
 
   if (length > 1 || length < -1)
@@ -1039,12 +1041,13 @@ inline uint8_t cc1101_strobe(FAR struct cc1101_dev_s *dev, uint8_t command)
   SPI_SETFREQUENCY(dev->spi, CC1101_SPIFREQ_SINGLE);
 
 
- //usleep(2);
+#if 0
   //add by liushuhe 2017.12.03
   while(stm32_gpioread(dev->pin_miso));
-
-//int i=0;
-// for(i=0;i<168*2;i++);
+#else if
+ int i=0;
+ for(i=0;i<168*10;i++);
+#endif
 
   status = SPI_SEND(dev->spi, command);
 
@@ -1197,7 +1200,9 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	if(cc1101_rxtx_status.workmode == CC1101_MODE_RX)
 	{
 		cc1101_interrupt++;
-		status = cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_RXBYTES);
+		
+		cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXBYTES, &status, 1);
+		//spierr("status=%d\n",status);
 	    if(status&0x7f)
 	    {
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &nbytes, 1);
@@ -1223,26 +1228,26 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			if(crc[1]&0x80)
 			{
 				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
-				//spierr("crc ok<%d>\n",cc1101_interrupt);
+				cc1101_rxtx_status.rx_status = SUCCESS;
+				CC1101_pollnotify(cc1101_fd);
 			}
 			else
 			{
-				//spierr("crc error<%d>\n",cc1101_interrupt);
 				crcerror++;
+				spierr("Error:crc<%d>\n",crcerror);
+				cc1101_rxtx_status.rx_len = 0;
+				cc1101_rxtx_status.rx_status = FAIL;
 			}
-			
-			cc1101_rxtx_status.rx_status = SUCCESS;
-			
+					
 			//add by liushuhe 2017.12.04	  
-			cc1101_receive((FAR struct cc1101_dev_s *)arg);
-			//CC1101_pollnotify(cc1101_fd);
+			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
 
 
 		}
 		else
 		{
 			//add by liushuhe 2017.12.04	  
-			cc1101_receive((FAR struct cc1101_dev_s *)arg);
+			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
 			//spierr("Error: cc1101 <%d> RX int status=%d  nbytes=%d\n",cc1101_interrupt,status,nbytes);
 		}
 	}
@@ -1552,7 +1557,7 @@ int cc1101_receive(FAR struct cc1101_dev_s *dev)
 	ASSERT(dev);
 
 	//cc1101_strobe(dev, CC1101_SIDLE);
-	cc1101_strobe(dev, CC1101_SFRX);
+	//cc1101_strobe(dev, CC1101_SFRX);
 
 	//cc1101_strobe(dev, CC1101_SRX | CC1101_READ_SINGLE);
 	cc1101_strobe(dev, CC1101_SRX);
@@ -1579,10 +1584,14 @@ int cc1101_sendmode(FAR struct cc1101_dev_s *dev)
 {
 	ASSERT(dev);
 
+    cc1101_rxtx_status.workmode = CC1101_MODE_TX;
+
+#if 0
+
 	cc1101_strobe(dev, CC1101_SIDLE);
 	cc1101_strobe(dev, CC1101_SFTX);
 
-    cc1101_rxtx_status.workmode = CC1101_MODE_TX;
+
 
 	rfSettings.ADDR = _Pcc1101_timemsg_tx->src;
     if(cc1101_access(dev, CC1101_ADDR, (FAR uint8_t *)&rfSettings.ADDR, -1) < 0)
@@ -1590,7 +1599,7 @@ int cc1101_sendmode(FAR struct cc1101_dev_s *dev)
 		spierr("cc1101 tx ADDR init error\n");
     }
 
-/*
+
 	rfSettings.IOCFG2 = CC1101_GDO2_TX;
     if(cc1101_access(dev, CC1101_IOCFG2, (FAR uint8_t *)&rfSettings.IOCFG2, -1) < 0)
     {
@@ -1601,7 +1610,7 @@ int cc1101_sendmode(FAR struct cc1101_dev_s *dev)
     {
 		spierr("cc1101 tx FIFOTHR init error\n");
     }
-*/
+#endif
 	return 0;
 }
 
@@ -1646,45 +1655,32 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 	  packetlen = size;
 	}
 
-	//while(txbyte > 0)
-	//{
-		cc1101_strobe(dev, CC1101_SIDLE);
-		cc1101_strobe(dev, CC1101_SFTX);
+	cc1101_strobe(dev, CC1101_SIDLE);
+	cc1101_strobe(dev, CC1101_SFTX);
 
-
-
-		//ttttt = cc1101_strobe(dev, CC1101_MARCSTATE);
-		cc1101_access(dev, CC1101_MARCSTATE, &ttttt, 1);
-		spierr("CC1101_MARCSTATE=%x\n",ttttt);
+	//cc1101_access(dev, CC1101_MARCSTATE, &ttttt, 1);	
+	//cc1101_access(dev, CC1101_TXBYTES, &ttttt, 1);
 		
-		//ttttt = cc1101_strobe(dev, CC1101_TXBYTES);
-		cc1101_access(dev, CC1101_TXBYTES, &ttttt, 1);
-		spierr("CC1101_TXBYTES=%x\n",ttttt);
-		
-	//}while(cc1101_strobe(dev, CC1101_TXBYTES));
-
-
-
-
 	//len
 	uint8_t len = 0;
 	len = packetlen + 1;
 	cc1101_access(dev, CC1101_TXFIFO, &len, -1);
+	
     //addr
     uint8_t addr = 0;
 	addr = _Pcc1101_timemsg_tx->dist;
 	cc1101_access(dev, CC1101_TXFIFO, &addr, -1);
 
-	
+	/*
 	int i = 0;
 	for(i=0;i<packetlen;i++)
 	{
 		spierr("<%d>=%x\n",i,buf[i]);
 	}
+	*/
 	
 	//data
 	ret = cc1101_access(dev, CC1101_TXFIFO, (FAR uint8_t *)buf, -(packetlen));
-	//cc1101_rxtx_status.tx_len = ret;
 	cc1101_rxtx_status.tx_len = packetlen;
 		
 	return ret;
@@ -1704,8 +1700,9 @@ int cc1101_send(FAR struct cc1101_dev_s *dev)
 		cc1101_access(dev, CC1101_TXBYTES, &bytes, 1);
 	}while((bytes &0x7F) != 0);
 	
-
-   spierr("===========================================\n");
+    //wait send ok
+	int i=0;
+	for(i=0;i<168*10;i++);
 
 
 	//goto recv

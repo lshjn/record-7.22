@@ -113,7 +113,7 @@ int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
 				bytes_left -= nbytes; 
 				rxbuff += nbytes; 
 				
-				printf("myreadn: Read <%ld bytes> %s\n", (long)nbytes,rxbuff);
+				//printf("myreadn: Read <%ld bytes> %s\n", (long)nbytes,rxbuff);
 	        }
 
 
@@ -314,12 +314,13 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 {
 	char *ptr = (char*)databuff;
 	int  msglen = maxlen;
+	int  datalen = 0;
 	int  rlen = 0;
 
 	int i = 0;
     for(i=0;i < msglen;i++)
     {
-    	printf("a<%d>=%x\n",i,*ptr);
+		//printf("a<%d>=%x\n",i,*ptr);
 		if(MSG_START == *ptr)
 		{
 			*start_addr = ptr;
@@ -339,17 +340,21 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 		return 0;
 	}
 
+	datalen = *ptr++;
+	//printf("a<%d>=%x\n",i,datalen);
 	
 	i = 0;
-	
 	while(msglen > 0)
 	{
-    	printf("b<%d>=%x\n",i,*ptr);
+		//printf("b<%d>=%x\n",i,*ptr);
 		if(MSG_END == *ptr++)
 		{
 			rlen++;
 			msglen--;
-			break;
+			if(datalen == rlen)
+			{
+				break;
+			}
 		}
 		else
 		{
@@ -453,7 +458,7 @@ int master_cc1101(int argc, char *argv[])
 	{
 		FD_ZERO(&rfds);											
 		FD_SET(fd, &rfds);
-		timeout.tv_sec = 2;
+		timeout.tv_sec = 5;
 		timeout.tv_usec = 0;			
 		iRet = select(fd+1, &rfds, NULL, NULL, &timeout);  	//recv-timeout
 		if (iRet < 0) 
@@ -468,7 +473,7 @@ int master_cc1101(int argc, char *argv[])
 			{
 				int timercnt=0;
 				ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt));
-				printf("sleep--timer2--cnt<%d>\n",timercnt);
+				printf("time_cnt<%d>\n",timercnt);
 			}
 		}
 		else if(iRet == 0)
@@ -492,18 +497,8 @@ int master_cc1101(int argc, char *argv[])
 				memset(rxbuff, 0, sizeof(rxbuff));
 
 				rBytes = myreadn(fd,rxbuff,sizeof(rxbuff),&timeout_f,&ready_f);
-
+				//printf("r<%d>\n",rBytes);
                 /****************************************************************/
-				
-				
-				char temp[100];
-				memcpy(temp,rxbuff,rBytes);
-				int i = 0;
-				for(i=0;i<rBytes;i++)
-				{
-					printf("w<%d>=%x\n",i,temp[i]);
-				}
-				
 				int msg_datalen = 0;
 				int loop = 0;
 				int ptr = 0;
@@ -515,12 +510,13 @@ int master_cc1101(int argc, char *argv[])
 					
 					if(MSG_START == P_data[0])
 					{
-						switch(P_data[1])
+						switch(P_data[2])
 						{
 							case CMD_READTIME:
 									{
 										P_cc1101_msg_rx = rxbuff;
 										P_cc1101_msg_tx->start_flag	= MSG_START;
+										P_cc1101_msg_tx->msglen		= sizeof(cc110x_timemsg);
 										P_cc1101_msg_tx->type			= CMD_READTIME;
 										P_cc1101_msg_tx->dist			= P_cc1101_msg_rx->src;
 										P_cc1101_msg_tx->src			= P_cc1101_msg_rx->dist;
@@ -532,9 +528,17 @@ int master_cc1101(int argc, char *argv[])
 										P_cc1101_msg_tx->us			= timercnt_us - P_cc1101_msg_rx->us;
 										P_cc1101_msg_tx->endflag		= MSG_END;
 										
-										printf("1 P_cc1101_msg_tx=%08x,sizeof=%d\n",P_cc1101_msg_tx,sizeof(cc110x_timemsg));
 										wBytes = write(fd, (char *)P_cc1101_msg_tx, sizeof(cc110x_timemsg));
-										printf("2 P_cc1101_msg_tx=%08x,sizeof=%d\n",P_cc1101_msg_tx,sizeof(cc110x_timemsg));
+										
+										printf("s<%d>\n",P_cc1101_msg_tx->dist);
+										/*
+										int n=0;
+										char* ptrr=(char *)P_cc1101_msg_tx;
+										for(n=0;n<sizeof(cc110x_timemsg);n++)
+										{
+											printf("s-><%d>=%x,rBytes=%d,msg_datalen=%d\n",n,*ptrr++,rBytes,msg_datalen);
+										}
+										*/
 									}
 								break;
 						}
@@ -542,18 +546,6 @@ int master_cc1101(int argc, char *argv[])
 				}
 				while(rBytes >0);
 
-				/*
-				char temp[100];
-				memcpy(temp,rxbuff,rBytes);
-				int i = 0;
-				for(i=0;i<rBytes;i++)
-				{
-					printf("w<%d>=%x\n",i,temp[i]);
-				}
-				*/
-				printf("---------------------\n");
-				
-				
 			    tcflush(fd, TCIFLUSH);
 			}
 		}

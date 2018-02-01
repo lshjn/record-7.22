@@ -32,6 +32,7 @@ struct cc110x_msg1{
 
 typedef struct ALIGN timemsg{
 	uint8_t  start_flag;
+	uint8_t  msglen;
 	uint8_t  type;
 	uint8_t  dist;
 	uint8_t  src;

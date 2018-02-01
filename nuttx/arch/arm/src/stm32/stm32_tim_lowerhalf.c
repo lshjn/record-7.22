@@ -299,7 +299,7 @@ static int stm32_timer_handler(int irq, void * context, void * arg)
   STM32_TIM_ACKINT(lower->tim, 0);
 
   //add by liushuhe 2018.01.25
-  boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+  //boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 
   if (lower->callback(&next_interval_us, lower->arg))
     {
@@ -313,11 +313,11 @@ static int stm32_timer_handler(int irq, void * context, void * arg)
       stm32_stop((struct timer_lowerhalf_s *)lower);
     }
   
-  int i_delay=0;
-  for(i_delay=0;i_delay<5000;i_delay++);
+  //int i_delay=0;
+  //for(i_delay=0;i_delay<5000;i_delay++);
 
   //add by liushuhe 2018.01.25
-  boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+  //boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
   return OK;
 }
 
