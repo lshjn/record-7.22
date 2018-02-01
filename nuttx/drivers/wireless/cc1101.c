@@ -316,6 +316,23 @@ FAR struct cc1101_upperhalf_s *cc1101_fd;
 #define SUCCESS                      		 1
 #define FAIL                      			 0
 
+#define ALIGN(n) __attribute__((aligned(n)))
+
+
+typedef struct _timemsg{
+	uint8_t  start_flag;
+	uint8_t  type;
+	uint8_t  dist;
+	uint8_t  src;
+	uint32_t second; 		//定时器中断累计值
+	uint32_t us;            //定时器的cnt
+	uint8_t  endflag;        
+}_cc110x_timemsg  ALIGN(1);
+
+//_cc110x_timemsg cc1101_timemsg_tx;
+
+_cc110x_timemsg * _Pcc1101_timemsg_tx = NULL;
+
 /*
 uint8_t PA_table[8] = {0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60};
 
@@ -594,9 +611,10 @@ struct c1101_rfsettings_s rfSettings = {
 	.SYNC1 = 0x9b,      // Frequency control word, middle byte. 
 	.SYNC0 = 0xad,      // Frequency control word, low byte.
     .PKTLEN = 0xff,    // Packet length.
-    .PKTCTRL1 = 0x04,  // Packet automation control.
+    .PKTCTRL1 = 0x05,  // Packet automation control.
+    //.PKTCTRL1 = 0x04,  // Packet automation control.
     .PKTCTRL0 = 0x05,  // Packet automation control.
-    .ADDR = 0x12,      // Device address.
+    .ADDR = 0x10,      // Device address.
 	.CHANNR = 0x00,     // Channel number
 	.FSCTRL1 = 0x0f,    // Frequency synthesizer control. 
 	.FSCTRL0 = 0x00,    // Frequency synthesizer control. 
@@ -1023,10 +1041,10 @@ inline uint8_t cc1101_strobe(FAR struct cc1101_dev_s *dev, uint8_t command)
 
  //usleep(2);
   //add by liushuhe 2017.12.03
-  //while(stm32_gpioread(dev->pin_miso));
+  while(stm32_gpioread(dev->pin_miso));
 
-int i=0;
- for(i=0;i<168*2;i++);
+//int i=0;
+// for(i=0;i<168*2;i++);
 
   status = SPI_SEND(dev->spi, command);
 
@@ -1191,12 +1209,17 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			}
 			else
 			{
-				cc1101_rxtx_status.rx_len = nbytes;
+				cc1101_rxtx_status.rx_len = nbytes - 1;
 			}
+
+			uint8_t addr = 0;
+			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &addr, 1);
 			
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);	
 			//crc
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, crc, 2);
+
+			
 			if(crc[1]&0x80)
 			{
 				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
@@ -1560,6 +1583,14 @@ int cc1101_sendmode(FAR struct cc1101_dev_s *dev)
 	cc1101_strobe(dev, CC1101_SFTX);
 
     cc1101_rxtx_status.workmode = CC1101_MODE_TX;
+
+	rfSettings.ADDR = _Pcc1101_timemsg_tx->src;
+    if(cc1101_access(dev, CC1101_ADDR, (FAR uint8_t *)&rfSettings.ADDR, -1) < 0)
+    {
+		spierr("cc1101 tx ADDR init error\n");
+    }
+
+/*
 	rfSettings.IOCFG2 = CC1101_GDO2_TX;
     if(cc1101_access(dev, CC1101_IOCFG2, (FAR uint8_t *)&rfSettings.IOCFG2, -1) < 0)
     {
@@ -1570,6 +1601,7 @@ int cc1101_sendmode(FAR struct cc1101_dev_s *dev)
     {
 		spierr("cc1101 tx FIFOTHR init error\n");
     }
+*/
 	return 0;
 }
 
@@ -1597,7 +1629,8 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 {
 	uint8_t packetlen;
 	int ret;
-	int ttttt;
+	uint8_t ttttt = 0;
+	int txbyte;
 
 	ASSERT(dev);
 	ASSERT(buf);
@@ -1613,30 +1646,53 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 	  packetlen = size;
 	}
 
-	do
-	{
+	//while(txbyte > 0)
+	//{
 		cc1101_strobe(dev, CC1101_SIDLE);
 		cc1101_strobe(dev, CC1101_SFTX);
 
-		ttttt = cc1101_strobe(dev, CC1101_MARCSTATE);
+
+
+		//ttttt = cc1101_strobe(dev, CC1101_MARCSTATE);
+		cc1101_access(dev, CC1101_MARCSTATE, &ttttt, 1);
 		spierr("CC1101_MARCSTATE=%x\n",ttttt);
-		ttttt = cc1101_strobe(dev, CC1101_TXBYTES);
+		
+		//ttttt = cc1101_strobe(dev, CC1101_TXBYTES);
+		cc1101_access(dev, CC1101_TXBYTES, &ttttt, 1);
 		spierr("CC1101_TXBYTES=%x\n",ttttt);
-	}while(cc1101_strobe(dev, CC1101_TXBYTES));
+		
+	//}while(cc1101_strobe(dev, CC1101_TXBYTES));
+
+
+
 
 	//len
-	cc1101_access(dev, CC1101_TXFIFO, &packetlen, -1);
+	uint8_t len = 0;
+	len = packetlen + 1;
+	cc1101_access(dev, CC1101_TXFIFO, &len, -1);
+    //addr
+    uint8_t addr = 0;
+	addr = _Pcc1101_timemsg_tx->dist;
+	cc1101_access(dev, CC1101_TXFIFO, &addr, -1);
+
+	
+	int i = 0;
+	for(i=0;i<packetlen;i++)
+	{
+		spierr("<%d>=%x\n",i,buf[i]);
+	}
+	
 	//data
 	ret = cc1101_access(dev, CC1101_TXFIFO, (FAR uint8_t *)buf, -(packetlen));
-
-	cc1101_rxtx_status.tx_len = ret;
+	//cc1101_rxtx_status.tx_len = ret;
+	cc1101_rxtx_status.tx_len = packetlen;
 		
 	return ret;
 }
 
 int cc1101_send(FAR struct cc1101_dev_s *dev)
 {
-	int bytes=0;
+	char bytes=0;
 	
 	ASSERT(dev);
 
@@ -1645,11 +1701,13 @@ int cc1101_send(FAR struct cc1101_dev_s *dev)
 	//wait untill txbyte ok
 	do
 	{
-		bytes = cc1101_strobe(dev, CC1101_TXBYTES);
+		cc1101_access(dev, CC1101_TXBYTES, &bytes, 1);
 	}while((bytes &0x7F) != 0);
 	
 
-	cc1101_rxtx_status.tx_status = FAIL;
+   spierr("===========================================\n");
+
+
 	//goto recv
 	cc1101_receive(dev);
 
@@ -1796,6 +1854,8 @@ static ssize_t fs_write(FAR struct file *filep, FAR const char *buffer, size_t b
 	FAR struct inode *inode = filep->f_inode;
 	FAR struct cc1101_upperhalf_s *upper = inode->i_private;
 	FAR struct cc1101_lowerhalf_s *lower = upper->dev;
+	
+	_Pcc1101_timemsg_tx = (_cc110x_timemsg *)buffer;
 
 	/* TODO: Should we check permissions here? */
 
@@ -1928,6 +1988,8 @@ int cc1101_register(struct cc1101_lowerhalf_s *dev)
   /* Allocate the upper-half data structure */
 
 	cc1101_buf.g_Buf = kmm_zalloc(CC1101_BUF_SIZE);
+
+	
     cc1101_buf.g_iReadPos  = 0;
     cc1101_buf.g_iWritePos = 0;
 		
@@ -1938,7 +2000,7 @@ int cc1101_register(struct cc1101_lowerhalf_s *dev)
     }
 
   
- cc1101_fd = upper;
+  cc1101_fd = upper;
  
   /* Initialize the Audio device structure (it was already zeroed by kmm_zalloc()) */
   nxsem_init(&upper->devsem, 0, 1);

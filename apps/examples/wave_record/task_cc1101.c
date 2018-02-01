@@ -29,10 +29,15 @@
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-struct cc110x_msg  cc1101_msg;
+cc110x_timemsg   _cc1101_msg_tx; 
+
+
+cc110x_timemsg * P_cc1101_msg_rx = NULL;
+cc110x_timemsg * P_cc1101_msg_tx = &_cc1101_msg_tx;
+
 
 pthread_mutex_t g_TimerMutex		= PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t  g_TimerConVar	= PTHREAD_COND_INITIALIZER;
+pthread_cond_t  g_TimerConVar		= PTHREAD_COND_INITIALIZER;
 
 
 /****************************************************************************
@@ -46,7 +51,7 @@ pthread_cond_t  g_TimerConVar	= PTHREAD_COND_INITIALIZER;
 #define		MASTER_ADDR 	32
 #define 	SLAVE_ADDR_A 	17
 #define 	SLAVE_ADDR_B 	18
-#define 	SLAVE_ADDR_C 	19
+#define 	SLAVE_ADDR_C 	0x03
 
 #define 	CMD_QUERYONLINE 		0
 #define 	CMD_GETTIMEROFFSET 	1
@@ -57,6 +62,14 @@ pthread_cond_t  g_TimerConVar	= PTHREAD_COND_INITIALIZER;
 
 #define 	ONLINE 		1
 #define 	OFFLINE 	0
+
+
+#define 	MSG_START	0xAA
+#define 	MSG_END		0x55
+
+#define 	CMD_READTIME    0X01
+
+static		uint32_t	systick = 0;
 
 //readn
 int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
@@ -112,31 +125,7 @@ int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
 	return (max_len-bytes_left) ;	  
 }
 
-static void timer2_sighandler(int signo, FAR siginfo_t *siginfo,FAR void *context)
-{
-  /* Does nothing in this example except for increment a count of signals
-   * received.
-   *
-   * NOTE: The use of signal handler is not recommended if you are concerned
-   * about the signal latency.  Instead, a dedicated, high-priority thread
-   * that waits on sigwaitinfo() is recommended.  High priority is required
-   * if you want a deterministic wake-up time when the signal occurs.
-   */
-	pthread_mutex_lock(&g_TimerMutex);
-	if((cc1101_msg.online_A == ONLINE)&&(cc1101_msg.online_B == ONLINE)&&(cc1101_msg.online_C == ONLINE))
-	{
-		//cc1101_msg.Ack = true;
-		//cc1101_msg.cmd = CMD_GETTIMEROFFSET;
-	}
-	else
-	{
-		cc1101_msg.Ack = true;
-		cc1101_msg.cmd = CMD_QUERYONLINE;
-	}
-	pthread_cond_signal(&g_TimerConVar);
-	pthread_mutex_unlock(&g_TimerMutex);
-}
-
+/*
 int slave_cc1101(int argc, char *argv[])
 {
 	struct sigaction act;
@@ -258,8 +247,8 @@ int slave_cc1101(int argc, char *argv[])
 				break;
 			case CMD_GETTIMEROFFSET:
 					{
-						int j = 0;
-						for(j=0;j<3;j++)
+						int j = 2;
+						//for(j=0;j<3;j++)
 						{
 							switch(j)
 							{
@@ -317,10 +306,71 @@ int slave_cc1101(int argc, char *argv[])
 	}
     
   return 0;
-
-
-
 }
+*/
+
+
+int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
+{
+	char *ptr = (char*)databuff;
+	int  msglen = maxlen;
+	int  rlen = 0;
+
+	int i = 0;
+    for(i=0;i < msglen;i++)
+    {
+    	printf("a<%d>=%x\n",i,*ptr);
+		if(MSG_START == *ptr)
+		{
+			*start_addr = ptr;
+			ptr++;
+			rlen++;
+			msglen--;
+			break;
+		}
+		else
+		{
+			ptr++;
+		}
+	}
+    //find start_flag fail
+	if(0 == rlen)
+	{
+		return 0;
+	}
+
+	
+	i = 0;
+	
+	while(msglen > 0)
+	{
+    	printf("b<%d>=%x\n",i,*ptr);
+		if(MSG_END == *ptr++)
+		{
+			rlen++;
+			msglen--;
+			break;
+		}
+		else
+		{
+			rlen++;
+			msglen--;
+		}
+		i++;
+	}
+	
+	return rlen;
+}
+
+
+
+
+static void timer2_sighandler(int signo, FAR siginfo_t *siginfo,FAR void *context)
+{
+   systick++;
+}
+
+
 
 /****************************************************************************
  * master_cc1101
@@ -329,28 +379,72 @@ int slave_cc1101(int argc, char *argv[])
  ****************************************************************************/
 int master_cc1101(int argc, char *argv[])
 {
-	task_create("slave_cc1101", 100,2048, slave_cc1101,NULL);
-
+	//task_create("slave_cc1101", 100,2048, slave_cc1101,NULL);
+	
+	struct timer_notify_s notify;
 	struct timeval timeout;
-	fd_set 	rfds;	
-	int cnt=0;
+	struct sigaction act;
+	fd_set 	rfds;
+	
+    char 	rxbuff[255];
+    char 	*P_data = NULL;
+	int 	fd;
+	int 	fd_timer;
+	int  	iRet = 0;
+	int  	rBytes = 0;
+	int  	wBytes = 0;
 
-	int fd;
-	int i=0;
-	int data=0;
-    char rxbuff[255];
-	int  iRet = 0;
-	int  iBytes = 0;
+	int 	timeout_f = 0;
+	int 	ready_f = 0;
 
-	int timeout_f = 0;
-	int ready_f = 0;
-
+    boardctl(BOARDIOC_TIME2_PPS_INIT, 0);
     boardctl(BOARDIOC_433_PWRON, 0);
 
 	fd = open("/dev/cc1101", O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
 	if (fd < 0)
 	{
 		printf("open cc1101 error:\n");
+	}
+
+
+	fd_timer = open(CONFIG_EXAMPLES_TIMER_DEVNAME, O_RDWR);
+	if (fd_timer < 0)
+	{
+		printf("ERROR: Failed to open %s: %d\n",CONFIG_EXAMPLES_TIMER_DEVNAME, errno);
+	}
+
+	iRet = ioctl(fd_timer, TCIOC_SETTIMEOUT, CONFIG_EXAMPLES_TIMER_INTERVAL);
+	if (iRet < 0)
+	{
+		printf("ERROR: Failed to set the timer interval: %d\n", errno);
+	}
+	
+	act.sa_sigaction = timer2_sighandler;
+	act.sa_flags     = SA_SIGINFO;
+
+	(void)sigfillset(&act.sa_mask);
+	(void)sigdelset(&act.sa_mask, CONFIG_EXAMPLES_TIMER_SIGNO);
+
+	iRet = sigaction(CONFIG_EXAMPLES_TIMER_SIGNO, &act, NULL);
+	if (iRet != OK)
+	{
+		printf("ERROR: Fsigaction failed: %d\n", errno);
+	}
+	
+	notify.arg   = NULL;
+	notify.pid   = getpid();
+	notify.signo = CONFIG_EXAMPLES_TIMER_SIGNO;
+	
+	iRet = ioctl(fd_timer, TCIOC_NOTIFICATION, (unsigned long)((uintptr_t)&notify));
+	if (iRet < 0)
+	{
+		printf("ERROR: Failed to set the timer handler: %d\n", errno);
+	}
+  
+	iRet = ioctl(fd_timer, TCIOC_START, 0);
+	if (iRet < 0)
+	{
+		printf("ERROR: Failed to start the timer: %d\n", errno);
 	}
 
 
@@ -372,14 +466,13 @@ int master_cc1101(int argc, char *argv[])
 			}
 			else
 			{
-				//int timercnt1=0;
-				//ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt1));
-				//printf("sleep--timer2--cnt<%d>\n",timercnt1);
+				int timercnt=0;
+				ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt));
+				printf("sleep--timer2--cnt<%d>\n",timercnt);
 			}
 		}
 		else if(iRet == 0)
 		{
-			//cnt = 0;
 			timeout_f = true;
 		}
 		else
@@ -395,93 +488,72 @@ int master_cc1101(int argc, char *argv[])
 		
 			if(FD_ISSET(fd, &rfds)) 
 			{
-				cnt++;
 				//usleep(50*1000L);                                     //sleep 100ms
 				memset(rxbuff, 0, sizeof(rxbuff));
 
-				iBytes = myreadn(fd,rxbuff,sizeof(rxbuff),&timeout_f,&ready_f);
+				rBytes = myreadn(fd,rxbuff,sizeof(rxbuff),&timeout_f,&ready_f);
 
                 /****************************************************************/
-				//Parse rcv data
-				//cmdtype
-				switch(rxbuff[0])
-				{
-					case CMD_QUERYONLINE:
-							{
-								//dst addr
-								if(rxbuff[1] == MASTER_ADDR)
-								{
-									//src addr
-									switch(rxbuff[2])
-									{
-										case SLAVE_ADDR_A:
-												cc1101_msg.online_A = ONLINE;
-												cc1101_msg.Ack 	 = ACK;
-												
-											break;
-										case SLAVE_ADDR_B:
-												cc1101_msg.online_B = ONLINE;
-												cc1101_msg.Ack 	 = ACK;
-											break;
-										case SLAVE_ADDR_C:
-												cc1101_msg.online_C = ONLINE;
-												cc1101_msg.Ack 	 = ACK;
-											break;
-									}
-									if((cc1101_msg.online_A == ONLINE)&&
-										(cc1101_msg.online_B == ONLINE)&&
-										(cc1101_msg.online_C == ONLINE))
-									{
-										pthread_mutex_lock(&g_TimerMutex);
-										cc1101_msg.Ack = true;
-										cc1101_msg.cmd = CMD_GETTIMEROFFSET;
-										pthread_cond_signal(&g_TimerConVar);
-										pthread_mutex_unlock(&g_TimerMutex);
-									}
-								}
-							}
-						break;
-					case CMD_GETTIMEROFFSET:
-							{
-								//dst addr
-								if(rxbuff[1] == MASTER_ADDR)
-								{
-									//src addr
-									switch(rxbuff[2])
-									{
-										case SLAVE_ADDR_A:
-												//cc1101_msg.cur_balladdr = SLAVE_ADDR_A;
-												cc1101_msg.GetTime = rxbuff[4]<<24|rxbuff[5]<<16|rxbuff[6]<<8|rxbuff[7];
-												cc1101_msg.Ack 	 = ACK;
-											break;
-										case SLAVE_ADDR_B:
-												//cc1101_msg.cur_balladdr = SLAVE_ADDR_B;
-												cc1101_msg.GetTime = rxbuff[4]<<24|rxbuff[5]<<16|rxbuff[6]<<8|rxbuff[7];
-												cc1101_msg.Ack 	 = ACK;
-											break;
-										case SLAVE_ADDR_C:
-												//cc1101_msg.cur_balladdr = SLAVE_ADDR_C;
-												cc1101_msg.GetTime = rxbuff[4]<<24|rxbuff[5]<<16|rxbuff[6]<<8|rxbuff[7];
-												cc1101_msg.Ack 	 = ACK;
-											break;
-									}
-								}
-							}
-						break;
-					case CMD_SETTIMEROFFSET:
-						break;
-						
-				}
-
-
 				
-                /****************************************************************/
 				
-				for(i=0;i<iBytes;i++)
+				char temp[100];
+				memcpy(temp,rxbuff,rBytes);
+				int i = 0;
+				for(i=0;i<rBytes;i++)
 				{
-					printf("<%d>=%d\n",i,rxbuff[i]);
+					printf("w<%d>=%x\n",i,temp[i]);
 				}
+				
+				int msg_datalen = 0;
+				int loop = 0;
+				int ptr = 0;
+				do
+				{
+					msg_datalen = GetmsgStartaddrAndLen(&rxbuff[ptr],rBytes,&P_data);
+					ptr += msg_datalen;
+					rBytes -= msg_datalen;
 					
+					if(MSG_START == P_data[0])
+					{
+						switch(P_data[1])
+						{
+							case CMD_READTIME:
+									{
+										P_cc1101_msg_rx = rxbuff;
+										P_cc1101_msg_tx->start_flag	= MSG_START;
+										P_cc1101_msg_tx->type			= CMD_READTIME;
+										P_cc1101_msg_tx->dist			= P_cc1101_msg_rx->src;
+										P_cc1101_msg_tx->src			= P_cc1101_msg_rx->dist;
+										P_cc1101_msg_tx->second		= systick;
+										
+										int timercnt_us=0;
+										ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt_us));
+										
+										P_cc1101_msg_tx->us			= timercnt_us - P_cc1101_msg_rx->us;
+										P_cc1101_msg_tx->endflag		= MSG_END;
+										
+										printf("1 P_cc1101_msg_tx=%08x,sizeof=%d\n",P_cc1101_msg_tx,sizeof(cc110x_timemsg));
+										wBytes = write(fd, (char *)P_cc1101_msg_tx, sizeof(cc110x_timemsg));
+										printf("2 P_cc1101_msg_tx=%08x,sizeof=%d\n",P_cc1101_msg_tx,sizeof(cc110x_timemsg));
+									}
+								break;
+						}
+					}					
+				}
+				while(rBytes >0);
+
+				/*
+				char temp[100];
+				memcpy(temp,rxbuff,rBytes);
+				int i = 0;
+				for(i=0;i<rBytes;i++)
+				{
+					printf("w<%d>=%x\n",i,temp[i]);
+				}
+				*/
+				printf("---------------------\n");
+				
+				
 			    tcflush(fd, TCIFLUSH);
 			}
 		}

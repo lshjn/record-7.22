@@ -5,7 +5,9 @@
  extern "C" {
 #endif 
 
-struct cc110x_msg{
+#define ALIGN __attribute__((packed))
+
+struct cc110x_msg1{
 	uint8_t cmd;
 	uint8_t online_A;
 	uint8_t online_B;
@@ -26,6 +28,18 @@ struct cc110x_msg{
 	uint32_t  SetTime;
 	
 };
+
+
+typedef struct ALIGN timemsg{
+	uint8_t  start_flag;
+	uint8_t  type;
+	uint8_t  dist;
+	uint8_t  src;
+	uint32_t second; 		//定时器中断累计值
+	uint32_t us;            //定时器的cnt
+	uint8_t  endflag;        
+}cc110x_timemsg;
+
 
 int master_cc1101(int argc, char *argv[]);
 
