@@ -69,6 +69,10 @@ pthread_cond_t  g_TimerConVar		= PTHREAD_COND_INITIALIZER;
 
 #define 	CMD_READTIME    0X01
 
+#define  GETCC1101BUF_BYTES  0x01
+
+
+
 static		uint32_t	systick = 0;
 
 //readn
@@ -77,7 +81,6 @@ int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
 	ssize_t nbytes = 0;
 	int read_loops = 0;
 	int bytes_left = 0;
-
 	read_loops = max_len;
 	bytes_left = max_len;
 	
@@ -91,12 +94,12 @@ int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
 	            {
 	              if (*ready)
 	                {
-	                  printf("myreadn: ERROR no read data\n");
+	                  //printf("myreadn: ERROR no read data\n");
 	                }
 	            }
 	          else if (errno != EINTR)
 	            {
-	              printf("myreadn: read failed: %d\n", errno);
+	              //printf("myreadn: read failed: %d\n", errno);
 	            }
 	          nbytes = 0;
 			  read_loops--;
@@ -105,8 +108,8 @@ int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
 	        {
 	          if (*timeout)
 	            {
-	              printf("myreadn: ERROR? Poll timeout, but data read\n");
-	              printf("               (might just be a race condition)\n");
+	              //printf("myreadn: ERROR? Poll timeout, but data read\n");
+	              //printf("               (might just be a race condition)\n");
 	            }
 
 				read_loops -= nbytes; 
@@ -119,6 +122,7 @@ int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
 
 	      *timeout = false;
 	      *ready   = false;
+
 	    }
 	  while (read_loops > 0);
 	  
@@ -320,7 +324,6 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 	int i = 0;
     for(i=0;i < msglen;i++)
     {
-		//printf("a<%d>=%x\n",i,*ptr);
 		if(MSG_START == *ptr)
 		{
 			*start_addr = ptr;
@@ -341,12 +344,9 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 	}
 
 	datalen = *ptr++;
-	//printf("a<%d>=%x\n",i,datalen);
 	
-	i = 0;
 	while(msglen > 0)
 	{
-		//printf("b<%d>=%x\n",i,*ptr);
 		if(MSG_END == *ptr++)
 		{
 			rlen++;
@@ -361,7 +361,6 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 			rlen++;
 			msglen--;
 		}
-		i++;
 	}
 	
 	return rlen;
@@ -385,7 +384,8 @@ static void timer2_sighandler(int signo, FAR siginfo_t *siginfo,FAR void *contex
 int master_cc1101(int argc, char *argv[])
 {
 	//task_create("slave_cc1101", 100,2048, slave_cc1101,NULL);
-	
+	  irqstate_t flags;
+
 	struct timer_notify_s notify;
 	struct timeval timeout;
 	struct sigaction act;
@@ -396,6 +396,7 @@ int master_cc1101(int argc, char *argv[])
 	int 	fd;
 	int 	fd_timer;
 	int  	iRet = 0;
+	int  	cc1101buf_datalen = 0;
 	int  	rBytes = 0;
 	int  	wBytes = 0;
 
@@ -452,8 +453,6 @@ int master_cc1101(int argc, char *argv[])
 		printf("ERROR: Failed to start the timer: %d\n", errno);
 	}
 
-
-
 	while(1)
 	{
 		FD_ZERO(&rfds);											
@@ -461,19 +460,21 @@ int master_cc1101(int argc, char *argv[])
 		timeout.tv_sec = 5;
 		timeout.tv_usec = 0;			
 		iRet = select(fd+1, &rfds, NULL, NULL, &timeout);  	//recv-timeout
+
+		
 		if (iRet < 0) 
 		{
 			//add by liushuhe 2018.01.19
 			//error unless timer2 int
 			if(errno != EINTR)
 			{
-				printf("select error!!!<%d>\n",errno);
+				//printf("select error!!!<%d>\n",errno);
 			}
 			else
 			{
 				int timercnt=0;
-				ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt));
-				printf("time_cnt<%d>\n",timercnt);
+				//ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt));
+				//printf("time_cnt<%d>\n",timercnt);
 			}
 		}
 		else if(iRet == 0)
@@ -484,7 +485,7 @@ int master_cc1101(int argc, char *argv[])
 		{
 			if (iRet != 1)
 			{
-				printf("my_read: ERROR poll reported: %d\n", iRet);
+				//printf("my_read: ERROR poll reported: %d\n", iRet);
 			}
 			else
 			{
@@ -494,9 +495,19 @@ int master_cc1101(int argc, char *argv[])
 			if(FD_ISSET(fd, &rfds)) 
 			{
 				//usleep(50*1000L);                                     //sleep 100ms
+	           boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 				memset(rxbuff, 0, sizeof(rxbuff));
-
-				rBytes = myreadn(fd,rxbuff,sizeof(rxbuff),&timeout_f,&ready_f);
+				boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+			   
+  				iRet = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen);
+                if(iRet < 0)
+                {
+					printf("Error:get cc1101 bytes fail!\n");
+				}
+				
+				//rBytes = myreadn(fd,rxbuff,sizeof(rxbuff),&timeout_f,&ready_f);
+				rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
+	           boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 				//printf("r<%d>\n",rBytes);
                 /****************************************************************/
 				int msg_datalen = 0;
@@ -522,14 +533,19 @@ int master_cc1101(int argc, char *argv[])
 										P_cc1101_msg_tx->src			= P_cc1101_msg_rx->dist;
 										P_cc1101_msg_tx->second		= systick;
 										
-										int timercnt_us=0;
+	 // flags   = enter_critical_section();
+				boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+
+									int timercnt_us=0;
 										ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt_us));
+	           boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+
 										
 										P_cc1101_msg_tx->us			= timercnt_us - P_cc1101_msg_rx->us;
 										P_cc1101_msg_tx->endflag		= MSG_END;
-										
 										wBytes = write(fd, (char *)P_cc1101_msg_tx, sizeof(cc110x_timemsg));
-										
+				boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+  //leave_critical_section(flags);
 										printf("s<%d>\n",P_cc1101_msg_tx->dist);
 										/*
 										int n=0;
@@ -545,7 +561,8 @@ int master_cc1101(int argc, char *argv[])
 					}					
 				}
 				while(rBytes >0);
-
+				
+	           boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 			    tcflush(fd, TCIFLUSH);
 			}
 		}

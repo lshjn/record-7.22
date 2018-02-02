@@ -117,6 +117,7 @@
 #include <nuttx/board.h>
 //#include <arch/board/board.h>
 #include <nuttx/board.h>
+#include <sys/boardctl.h>
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -672,8 +673,9 @@ static int fs_close(FAR struct file *filep);
 static ssize_t fs_read(FAR struct file *filep, FAR char *buffer, size_t buflen);
 static ssize_t fs_write(FAR struct file *filep, FAR const char *buffer, size_t buflen);
 static int fs_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup);
+static int fs_ioctl(FAR struct file *filep, int cmd, unsigned long arg);
 
-
+#define  GETCC1101BUF_BYTES  0x01
 
 
 struct cc1101_status
@@ -756,8 +758,8 @@ static const struct file_operations g_cc1101_drvrops =
   fs_read,    		/* read */
   fs_write,   		/* write */
   0,           		/* seek */
-  0,   				/* ioctl */
-  fs_poll,		   		/*poll*/
+  fs_ioctl,   		/* ioctl */
+  fs_poll,		   	/*poll*/
   0,      			/* unlink */
 };
 
@@ -1229,6 +1231,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			{
 				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
 				cc1101_rxtx_status.rx_status = SUCCESS;
+				boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 				CC1101_pollnotify(cc1101_fd);
 			}
 			else
@@ -1939,7 +1942,7 @@ static int fs_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup)
         		cc1101_interrupt = 0;
 				cc1101_rxtx_status.rx_status = FAIL;
 			}
-            CC1101_pollnotify(priv);
+            //CC1101_pollnotify(priv);
         }
 
     }
@@ -1958,6 +1961,48 @@ out:
   return ret;
 }
 
+
+static int fs_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
+{
+  int ret = -1;
+  uint32_t bytes = 0;
+  uint32_t r_ptr = cc1101_buf.g_iReadPos;
+  uint32_t w_ptr = cc1101_buf.g_iWritePos;
+ 
+  
+  switch (cmd)
+    {
+      case GETCC1101BUF_BYTES:
+        {
+          uint32_t* ptr = (uint32_t*)((uintptr_t)arg);
+
+		  if(w_ptr != r_ptr)
+		  {
+			  do
+			  {
+				  r_ptr = (r_ptr + 1) % CC1101_BUF_SIZE;
+				  bytes++;
+			  }
+			  while(w_ptr != r_ptr);
+			  
+			  *ptr = bytes; 	  
+		  }
+		  else
+		  {
+			  *ptr = 0; 
+		  }
+		  
+          ret = OK;
+        }
+        break;
+		
+      default:
+        ret = -ENOTTY;
+        break;
+    }
+
+  return ret;
+}
 
 
 
