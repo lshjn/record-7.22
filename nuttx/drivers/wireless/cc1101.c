@@ -1258,6 +1258,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)
 	{		
 		//wait untill txbyte ok
+		cc1101_rxtx_status.tx_status = SUCCESS;
 	}
 	else
 	{
@@ -1588,6 +1589,7 @@ int cc1101_sendmode(FAR struct cc1101_dev_s *dev)
 	ASSERT(dev);
 
     cc1101_rxtx_status.workmode = CC1101_MODE_TX;
+	cc1101_rxtx_status.tx_status = FAIL;
 
 #if 0
 
@@ -1660,7 +1662,9 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 
 	cc1101_strobe(dev, CC1101_SIDLE);
 	cc1101_strobe(dev, CC1101_SFTX);
-
+	
+	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+	
 	//cc1101_access(dev, CC1101_MARCSTATE, &ttttt, 1);	
 	//cc1101_access(dev, CC1101_TXBYTES, &ttttt, 1);
 		
@@ -1669,10 +1673,14 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 	len = packetlen + 1;
 	cc1101_access(dev, CC1101_TXFIFO, &len, -1);
 	
+	boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+	
     //addr
     uint8_t addr = 0;
 	addr = _Pcc1101_timemsg_tx->dist;
 	cc1101_access(dev, CC1101_TXFIFO, &addr, -1);
+
+	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 
 	/*
 	int i = 0;
@@ -1685,7 +1693,8 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 	//data
 	ret = cc1101_access(dev, CC1101_TXFIFO, (FAR uint8_t *)buf, -(packetlen));
 	cc1101_rxtx_status.tx_len = packetlen;
-		
+	
+	boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 	return ret;
 }
 
@@ -1693,23 +1702,41 @@ int cc1101_send(FAR struct cc1101_dev_s *dev)
 {
 	char bytes=0;
 	
+	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+	
 	ASSERT(dev);
 
 	cc1101_strobe(dev, CC1101_STX);
 
+
+	boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+
 	//wait untill txbyte ok
+#if 0
 	do
 	{
 		cc1101_access(dev, CC1101_TXBYTES, &bytes, 1);
 	}while((bytes &0x7F) != 0);
-	
+
     //wait send ok
 	int i=0;
 	for(i=0;i<168*10;i++);
+	
+#endif
+
+	while( SUCCESS != cc1101_rxtx_status.tx_status)
+	{
+		;
+	}
+
+	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 
 
 	//goto recv
 	cc1101_receive(dev);
+
+	boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+	
 
 	return cc1101_rxtx_status.tx_len;
 }
@@ -1860,9 +1887,10 @@ static ssize_t fs_write(FAR struct file *filep, FAR const char *buffer, size_t b
 	/* TODO: Should we check permissions here? */
 
 	/* Audio write operations get passed directly to the lower-level */
+	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 
 	cc1101_sendmode(lower->c1101_dev);
-
+	boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 	//set data to fifo
 	if (lower->ops->write != NULL)
 	{

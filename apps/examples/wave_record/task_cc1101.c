@@ -460,7 +460,7 @@ int master_cc1101(int argc, char *argv[])
 		timeout.tv_sec = 5;
 		timeout.tv_usec = 0;			
 		iRet = select(fd+1, &rfds, NULL, NULL, &timeout);  	//recv-timeout
-
+       boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 		
 		if (iRet < 0) 
 		{
@@ -494,10 +494,9 @@ int master_cc1101(int argc, char *argv[])
 		
 			if(FD_ISSET(fd, &rfds)) 
 			{
-				//usleep(50*1000L);                                     //sleep 100ms
-	           boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
-				memset(rxbuff, 0, sizeof(rxbuff));
 				boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+				//usleep(50*1000L);                                     //sleep 100ms
+				memset(rxbuff, 0, sizeof(rxbuff));
 			   
   				iRet = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen);
                 if(iRet < 0)
@@ -507,7 +506,6 @@ int master_cc1101(int argc, char *argv[])
 				
 				//rBytes = myreadn(fd,rxbuff,sizeof(rxbuff),&timeout_f,&ready_f);
 				rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
-	           boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 				//printf("r<%d>\n",rBytes);
                 /****************************************************************/
 				int msg_datalen = 0;
@@ -534,7 +532,6 @@ int master_cc1101(int argc, char *argv[])
 										P_cc1101_msg_tx->second		= systick;
 										
 	 // flags   = enter_critical_section();
-				boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 
 									int timercnt_us=0;
 										ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt_us));
@@ -544,8 +541,10 @@ int master_cc1101(int argc, char *argv[])
 										P_cc1101_msg_tx->us			= timercnt_us - P_cc1101_msg_rx->us;
 										P_cc1101_msg_tx->endflag		= MSG_END;
 										wBytes = write(fd, (char *)P_cc1101_msg_tx, sizeof(cc110x_timemsg));
-				boardctl(BOARDIOC_TIME2_PPS_UP, 0);
   //leave_critical_section(flags);
+
+  	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+
 										printf("s<%d>\n",P_cc1101_msg_tx->dist);
 										/*
 										int n=0;
@@ -561,8 +560,8 @@ int master_cc1101(int argc, char *argv[])
 					}					
 				}
 				while(rBytes >0);
-				
-	           boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+		           boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+			
 			    tcflush(fd, TCIFLUSH);
 			}
 		}
