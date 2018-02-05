@@ -127,8 +127,8 @@
 #endif
 
 
-#define CC1101_SPIFREQ_BURST    6500000 /* Hz, no delay */
-#define CC1101_SPIFREQ_SINGLE   9000000 /* Hz, single access only - no delay */
+#define CC1101_SPIFREQ_BURST    5000000 /* Hz, no delay */
+#define CC1101_SPIFREQ_SINGLE   5000000 /* Hz, single access only - no delay */
 
 #define CC1101_MCSM0_VALUE      0x1C
 
