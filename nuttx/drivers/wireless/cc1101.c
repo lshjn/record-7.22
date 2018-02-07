@@ -1197,13 +1197,13 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	int temp = 0;
 	static int crcerror = 0;
 
-	
 	//add by liushuhe 2017.11.30
 	if(cc1101_rxtx_status.workmode == CC1101_MODE_RX)
 	{
 		cc1101_interrupt++;
-		
+		//boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 		cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXBYTES, &status, 1);
+		//boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 		//spierr("status=%d\n",status);
 	    if(status&0x7f)
 	    {
@@ -1225,12 +1225,12 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);	
 			//crc
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, crc, 2);
-
-			
+				
 			if(crc[1]&0x80)
 			{
 				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
 				cc1101_rxtx_status.rx_status = SUCCESS;
+				//boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 				CC1101_pollnotify(cc1101_fd);
 			}
 			else
@@ -1246,12 +1246,14 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 
 
 		}
+		#if 0
 		else
 		{
 			//add by liushuhe 2017.12.04	  
 			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
 			//spierr("Error: cc1101 <%d> RX int status=%d  nbytes=%d\n",cc1101_interrupt,status,nbytes);
 		}
+		#endif
 	}
 	
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)

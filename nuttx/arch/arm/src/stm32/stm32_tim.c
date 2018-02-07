@@ -586,6 +586,7 @@ static inline void stm32_modifyreg16(FAR struct stm32_tim_dev_s *dev,
 static inline uint32_t stm32_getreg32(FAR struct stm32_tim_dev_s *dev,
                                       uint8_t offset)
 {
+	//spierr("timer addr=%08x\n",(((struct stm32_tim_priv_s *)dev)->base + offset));
   return getreg32(((struct stm32_tim_priv_s *)dev)->base + offset);
 }
 
@@ -725,6 +726,11 @@ static int stm32_tim_setmode(FAR struct stm32_tim_dev_s *dev, stm32_tim_mode_t m
       default:
         return -EINVAL;
     }
+
+//spierr("stm32_tim_reload_counter=%x\n",val);
+
+      //  val |= ATIM_CR1_URS;
+//spierr("stm32_tim_reload_counter=%x\n",val);
 
   stm32_tim_reload_counter(dev);
   stm32_putreg16(dev, STM32_BTIM_CR1_OFFSET, val);
@@ -905,6 +911,10 @@ static void stm32_tim_setperiod(FAR struct stm32_tim_dev_s *dev,
 static uint32_t stm32_tim_getcounter(FAR struct stm32_tim_dev_s *dev)
 {
   DEBUGASSERT(dev != NULL);
+
+//spierr("stm32_tim_getwidth=%d\n",stm32_tim_getwidth(dev));
+
+  
   return stm32_tim_getwidth(dev) > 16 ?
     stm32_getreg32(dev, STM32_BTIM_CNT_OFFSET) :
     (uint32_t)stm32_getreg16(dev, STM32_BTIM_CNT_OFFSET);

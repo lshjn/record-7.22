@@ -46,7 +46,7 @@ pthread_cond_t  g_TimerConVar		= PTHREAD_COND_INITIALIZER;
  ****************************************************************************/
 #define TX_BUF 60
 #define CONFIG_EXAMPLES_TIMER_DEVNAME "/dev/timer2_gps"
-#define CONFIG_EXAMPLES_TIMER_INTERVAL 1000000
+#define CONFIG_EXAMPLES_TIMER_INTERVAL (1000000)
 #define CONFIG_EXAMPLES_TIMER_SIGNO 17
 
 #define		MASTER_ADDR 	32
@@ -372,8 +372,27 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 
 static void timer2_sighandler(int signo, FAR siginfo_t *siginfo,FAR void *context)
 {
+    unsigned int timer2cnt = 0;
+
+static int cnt = 0;
+
+
+
    systick++;
    //printf("timer2_sighandler!\n");
+   	timer2cnt = *(int*)0x40000024;
+cnt++;
+
+if(cnt%2)
+{
+    boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+}
+else
+{
+    boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+}
+   
+	//printf("<%d>timer2_sighandler=%d\n",timer2cnt - P_cc1101_msg_rx->us,timer2cnt);
 }
 
 
@@ -587,6 +606,12 @@ int  synctime(int fd,int fd_timer,cc110x_timemsg * P_cc1101_msg_rx,char * rxbuff
 	irqstate_t flags;
 	int 	timercnt_us=0;
 	int  	wBytes = 0;
+
+    unsigned int timer2cnt = 0;
+	
+
+	static int   i =0;
+	i++;
 	
 	P_cc1101_msg_rx = rxbuff;
 	P_cc1101_msg_tx->start_flag	= MSG_START;
@@ -595,15 +620,32 @@ int  synctime(int fd,int fd_timer,cc110x_timemsg * P_cc1101_msg_rx,char * rxbuff
 	P_cc1101_msg_tx->dist			= P_cc1101_msg_rx->src;
 	P_cc1101_msg_tx->src			= P_cc1101_msg_rx->dist;
 	P_cc1101_msg_tx->second		= systick;
-	ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt_us));
-	P_cc1101_msg_tx->us			= timercnt_us - P_cc1101_msg_rx->us;
-	P_cc1101_msg_tx->endflag		= MSG_END;
+    //boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+    
+	timer2cnt = *(int*)0x40000024;
+	//ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt_us));
+	
+    //boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+	//P_cc1101_msg_tx->us			= timercnt_us - P_cc1101_msg_rx->us;
+	P_cc1101_msg_tx->us			= timer2cnt - P_cc1101_msg_rx->us;
 
+
+	P_cc1101_msg_tx->endflag		= MSG_END;
 	flags   = enter_critical_section();
+    //boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+    //boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 	wBytes = write(fd, (char *)P_cc1101_msg_tx, sizeof(cc110x_timemsg));
+    //boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 	leave_critical_section(flags);
 
-	printf("s-%d->%d\n",wBytes,P_cc1101_msg_tx->dist);
+
+
+	printf("<%d>r-%d->%d\n",i,P_cc1101_msg_rx->src,P_cc1101_msg_rx->us);
+	printf("<%d>s-%d->%d->%d\n",i,P_cc1101_msg_tx->us,P_cc1101_msg_tx->dist,timer2cnt);
+	printf("=====================\n");
+	//printf("<%d>timer2cnt=%d\n",timer2cnt - P_cc1101_msg_rx->us,timer2cnt);
+
+	
 	/*
 	int n=0;
 	char* ptrr=(char *)P_cc1101_msg_tx;
@@ -622,6 +664,8 @@ int  synctime(int fd,int fd_timer,cc110x_timemsg * P_cc1101_msg_rx,char * rxbuff
  ****************************************************************************/
 int master_cc1101(int argc, char *argv[])
 {
+	irqstate_t flags;
+
   	struct pollfd fds[1];
 	//task_create("slave_cc1101", 100,2048, slave_cc1101,NULL);
 
@@ -699,6 +743,12 @@ int master_cc1101(int argc, char *argv[])
 		fds[0].revents  = 0;
 
 		iRet = poll(fds, 1,5*1000);
+
+        //boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+		int timer3cnt = 0;
+		timer3cnt = *(int*)0x40000024;
+		//printf("----timer3cnt=%d-----\n",timer3cnt);
+		
 		if (iRet < 0) 
 		{
 			//add by liushuhe 2018.01.19
@@ -723,6 +773,7 @@ int master_cc1101(int argc, char *argv[])
 		}
 		else if (fds[0].revents & POLLIN)
 		{
+		
 			if (iRet != 1)
 			{
 				//printf("my_read: ERROR poll reported: %d\n", iRet);
@@ -756,6 +807,7 @@ int master_cc1101(int argc, char *argv[])
 						case CMD_READTIME:
 								{
 									wBytes = synctime(fd,fd_timer,P_cc1101_msg_rx,rxbuff,P_cc1101_msg_tx);
+
 									if(wBytes != sizeof(cc110x_timemsg))
 									{
 										printf("send synctime fail!\n");
