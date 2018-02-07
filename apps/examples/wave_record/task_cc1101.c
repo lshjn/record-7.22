@@ -20,6 +20,7 @@
 #include <sys/time.h>
 #include <termios.h>
 #include <strings.h>
+#include <poll.h>
 
 #include <sys/boardctl.h>
 #include <nuttx/timers/timer.h>
@@ -372,6 +373,7 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 static void timer2_sighandler(int signo, FAR siginfo_t *siginfo,FAR void *context)
 {
    systick++;
+   //printf("timer2_sighandler!\n");
 }
 
 
@@ -381,7 +383,7 @@ static void timer2_sighandler(int signo, FAR siginfo_t *siginfo,FAR void *contex
  * liushuhe
  * 2018.01.29
  ****************************************************************************/
-int master_cc1101(int argc, char *argv[])
+int master_cc1101_01(int argc, char *argv[])
 {
 	//task_create("slave_cc1101", 100,2048, slave_cc1101,NULL);
 	  irqstate_t flags;
@@ -452,6 +454,15 @@ int master_cc1101(int argc, char *argv[])
 	{
 		printf("ERROR: Failed to start the timer: %d\n", errno);
 	}
+
+
+  pid_t ww;
+
+  /* Do we already hold the semaphore? */
+
+  ww = getpid();
+	printf("app pid =%d\n",ww);
+
 
 	while(1)
 	{
@@ -571,7 +582,196 @@ int master_cc1101(int argc, char *argv[])
 }
 
 
+int  synctime(int fd,int fd_timer,cc110x_timemsg * P_cc1101_msg_rx,char * rxbuff,cc110x_timemsg * P_cc1101_msg_tx)
+{
+	irqstate_t flags;
+	int 	timercnt_us=0;
+	int  	wBytes = 0;
+	
+	P_cc1101_msg_rx = rxbuff;
+	P_cc1101_msg_tx->start_flag	= MSG_START;
+	P_cc1101_msg_tx->msglen		= sizeof(cc110x_timemsg);
+	P_cc1101_msg_tx->type			= CMD_READTIME;
+	P_cc1101_msg_tx->dist			= P_cc1101_msg_rx->src;
+	P_cc1101_msg_tx->src			= P_cc1101_msg_rx->dist;
+	P_cc1101_msg_tx->second		= systick;
+	ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt_us));
+	P_cc1101_msg_tx->us			= timercnt_us - P_cc1101_msg_rx->us;
+	P_cc1101_msg_tx->endflag		= MSG_END;
 
+	flags   = enter_critical_section();
+	wBytes = write(fd, (char *)P_cc1101_msg_tx, sizeof(cc110x_timemsg));
+	leave_critical_section(flags);
+
+	printf("s-%d->%d\n",wBytes,P_cc1101_msg_tx->dist);
+	/*
+	int n=0;
+	char* ptrr=(char *)P_cc1101_msg_tx;
+	for(n=0;n<sizeof(cc110x_timemsg);n++)
+	{
+		printf("s-><%d>=%x,rBytes=%d,msg_datalen=%d\n",n,*ptrr++,rBytes,msg_datalen);
+	}
+	*/
+	return wBytes;
+}
+
+/****************************************************************************
+ * master_cc1101
+ * liushuhe
+ * 2018.01.29
+ ****************************************************************************/
+int master_cc1101(int argc, char *argv[])
+{
+  	struct pollfd fds[1];
+	//task_create("slave_cc1101", 100,2048, slave_cc1101,NULL);
+
+	struct timer_notify_s notify;
+	struct timeval timeout;
+	struct sigaction act;
+	fd_set 	rfds;
+	
+    char 	rxbuff[255];
+    char 	*P_data = NULL;
+	int 	fd;
+	int 	fd_timer;
+	int  	iRet = 0;
+	int  	cc1101buf_datalen = 0;
+	int  	rBytes = 0;
+	int  	wBytes = 0;
+
+	int 	timeout_f = 0;
+	int 	ready_f = 0;
+
+    boardctl(BOARDIOC_TIME2_PPS_INIT, 0);
+    boardctl(BOARDIOC_433_PWRON, 0);
+
+	fd = open("/dev/cc1101", O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
+	if (fd < 0)
+	{
+		printf("open cc1101 error:\n");
+	}
+
+	fd_timer = open(CONFIG_EXAMPLES_TIMER_DEVNAME, O_RDWR);
+	if (fd_timer < 0)
+	{
+		printf("ERROR: Failed to open %s: %d\n",CONFIG_EXAMPLES_TIMER_DEVNAME, errno);
+	}
+
+	iRet = ioctl(fd_timer, TCIOC_SETTIMEOUT, CONFIG_EXAMPLES_TIMER_INTERVAL);
+	if (iRet < 0)
+	{
+		printf("ERROR: Failed to set the timer interval: %d\n", errno);
+	}
+	
+	act.sa_sigaction = timer2_sighandler;
+	act.sa_flags     = SA_SIGINFO;
+
+	(void)sigfillset(&act.sa_mask);
+	(void)sigdelset(&act.sa_mask, CONFIG_EXAMPLES_TIMER_SIGNO);
+
+	iRet = sigaction(CONFIG_EXAMPLES_TIMER_SIGNO, &act, NULL);
+	if (iRet != OK)
+	{
+		printf("ERROR: Fsigaction failed: %d\n", errno);
+	}
+	
+	notify.arg   = NULL;
+	notify.pid   = getpid();
+	notify.signo = CONFIG_EXAMPLES_TIMER_SIGNO;
+	
+	iRet = ioctl(fd_timer, TCIOC_NOTIFICATION, (unsigned long)((uintptr_t)&notify));
+	if (iRet < 0)
+	{
+		printf("ERROR: Failed to set the timer handler: %d\n", errno);
+	}
+  
+	iRet = ioctl(fd_timer, TCIOC_START, 0);
+	if (iRet < 0)
+	{
+		printf("ERROR: Failed to start the timer: %d\n", errno);
+	}
+  /* Do we already hold the semaphore? */
+	while(1)
+	{
+		memset(fds, 0, sizeof(struct pollfd));
+		fds[0].fd       = fd;
+		fds[0].events   = POLLIN;
+		fds[0].revents  = 0;
+
+		iRet = poll(fds, 1,5*1000);
+		if (iRet < 0) 
+		{
+			//add by liushuhe 2018.01.19
+			if(errno != EINTR)
+			{
+				//printf("select error!!!<%d>\n",errno);
+			}
+			else
+			{
+				int timercnt=0;
+				//ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt));
+				//printf("time_cnt<%d>\n",timercnt);
+			}
+		}
+		else if(iRet == 0)
+		{
+			timeout_f = true;			
+		}
+		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
+		{
+			printf("ERROR: worker poll read Error %d\n", errno);
+		}
+		else if (fds[0].revents & POLLIN)
+		{
+			if (iRet != 1)
+			{
+				//printf("my_read: ERROR poll reported: %d\n", iRet);
+			}
+			else
+			{
+				ready_f = true;
+			}
+			memset(rxbuff, 0, sizeof(rxbuff));
+		   
+			iRet = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen);
+            if(iRet < 0)
+            {
+				printf("Error:get cc1101 bytes fail!\n");
+			}
+			rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
+			//printf("r<%d>\n",rBytes);
+            /****************************************************************/
+			int msg_datalen = 0;
+			int loop = 0;
+			int ptr = 0;
+			do
+			{
+				msg_datalen = GetmsgStartaddrAndLen(&rxbuff[ptr],rBytes,&P_data);
+				ptr += msg_datalen;
+				rBytes -= msg_datalen;
+				if(MSG_START == P_data[0])
+				{
+					switch(P_data[2])
+					{
+						case CMD_READTIME:
+								{
+									wBytes = synctime(fd,fd_timer,P_cc1101_msg_rx,rxbuff,P_cc1101_msg_tx);
+									if(wBytes != sizeof(cc110x_timemsg))
+									{
+										printf("send synctime fail!\n");
+									}
+								}
+							break;
+					}
+				}					
+			}
+			while(rBytes >0);			
+		    tcflush(fd, TCIFLUSH);
+		}
+	}    
+
+  return 0;
+}
 
 
 
