@@ -334,6 +334,9 @@ typedef struct _timemsg{
 //_cc110x_timemsg cc1101_timemsg_tx;
 
 _cc110x_timemsg * _Pcc1101_timemsg_tx = NULL;
+_cc110x_timemsg * _Pcc1101_timemsg_timer_rx = NULL;
+
+uint32_t  cc1101_timer2_us = 0;
 
 /*
 uint8_t PA_table[8] = {0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60 ,0x60};
@@ -1175,6 +1178,42 @@ void cc1101_setpacketctrl(FAR struct cc1101_dev_s *dev)
   /* WOREVT1:WOREVT0 - 16-bit timeout register */
 }
 
+extern int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr);
+#define 	MSG_START		0xAA
+#define 	MSG_END			0x55
+#define 	CMD_READTIME    0X01
+
+void modifyTimer_us(uint32_t  timer2_us)
+{
+    /****************************************************************/
+    char 	*P_data = NULL;
+	int 	msg_datalen = 0;
+	int 	loop = 0;
+	int 	ptr = 0;
+	int 	rBytes = 0;
+
+	rBytes = cc1101_rxtx_status.rx_len;
+	do
+	{
+		msg_datalen = GetmsgStartaddrAndLen(&cc1101_rxtx_status.rxbuf[ptr],rBytes,&P_data);
+		ptr += msg_datalen;
+		rBytes -= msg_datalen;
+		if(MSG_START == P_data[0])
+		{
+			switch(P_data[2])
+			{
+				case CMD_READTIME:
+						{
+							_Pcc1101_timemsg_timer_rx = (_cc110x_timemsg *)P_data;
+							_Pcc1101_timemsg_timer_rx->us = timer2_us - _Pcc1101_timemsg_timer_rx->us;
+						}
+					break;
+			}
+		}					
+	}
+	while(rBytes >0);			
+}
+
 /****************************************************************************
  * Callbacks
  ****************************************************************************/
@@ -1201,9 +1240,9 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	if(cc1101_rxtx_status.workmode == CC1101_MODE_RX)
 	{
 		cc1101_interrupt++;
-		//boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+		cc1101_timer2_us = *(int*)0x40000024;
+		
 		cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXBYTES, &status, 1);
-		//boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 		//spierr("status=%d\n",status);
 	    if(status&0x7f)
 	    {
@@ -1228,6 +1267,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 				
 			if(crc[1]&0x80)
 			{
+				modifyTimer_us(cc1101_timer2_us);
 				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
 				cc1101_rxtx_status.rx_status = SUCCESS;
 				//boardctl(BOARDIOC_TIME2_PPS_UP, 0);
