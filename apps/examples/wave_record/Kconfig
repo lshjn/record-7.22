@@ -117,6 +117,10 @@ config EXAMPLES_GPS_STACKSIZE
 config EXAMPLES_GPS_DEVPATH
 	string "gps device path"
 	default "/dev/ttyS1"
+
+config EXAMPLES_PPS_DEVPATH
+	string "pps device path"
+	default "/dev/gpint1"
 	
 endif # EXAMPLES_GPS
 

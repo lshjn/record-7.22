@@ -317,10 +317,10 @@ FAR struct cc1101_upperhalf_s *cc1101_fd;
 #define SUCCESS                      		 1
 #define FAIL                      			 0
 
-#define ALIGN(n) __attribute__((aligned(n)))
+#define ALIGN __attribute__((packed))
 
 
-typedef struct _timemsg{
+typedef struct ALIGN _timemsg{
 	uint8_t  start_flag;
 	uint8_t  msglen;
 	uint8_t  type;
@@ -329,7 +329,7 @@ typedef struct _timemsg{
 	uint32_t second; 		//定时器中断累计值
 	uint32_t us;            //定时器的cnt
 	uint8_t  endflag;        
-}_cc110x_timemsg  ALIGN(1);
+}_cc110x_timemsg;
 
 //_cc110x_timemsg cc1101_timemsg_tx;
 
@@ -1182,6 +1182,7 @@ extern int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr);
 #define 	MSG_START		0xAA
 #define 	MSG_END			0x55
 #define 	CMD_READTIME    0X01
+#define     CC1101_SYNCCODE_US  10
 
 void modifyTimer_us(uint32_t  timer2_us)
 {
@@ -1205,7 +1206,7 @@ void modifyTimer_us(uint32_t  timer2_us)
 				case CMD_READTIME:
 						{
 							_Pcc1101_timemsg_timer_rx = (_cc110x_timemsg *)P_data;
-							_Pcc1101_timemsg_timer_rx->us = timer2_us - _Pcc1101_timemsg_timer_rx->us;
+							_Pcc1101_timemsg_timer_rx->us = (timer2_us - _Pcc1101_timemsg_timer_rx->us - CC1101_SYNCCODE_US);
 						}
 					break;
 			}
@@ -1236,11 +1237,18 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	int temp = 0;
 	static int crcerror = 0;
 
+	
+	cc1101_timer2_us = *(int*)0x40000024;
+	
+	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+	 int i=0;
+	 for(i=0;i<168*10;i++);
+	boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+	 
 	//add by liushuhe 2017.11.30
 	if(cc1101_rxtx_status.workmode == CC1101_MODE_RX)
 	{
 		cc1101_interrupt++;
-		cc1101_timer2_us = *(int*)0x40000024;
 		
 		cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXBYTES, &status, 1);
 		//spierr("status=%d\n",status);

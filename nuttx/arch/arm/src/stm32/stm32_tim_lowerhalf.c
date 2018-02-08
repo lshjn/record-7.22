@@ -297,9 +297,11 @@ static int stm32_timer_handler(int irq, void * context, void * arg)
   uint32_t next_interval_us = 0;
 
   STM32_TIM_ACKINT(lower->tim, 0);
-
-  //add by liushuhe 2018.01.25
-  //boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+  
+	//*(int*)0x40000024 = 0;
+	//printf("handler=%d\n",*(int*)0x40000024);
+	//add by liushuhe 2018.01.25
+	//boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 
   if (lower->callback(&next_interval_us, lower->arg))
     {

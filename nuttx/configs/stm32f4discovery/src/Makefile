@@ -36,7 +36,7 @@
 -include $(TOPDIR)/Make.defs
 
 ASRCS =
-CSRCS = stm32_boot.c stm32_bringup.c stm32_spi.c
+CSRCS = stm32_boot.c stm32_gpio.c stm32_bringup.c stm32_spi.c
 
 ##add by liushuhe 2017.11.13
 ifeq ($(CONFIG_ADC),y)
@@ -166,5 +166,6 @@ endif
 ifeq ($(CONFIG_USBMSC),y)
 CSRCS += stm32_usbmsc.c
 endif
+
 
 include $(TOPDIR)/configs/Board.mk

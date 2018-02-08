@@ -78,6 +78,7 @@
 #  include "stm32_rtc.h"
 #endif
 
+#include "stm32f407_gpioint.h"
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -265,6 +266,9 @@ int stm32_bringup(void)
 #if defined(CONFIG_STM32_SPI1) || defined(CONFIG_STM32_SPI2) || defined(CONFIG_STM32_SPI3)
   stm32f407_cc1100_spiinitialize();
 #endif
+
+
+stm32f407_gpiodev_initialize();
 
 
 //add by liushuhe 2018.01.18

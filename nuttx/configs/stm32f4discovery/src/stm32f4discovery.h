@@ -296,8 +296,7 @@
 //add by liushuhe 2017.11.29
 #ifdef CONFIG_WL_CC1101
 #define GPIO_CC1100_CS  	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTA|GPIO_PIN4)
-#define GPIO_GDO2_C1100 	(GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTC|GPIO_PIN9)
-                            
+#define GPIO_GDO2_C1100 	(GPIO_INPUT|GPIO_FLOAT|GPIO_EXTI|GPIO_PORTC|GPIO_PIN9)                      
 #endif
 
 /* XEN1210 magnetic sensor */
@@ -814,6 +813,9 @@ int stm32_adc_setup(void);
 #if defined(CONFIG_STM32_SPI1) || defined(CONFIG_STM32_SPI2) || defined(CONFIG_STM32_SPI3)
 void stm32f407_cc1100_spiinitialize(void);
 #endif
+
+
+
 
 #endif /* __ASSEMBLY__ */
 #endif /* __CONFIGS_STM32F4DISCOVERY_SRC_STM32F4DISCOVERY_H */

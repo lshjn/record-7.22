@@ -422,7 +422,8 @@ task_gps.o: task_gps.c /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/string.h \
  /work/record-7.22/nuttx/include/stddef.h \
  /work/record-7.22/nuttx/include/termios.h \
- /work/record-7.22/nuttx/include/strings.h task_gps.h
+ /work/record-7.22/nuttx/include/strings.h task_gps.h \
+ /work/record-7.22/nuttx/include/nuttx/ioexpander/gpio.h
 task_i2c_sensor.o: task_i2c_sensor.c \
  /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \

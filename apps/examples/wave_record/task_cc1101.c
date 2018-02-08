@@ -184,13 +184,15 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 
 static void timer2_sighandler(int signo, FAR siginfo_t *siginfo,FAR void *context)
 {
-   systick++;
-   //printf("timer2_sighandler!\n");
+	static int cnt; 
+    systick++;
+	*(int*)0x40000024 = 0;
+
+    //printf("<%d>timer2<%d>\n",cnt++,*(int*)0x40000024);
 }
 
-int  synctime(int fd,int fd_timer,cc110x_timemsg * P_cc1101_msg_rx,char * rxbuff,cc110x_timemsg * P_cc1101_msg_tx)
+int  synctime(irqstate_t flags,int fd,int fd_timer,cc110x_timemsg * P_cc1101_msg_rx,char * rxbuff,cc110x_timemsg * P_cc1101_msg_tx)
 {
-	irqstate_t 	flags;
 	int 		timercnt_us=0;
 	int  		wBytes = 0;	
 	static int i = 0;
@@ -203,14 +205,15 @@ int  synctime(int fd,int fd_timer,cc110x_timemsg * P_cc1101_msg_rx,char * rxbuff
 	P_cc1101_msg_tx->dist			= P_cc1101_msg_rx->src;
 	P_cc1101_msg_tx->src			= P_cc1101_msg_rx->dist;
 	P_cc1101_msg_tx->second		= systick;
-	ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt_us));
+	//ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt_us));
+	//ioctl(fd_timer, TCIOC_SETCOUNTER, (uint32_t)(&timercnt_us));
+	
 	P_cc1101_msg_tx->us			= P_cc1101_msg_rx->us;
 	P_cc1101_msg_tx->endflag		= MSG_END;
 	
 	flags   = enter_critical_section();
-	
 	wBytes = write(fd, (char *)P_cc1101_msg_tx, sizeof(cc110x_timemsg));
-	
+    //boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);		
 	leave_critical_section(flags);
 
 	printf("<%d>r-%d->%d\n",i,P_cc1101_msg_rx->src,P_cc1101_msg_rx->us);
@@ -306,15 +309,7 @@ int master_cc1101(int argc, char *argv[])
 		fds[0].revents  = 0;
 
 		iRet = poll(fds, 1,5*1000);
-
-        //boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
-		int timer3cnt = 0;
-		extern uint32_t  cc1101_timer2_us;
-
-		timer3cnt = *(int*)0x40000024;
-		timer3cnt = cc1101_timer2_us;
-		//printf("----timer3cnt=%d-----\n",timer3cnt);
-		
+        //boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);		
 		if (iRet < 0) 
 		{
 			//add by liushuhe 2018.01.19
@@ -339,7 +334,6 @@ int master_cc1101(int argc, char *argv[])
 		}
 		else if (fds[0].revents & POLLIN)
 		{
-		
 			if (iRet != 1)
 			{
 				//printf("my_read: ERROR poll reported: %d\n", iRet);
@@ -372,7 +366,7 @@ int master_cc1101(int argc, char *argv[])
 					{
 						case CMD_READTIME:
 								{
-									wBytes = synctime(fd,fd_timer,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
+									wBytes = synctime(flags,fd,fd_timer,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
 
 									if(wBytes != sizeof(cc110x_timemsg))
 									{
