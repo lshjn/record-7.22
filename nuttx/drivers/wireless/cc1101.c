@@ -127,8 +127,8 @@
 #endif
 
 
-#define CC1101_SPIFREQ_BURST    5000000 /* Hz, no delay */
-#define CC1101_SPIFREQ_SINGLE   5000000 /* Hz, single access only - no delay */
+#define CC1101_SPIFREQ_BURST    6000000 /* Hz, no delay */
+#define CC1101_SPIFREQ_SINGLE   6000000 /* Hz, single access only - no delay */
 
 #define CC1101_MCSM0_VALUE      0x1C
 
@@ -1272,25 +1272,40 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);	
 			//crc
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, crc, 2);
-				
+
+			//add by liushuhe 2018.02.24  
+			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
+
+
 			if(crc[1]&0x80)
 			{
+#if 1
 				modifyTimer_us(cc1101_timer2_us);
 				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
 				cc1101_rxtx_status.rx_status = SUCCESS;
-				//boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 				CC1101_pollnotify(cc1101_fd);
+				//spierr("ok\n");
+#endif
 			}
 			else
 			{
+				//cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SFRX);
 				crcerror++;
-				spierr("Error:crc<%d>\n",crcerror);
+				//spierr("crc<%d>\n",crcerror);
 				cc1101_rxtx_status.rx_len = 0;
 				cc1101_rxtx_status.rx_status = FAIL;
 			}
+
+#if 0
+				modifyTimer_us(cc1101_timer2_us);
+				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
+				cc1101_rxtx_status.rx_status = SUCCESS;
+				CC1101_pollnotify(cc1101_fd);
+#endif
+
 					
 			//add by liushuhe 2017.12.04	  
-			cc1101_receive((FAR struct cc1101_dev_s *)arg);
+			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
 
 
 		}
@@ -1308,6 +1323,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	{		
 		//wait untill txbyte ok
 		cc1101_rxtx_status.tx_status = SUCCESS;
+		
 	}
 	else
 	{
@@ -1720,6 +1736,7 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
     //addr
     uint8_t addr = 0;
 	addr = _Pcc1101_timemsg_tx->dist;
+	//spierr("addr=%x----------------------\n",addr);
 	cc1101_access(dev, CC1101_TXFIFO, &addr, -1);
 
 

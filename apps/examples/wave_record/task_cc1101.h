@@ -6,6 +6,9 @@
 #endif 
 
 #define ALIGN __attribute__((packed))
+#define FRAME_REPORT_SIZE  10
+
+
 
 struct cc110x_msg1{
 	uint8_t cmd;
@@ -29,17 +32,60 @@ struct cc110x_msg1{
 	
 };
 
-
+//sync
 typedef struct ALIGN timemsg{
 	uint8_t  start_flag;
 	uint8_t  msglen;
 	uint8_t  type;
 	uint8_t  dist;
 	uint8_t  src;
+	//private
 	uint32_t second; 		//定时器中断累计值
 	uint32_t us;            //定时器的cnt
 	uint8_t  endflag;        
 }cc110x_timemsg;
+
+#if 0
+struct report_data{
+	uint8_t   ReportIndex[96];
+	uint8_t   Reportdata[96][40];
+	uint8_t   Reportdata_V[REPORTSIZE];
+	uint8_t   Reportdata_I[REPORTSIZE];
+};
+#endif
+
+struct report_status{
+	uint8_t  req_ballnum;
+	uint8_t  req_sendok;
+	uint8_t  res_rcvtimeout;
+};
+
+//report_req
+struct ALIGN report_req{
+	uint8_t  start_flag;
+	uint8_t  msglen;
+	uint8_t  type;
+	uint8_t  dist;
+	uint8_t  src;
+	//private
+	uint32_t second; 		//定时器中断累计值,第几秒数据
+	uint32_t pos;           //0-3999
+	uint8_t  endflag;        
+};
+
+//report_res
+struct ALIGN report_res{
+	uint8_t  start_flag;
+	uint8_t  msglen;
+	uint8_t  type;
+	uint8_t  dist;
+	uint8_t  src;
+	//private
+	uint8_t  sum; 		    //总包数
+	uint8_t  pos;           //第几包         
+	uint16_t data[FRAME_REPORT_SIZE << 1];         
+	uint8_t  endflag;        
+};
 
 
 int master_cc1101(int argc, char *argv[]);
