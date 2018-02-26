@@ -40,9 +40,6 @@ struct report_status	summon_status;
 
 pthread_mutex_t g_TimerMutex		= PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  g_TimerConVar		= PTHREAD_COND_INITIALIZER;
-//ping
-pthread_mutex_t g_PingMutex		= PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t  g_PingConVar		= PTHREAD_COND_INITIALIZER;
 
 //#define    REPORTSIZE  1920
 #define    REPORTSIZE  2000
@@ -153,10 +150,8 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 	int  msglen = maxlen;
 	int  datalen = 0;
 	int  rlen = 0;
-	int  nspace = 0;    //invalid bytes
-	
+
 	int i = 0;
-	
     for(i=0;i < msglen;i++)
     {
 		if(MSG_START == *ptr)
@@ -170,17 +165,12 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 		else
 		{
 			ptr++;
-			nspace++;    //invalid bytes
 		}
 	}
     //find start_flag fail
 	if(0 == rlen)
 	{
-		while(MSG_START == **start_addr)
-		{
-			*start_addr +=1;	
-		}
-		return nspace;
+		return 0;
 	}
 
 	datalen = *ptr++;
@@ -210,9 +200,11 @@ int GetReportdata(char * rxbuff,uint8_t *reportdata,uint8_t *reportindex)
 	int j = 0;
 	struct report_res * P_summon_wave_res = (struct report_res *)rxbuff;
 	char * ptr_src = (char *)P_summon_wave_res->data;
+	char * ptr_src2 = (char *)P_summon_wave_res->data;
 	char * ptr_dst = (char *)reportdata;
 	
 	reportindex[P_summon_wave_res->pos-1] = 'Y';
+	
 	for(j=0;j<40;j++)
 	{
 		ptr_dst[(P_summon_wave_res->pos-1)*40 + j] = *ptr_src++;
@@ -227,16 +219,6 @@ void	ActiveSignal(pthread_cond_t *cond,pthread_mutex_t *mutex)
 	pthread_mutex_unlock(mutex);
 }
 
-void waitping(pthread_cond_t *cond,pthread_mutex_t *mutex)
-{
-	pthread_mutex_lock(mutex);
-	while(msgcmd_type != CMD_PING)
-	{
-		pthread_cond_wait(cond, mutex);   //pthread_cond_wait 会先解除g_AdcMutex锁，再阻塞在条件变量
-	}
-	msgcmd_type = 0;
-	pthread_mutex_unlock(mutex);
-}
 
 
 int thread_wait5ms(pthread_cond_t *cond,pthread_mutex_t *mutex)
@@ -384,98 +366,106 @@ int report_cc1101(int argc, char *argv[])
 	{
 		printf("open cc1101 error:\n");
 	}
-
 	while(1)
 	{
-		waitping(&g_PingConVar,&g_PingMutex);
-		//have request..................
-		int i=0;
-		//for(i=0;i<1;i++)
+		if(msgcmd_type == CMD_PING)
 		{
-			#if 0
-			i = 2;
-			switch(i)
+			msgcmd_type = 0;
+			//have request..................
+			int i=0;
+			for(i=0;i<1;i++)
 			{
-				case 0:
-					 summon_status.req_ballnum	= A_ADDR;
-					break;
-				case 1:
-					 summon_status.req_ballnum	= B_ADDR;
-					break;
-				case 2:
-					 summon_status.req_ballnum	= C_ADDR;
-					break;
-					
-			}
-			#endif
-			do
-			{
-				printf("<r>\n",summon_status.req_ballnum);
-				//主动招波
-				//ret = summon_wave(irqflag,fd,&summon_wave_req,summon_status.req_ballnum);
-				//if(ret < sizeof(summon_wave_req))
+				i=1;
+				switch(i)
 				{
-				//	printf("send summon head fail\n");
+					case 0:
+						 summon_status.req_ballnum	= A_ADDR;
+						break;
+					case 1:
+						 summon_status.req_ballnum	= B_ADDR;
+						break;
+					case 2:
+						 summon_status.req_ballnum	= C_ADDR;
+						break;
+						
 				}
-				clock_gettime(CLOCK_REALTIME, &clock1);
-				ret = thread_wait5ms(&g_TimerConVar, &g_TimerMutex);
-				clock_gettime(CLOCK_REALTIME, &clock2);
-				#if 0
-				unsigned int f=0;
-				f = (1000000000*(clock2.tv_sec - clock1.tv_sec) + (clock2.tv_nsec - clock1.tv_nsec)); 
-				printf("tv_nsec=%d\n",f);
-				printf("1tv_nsec=%d\n",clock1.tv_nsec);
-				printf("2tv_nsec=%d\n",clock2.tv_nsec);
-				#endif
-			}while(ret == 1); //timeout
-			summon_status.req_sendok = 1;
-			//printf("<%d>req_sendok--------------------- \n",summon_status.req_ballnum);
-			//wait data rcv ok
-			while(summon_status.res_rcvtimeout != 1)
-			{
-				usleep(100);
-			}
-			//printf("<%d>res_rcvtimeout------------------ \n",summon_status.req_ballnum);
-			summon_status.req_sendok = 0;
-			summon_status.res_rcvtimeout = 0;
-#if 1
-			//data parsing
-			int i,j = 0;
-			int total = 0;
-			for(i=0;i<96;i++)
-			{
-				if(ReportIndex[i] == 'Y')
+				do
 				{
-					total++;
-				}
-				//printf("<%d>[%c] |",i,ReportIndex[i]);
-				if(i%24 == 0)
-				{
-					//printf("\n");
-				}
-				if(ReportIndex[i] == 'Y')
-				{
-					//printf("\n");
-					for(j=0;j<40;j++)
+					printf("<q>\n",summon_status.req_ballnum);
+					//主动招波
+					ret = summon_wave(irqflag,fd,&summon_wave_req,summon_status.req_ballnum);
+					if(ret < sizeof(summon_wave_req))
 					{
-						if(j < 20)
-						{
-							Reportdata_V[i*20 + j] = Reportdata[i][j]; 	
-						}
-						else
-						{
-							Reportdata_I[i*20 + j-20] = Reportdata[i][j]; 	
-						}
-						//printf("[%02x] ",Reportdata[i][j]);
+						printf("send summon head fail\n");
 					}
-					//printf("\n");
+					clock_gettime(CLOCK_REALTIME, &clock1);
+					//ret = thread_wait5ms(&g_TimerConVar, &g_TimerMutex);
+					//usleep(1000*10);
+					int j=0;
+					int i=0;
+					for(j=0;j<5;j++)
+					  for(i=0;i<5000;i++);
+					
+					clock_gettime(CLOCK_REALTIME, &clock2);
+					unsigned int f=0;
+					f = (1000000000*(clock2.tv_sec - clock1.tv_sec) + (clock2.tv_nsec - clock1.tv_nsec)); 
+					printf("tv_nsec=%d\n",f);
+					printf("1tv_nsec=%d\n",clock1.tv_nsec);
+					printf("2tv_nsec=%d\n",clock2.tv_nsec);
+					
+				}while(ret == 1); //timeout
+				summon_status.req_sendok = 1;
+				printf("<%d>req_sendok--------------------- \n",summon_status.req_ballnum);
+				//wait data rcv ok
+				while(summon_status.res_rcvtimeout != 1)
+				{
+					usleep(100);
 				}
-			}
-			printf("rcv total <%d>\n",total);
-			memset(ReportIndex,0,sizeof(ReportIndex));
+				printf("<%d>res_rcvtimeout------------------ \n",summon_status.req_ballnum);
+				summon_status.req_sendok = 0;
+				summon_status.res_rcvtimeout = 0;
+#if 1
+				sleep(1);
+				//data parsing
+				int i,j = 0;
+				int total = 0;
+				for(i=0;i<96;i++)
+				{
+					if(ReportIndex[i] == 'Y')
+					{
+						total++;
+					}
+					printf("<%d>[%c] |",i,ReportIndex[i]);
+					if(i%24 == 0)
+					{
+						printf("\n");
+					}
+					if(ReportIndex[i] == 'Y')
+					{
+						printf("\n");
+						for(j=0;j<40;j++)
+						{
+							if(j < 20)
+							{
+								Reportdata_V[i*20 + j] = Reportdata[i][j]; 	
+							}
+							else
+							{
+								Reportdata_I[i*20 + j-20] = Reportdata[i][j]; 	
+							}
+							//printf("[%02x] ",Reportdata[i][j]);
+						}
+						printf("\n");
+					}
+				}
+				printf("rcv total <%d>\n",total);
+				memset(ReportIndex,0,sizeof(ReportIndex));
 #endif				
+			}
 		}
+		sleep(5);
 	}
+	
 }
 
 /****************************************************************************
@@ -503,7 +493,7 @@ int master_cc1101(int argc, char *argv[])
 	//struct timeval timeout;
 	//fd_set 	rfds;
 	
-    char 	rxbuff[1024*4];
+    char 	rxbuff[255];
     char 	*P_data = NULL;
 	int 	fd;
 	int 	fd_timer;
@@ -566,9 +556,6 @@ int master_cc1101(int argc, char *argv[])
 		printf("ERROR: Failed to start the timer: %d\n", errno);
 	}
 	/* Do we already hold the semaphore? */
-
-    summon_status.req_ballnum = B_ADDR;
-	
 	while(1)
 	{
 		memset(fds, 0, sizeof(struct pollfd));
@@ -576,7 +563,7 @@ int master_cc1101(int argc, char *argv[])
 		fds[0].events   = POLLIN;
 		fds[0].revents  = 0;
 		//timeout 10ms
-		iRet = poll(fds, 1,200);
+		iRet = poll(fds, 1,30);
 		if (iRet < 0) 
 		{
 			//add by liushuhe 2018.01.19
@@ -598,6 +585,9 @@ int master_cc1101(int argc, char *argv[])
 			{
 				summon_status.res_rcvtimeout = 1;
 			}
+			//clock_gettime(CLOCK_REALTIME, &clock);
+			//sleep 10ms
+			//printf("tv_nsec<%d>\n",clock.tv_nsec/1000/1000);
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
 		{
@@ -613,69 +603,67 @@ int master_cc1101(int argc, char *argv[])
 			{
 				ready_f = true;
 			}
-
-			while((iRet = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen)) > 0)
-			{
-				memset(rxbuff, 0, sizeof(rxbuff));
-			   	rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
-#if 0
-				int k = 0;
-				for(k=0;k<rBytes;k++)
-				{
-					printf("<%d>=[%x]\n",k,rxbuff[k]);
-				}
-				//printf("r<%d>\n",rBytes);
-#endif			
-	            /****************************************************************/
-				int msg_datalen = 0;
-				//int loop = 0;
-				int ptr = 0;
-
-				do
-				{
-					msg_datalen = GetmsgStartaddrAndLen(&rxbuff[ptr],rBytes,(int **)&P_data);				
-					ptr += msg_datalen;
-					rBytes -= msg_datalen;
-					if(MSG_START == P_data[0])
-					{
-						switch(P_data[2])
-						{
-							case CMD_READTIME:
-									{
-										wBytes = synctime(flags,fd,fd_timer,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
-										if(wBytes != sizeof(cc110x_timemsg))
-										{
-											printf("send synctime fail!\n");
-										}
-									}
-								break;
-							case CMD_PING:
-									{
-										//主动招波
-										ret = summon_wave(flags,fd,&summon_wave_req,summon_status.req_ballnum);
-										memset(ReportIndex,0,sizeof(ReportIndex));
-										pthread_mutex_lock(&g_PingMutex);
-										msgcmd_type = CMD_PING;
-										pthread_cond_signal(&g_PingConVar);
-										pthread_mutex_unlock(&g_PingMutex);
-										printf("<%d>CMD_PING!\n",P_data[4]);
-										printf("\n");
-									}
-								break;
-							case CMD_SUMMONWAVE:
-									{
-										ActiveSignal(&g_TimerConVar, &g_TimerMutex);
-										if(P_data[4] == summon_status.req_ballnum)
-										{
-											GetReportdata(P_data,(uint8_t *)Reportdata,ReportIndex);
-										}
-									}
-								break;		
-						}
-					}
-				}
-				while(rBytes >0);	
+			memset(rxbuff, 0, sizeof(rxbuff));
+		   
+			iRet = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen);
+            if(iRet < 0)
+            {
+				printf("Error:get cc1101 bytes fail!\n");
 			}
+			rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
+#if 0
+			int k = 0;
+			for(k=0;k<rBytes;k++)
+			{
+				printf("<%d>=[%x]\n",k,rxbuff[k]);
+			}
+
+#endif			
+			//printf("r<%d>\n",rBytes);
+            /****************************************************************/
+			int msg_datalen = 0;
+			//int loop = 0;
+			int ptr = 0;
+
+			do
+			{
+				msg_datalen = GetmsgStartaddrAndLen(&rxbuff[ptr],rBytes,(int **)&P_data);				
+				ptr += msg_datalen;
+				rBytes -= msg_datalen;
+				if(MSG_START == P_data[0])
+				{
+					switch(P_data[2])
+					{
+						case CMD_READTIME:
+								{
+									wBytes = synctime(flags,fd,fd_timer,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
+
+									if(wBytes != sizeof(cc110x_timemsg))
+									{
+										printf("send synctime fail!\n");
+									}
+								}
+							break;
+						case CMD_PING:
+								{
+									msgcmd_type = CMD_PING;
+								}
+							break;
+						case CMD_SUMMONWAVE:
+								{
+									//ActiveSignal(&g_TimerConVar, &g_TimerMutex);
+									if(P_data[4] == summon_status.req_ballnum)
+									{
+										GetReportdata(P_data,(uint8_t *)Reportdata,ReportIndex);
+									}
+								}
+							break;		
+					}
+				}					
+			}
+			while(rBytes >0);	
+			
+		    tcflush(fd, TCIFLUSH);
 		}
 	}    
 

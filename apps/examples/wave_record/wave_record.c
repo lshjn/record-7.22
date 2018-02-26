@@ -187,13 +187,15 @@ int wave_record_main(int argc, FAR char *argv[])
       printf("master_CC1101: ERROR: Failed to start CC1101: %d\n",errcode);
       return EXIT_FAILURE;
     }
-
+	int cnt = 0;
   while(1)	
   {
+  		cnt++;
 		boardctl(BOARDIOC_LED4_ON, 0);
   		usleep(2000*1000);
 		boardctl(BOARDIOC_LED4_OFF, 0);
   		usleep(2000*1000);
+		printf("<%d>----------------------------------------<%d>\n",cnt,cnt);
   }
 
   return EXIT_SUCCESS;

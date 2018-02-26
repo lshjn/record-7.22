@@ -773,7 +773,7 @@ struct ring_buf
 	int		g_iWritePos;
 };
 
-#define CC1101_BUF_SIZE   (1024)
+#define CC1101_BUF_SIZE   (1024*4)
 
 struct ring_buf cc1101_buf;
 /****************************************************************************
@@ -1239,12 +1239,13 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 
 	
 	cc1101_timer2_us = *(int*)0x40000024;
-	
+
+#if 0
 	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 	 int i=0;
 	 for(i=0;i<168*10;i++);
 	boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
-	 
+#endif	 
 	//add by liushuhe 2017.11.30
 	if(cc1101_rxtx_status.workmode == CC1101_MODE_RX)
 	{
@@ -1263,29 +1264,23 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			}
 			else
 			{
-				cc1101_rxtx_status.rx_len = nbytes - 1;
+				cc1101_rxtx_status.rx_len = nbytes+2;
 			}
-
-			uint8_t addr = 0;
-			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &addr, 1);
 			
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);	
-			//crc
-			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, crc, 2);
 
-			//add by liushuhe 2018.02.24  
-			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
-
-
-			if(crc[1]&0x80)
+#if 1			
+			if(cc1101_rxtx_status.rxbuf[cc1101_rxtx_status.rx_len-1]&0x80)
 			{
-#if 1
-				modifyTimer_us(cc1101_timer2_us);
-				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
-				cc1101_rxtx_status.rx_status = SUCCESS;
-				CC1101_pollnotify(cc1101_fd);
-				//spierr("ok\n");
-#endif
+				if(cc1101_rxtx_status.rx_len != 61)
+				{
+					modifyTimer_us(cc1101_timer2_us);
+					//3:add+2crcbytes
+					DatePrint(&cc1101_rxtx_status.rxbuf[1],cc1101_rxtx_status.rx_len-3); 
+					cc1101_rxtx_status.rx_status = SUCCESS;
+					CC1101_pollnotify(cc1101_fd);		
+					//spierr("ok\n");
+				}
 			}
 			else
 			{
@@ -1296,18 +1291,10 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 				cc1101_rxtx_status.rx_status = FAIL;
 			}
 
-#if 0
-				modifyTimer_us(cc1101_timer2_us);
-				DatePrint(cc1101_rxtx_status.rxbuf,cc1101_rxtx_status.rx_len);
-				cc1101_rxtx_status.rx_status = SUCCESS;
-				CC1101_pollnotify(cc1101_fd);
-#endif
-
-					
 			//add by liushuhe 2017.12.04	  
 			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
 
-
+#endif		
 		}
 		#if 0
 		else
@@ -2069,7 +2056,7 @@ static int fs_ioctl(FAR struct file *filep, int cmd, unsigned long arg)
 			  *ptr = 0; 
 		  }
 		  
-          ret = OK;
+          ret = bytes;
         }
         break;
 		
