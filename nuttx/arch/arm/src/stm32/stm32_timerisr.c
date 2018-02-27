@@ -144,6 +144,8 @@ void arm_timer_initialize(void)
 
   /* Configure SysTick to interrupt at the requested rate */
 
+//add by liushuhe 2018.02.27
+  putreg32(1<<2, NVIC_SYSTICK_CTRL);
   putreg32(SYSTICK_RELOAD, NVIC_SYSTICK_RELOAD);
 
   /* Attach the timer interrupt vector */

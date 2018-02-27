@@ -89,6 +89,7 @@ struct ALIGN report_res{
 
 
 int master_cc1101(int argc, char *argv[]);
+int report_cc1101(int argc, char *argv[]);
 
 
 

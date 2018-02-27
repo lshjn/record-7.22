@@ -187,6 +187,19 @@ int wave_record_main(int argc, FAR char *argv[])
       printf("master_CC1101: ERROR: Failed to start CC1101: %d\n",errcode);
       return EXIT_FAILURE;
     }
+
+	ret = task_create("report_cc1101", CONFIG_EXAMPLES_CC1101_PRIORITY,
+					CONFIG_EXAMPLES_CC1101_STACKSIZE, report_cc1101,
+					NULL);
+	if (ret < 0)
+	{
+	  int errcode = errno;
+	  printf("report_cc1101: ERROR: Failed to start CC1101: %d\n",errcode);
+	  return EXIT_FAILURE;
+	}
+
+
+  
 	int cnt = 0;
   while(1)	
   {

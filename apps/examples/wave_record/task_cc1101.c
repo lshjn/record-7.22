@@ -91,6 +91,9 @@ static		uint32_t	systick = 0;
 static		uint32_t	msgcmd_type = 0;
 //static		uint32_t	summon_ack = false;
 
+	struct timespec clock1;
+	struct timespec clock2;
+	struct timespec clock3;
 
 
 //readn
@@ -238,8 +241,14 @@ void waitping(pthread_cond_t *cond,pthread_mutex_t *mutex)
 	pthread_mutex_unlock(mutex);
 }
 
+void waitping2(pthread_cond_t *cond,pthread_mutex_t *mutex)
+{
+	pthread_mutex_lock(mutex);
+	pthread_cond_wait(cond, mutex);   //pthread_cond_wait 会先解除g_AdcMutex锁，再阻塞在条件变量
+	pthread_mutex_unlock(mutex);
+}
 
-int thread_wait5ms(pthread_cond_t *cond,pthread_mutex_t *mutex)
+int thread_wait15ms(pthread_cond_t *cond,pthread_mutex_t *mutex)
 {
 	struct timespec ts;
 	int status;
@@ -259,7 +268,7 @@ int thread_wait5ms(pthread_cond_t *cond,pthread_mutex_t *mutex)
 	
 	//sleep 10ms
 	ts.tv_sec += 0;
-	ts.tv_nsec += 1000 * 1000 * 1;
+	ts.tv_nsec += 1000 * 1000 * 15;
 
 	//wait awake
 	status = pthread_cond_timedwait(cond, mutex, &ts);
@@ -375,9 +384,11 @@ int report_cc1101(int argc, char *argv[])
 	irqstate_t irqflag;
 	int ret = 0;
 	int fd;
+	int num = 0;
+	int cnt = 0;
 
-	struct timespec clock1;
-	struct timespec clock2;
+
+	boardctl(BOARDIOC_TIME2_PPS_INIT, 0);
 	
 	fd = open("/dev/cc1101", O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
 	if (fd < 0)
@@ -387,94 +398,89 @@ int report_cc1101(int argc, char *argv[])
 
 	while(1)
 	{
-		waitping(&g_PingConVar,&g_PingMutex);
 		//have request..................
-		int i=0;
-		//for(i=0;i<1;i++)
+		num = 1;
+		switch(num)
 		{
-			#if 0
-			i = 2;
-			switch(i)
-			{
-				case 0:
-					 summon_status.req_ballnum	= A_ADDR;
-					break;
-				case 1:
-					 summon_status.req_ballnum	= B_ADDR;
-					break;
-				case 2:
-					 summon_status.req_ballnum	= C_ADDR;
-					break;
-					
-			}
-			#endif
-			do
-			{
-				printf("<r>\n",summon_status.req_ballnum);
-				//主动招波
-				//ret = summon_wave(irqflag,fd,&summon_wave_req,summon_status.req_ballnum);
-				//if(ret < sizeof(summon_wave_req))
-				{
-				//	printf("send summon head fail\n");
-				}
-				clock_gettime(CLOCK_REALTIME, &clock1);
-				ret = thread_wait5ms(&g_TimerConVar, &g_TimerMutex);
-				clock_gettime(CLOCK_REALTIME, &clock2);
-				#if 0
-				unsigned int f=0;
-				f = (1000000000*(clock2.tv_sec - clock1.tv_sec) + (clock2.tv_nsec - clock1.tv_nsec)); 
-				printf("tv_nsec=%d\n",f);
-				printf("1tv_nsec=%d\n",clock1.tv_nsec);
-				printf("2tv_nsec=%d\n",clock2.tv_nsec);
-				#endif
-			}while(ret == 1); //timeout
-			summon_status.req_sendok = 1;
-			//printf("<%d>req_sendok--------------------- \n",summon_status.req_ballnum);
-			//wait data rcv ok
-			while(summon_status.res_rcvtimeout != 1)
-			{
-				usleep(100);
-			}
-			//printf("<%d>res_rcvtimeout------------------ \n",summon_status.req_ballnum);
-			summon_status.req_sendok = 0;
-			summon_status.res_rcvtimeout = 0;
-#if 1
-			//data parsing
-			int i,j = 0;
-			int total = 0;
-			for(i=0;i<96;i++)
-			{
-				if(ReportIndex[i] == 'Y')
-				{
-					total++;
-				}
-				//printf("<%d>[%c] |",i,ReportIndex[i]);
-				if(i%24 == 0)
-				{
-					//printf("\n");
-				}
-				if(ReportIndex[i] == 'Y')
-				{
-					//printf("\n");
-					for(j=0;j<40;j++)
-					{
-						if(j < 20)
-						{
-							Reportdata_V[i*20 + j] = Reportdata[i][j]; 	
-						}
-						else
-						{
-							Reportdata_I[i*20 + j-20] = Reportdata[i][j]; 	
-						}
-						//printf("[%02x] ",Reportdata[i][j]);
-					}
-					//printf("\n");
-				}
-			}
-			printf("rcv total <%d>\n",total);
-			memset(ReportIndex,0,sizeof(ReportIndex));
-#endif				
+			case 0:
+				 summon_status.req_ballnum	= A_ADDR;
+				break;
+			case 1:
+				 summon_status.req_ballnum	= B_ADDR;
+				break;
+			case 2:
+				 summon_status.req_ballnum	= C_ADDR;
+				break;
+				
 		}
+		//wait signal
+		waitping(&g_PingConVar,&g_PingMutex);
+		
+		do
+		{
+			//主动招波
+			summon_wave(irqflag,fd,&summon_wave_req,summon_status.req_ballnum);
+			memset(ReportIndex,0,sizeof(ReportIndex));
+			memset(Reportdata,0,sizeof(Reportdata));
+			memset(Reportdata_V,0,sizeof(Reportdata_V));
+			memset(Reportdata_I,0,sizeof(Reportdata_I));
+			ret = thread_wait15ms(&g_TimerConVar, &g_TimerMutex);	
+			if(ret == 1)
+			{
+				printf("t<%d>\n",cnt++);
+			}
+			else
+			{
+				cnt = 0;
+				printf("t<%d>\n",cnt);
+			}
+		}
+		while(ret == 1); //timeout
+
+		//wait data rcv ok
+		summon_status.req_sendok = 1;
+		while(summon_status.res_rcvtimeout != 1)
+		{
+			usleep(1000*1);
+		}
+		summon_status.req_sendok = 0;
+		summon_status.res_rcvtimeout = 0;
+		
+		//data parsing
+		int i,j = 0;
+		int total = 0;
+		for(i=0;i<96;i++)
+		{
+			if(ReportIndex[i] == 'Y')
+			{
+				total++;
+			}
+#if 0
+			//printf("<%d>[%c] |",i,ReportIndex[i]);
+			if(i%24 == 0)
+			{
+				//printf("\n");
+			}
+			if(ReportIndex[i] == 'Y')
+			{
+				//printf("\n");
+				for(j=0;j<40;j++)
+				{
+					if(j < 20)
+					{
+						Reportdata_V[i*20 + j] = Reportdata[i][j]; 	
+					}
+					else
+					{
+						Reportdata_I[i*20 + j-20] = Reportdata[i][j]; 	
+					}
+					//printf("[%02x] ",Reportdata[i][j]);
+				}
+				//printf("\n");
+			}
+#endif			
+		}
+		printf("rcv total <%d>\n",total);
 	}
 }
 
@@ -487,13 +493,6 @@ int master_cc1101(int argc, char *argv[])
 {
 
 	int ret =-1;
-	ret = task_create("report_cc1101", CONFIG_EXAMPLES_CC1101_PRIORITY,CONFIG_EXAMPLES_CC1101_STACKSIZE, report_cc1101,NULL);
-	if (ret < 0)
-	{
-	  int errcode = errno;
-	  printf("report_cc1101: ERROR: Failed to start CC1101: %d\n",errcode);
-	  return EXIT_FAILURE;
-	}
 
 	irqstate_t flags;
   	struct pollfd fds[1];
@@ -566,17 +565,14 @@ int master_cc1101(int argc, char *argv[])
 		printf("ERROR: Failed to start the timer: %d\n", errno);
 	}
 	/* Do we already hold the semaphore? */
-
-    summon_status.req_ballnum = B_ADDR;
-	
 	while(1)
 	{
 		memset(fds, 0, sizeof(struct pollfd));
 		fds[0].fd       = fd;
 		fds[0].events   = POLLIN;
 		fds[0].revents  = 0;
-		//timeout 10ms
-		iRet = poll(fds, 1,200);
+		//timeout 15ms
+		iRet = poll(fds, 1,10);
 		if (iRet < 0) 
 		{
 			//add by liushuhe 2018.01.19
@@ -586,9 +582,7 @@ int master_cc1101(int argc, char *argv[])
 			}
 			else
 			{
-				//int timercnt=0;
-				//ioctl(fd_timer, TCIOC_GETCOUNTER, (uint32_t)(&timercnt));
-				//printf("time_cnt<%d>\n",timercnt);
+			
 			}
 		}
 		else if(iRet == 0)
@@ -598,6 +592,8 @@ int master_cc1101(int argc, char *argv[])
 			{
 				summon_status.res_rcvtimeout = 1;
 			}
+			//clock_gettime(CLOCK_REALTIME, &clock1);
+			//printf("1tv_nsec=%d\n",clock1.tv_nsec);
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
 		{
@@ -628,7 +624,6 @@ int master_cc1101(int argc, char *argv[])
 #endif			
 	            /****************************************************************/
 				int msg_datalen = 0;
-				//int loop = 0;
 				int ptr = 0;
 
 				do
@@ -651,15 +646,13 @@ int master_cc1101(int argc, char *argv[])
 								break;
 							case CMD_PING:
 									{
-										//主动招波
-										ret = summon_wave(flags,fd,&summon_wave_req,summon_status.req_ballnum);
-										memset(ReportIndex,0,sizeof(ReportIndex));
-										pthread_mutex_lock(&g_PingMutex);
-										msgcmd_type = CMD_PING;
-										pthread_cond_signal(&g_PingConVar);
-										pthread_mutex_unlock(&g_PingMutex);
-										printf("<%d>CMD_PING!\n",P_data[4]);
-										printf("\n");
+										if(P_data[4] == summon_status.req_ballnum)
+										{
+											pthread_mutex_lock(&g_PingMutex);
+											msgcmd_type = CMD_PING;
+											pthread_cond_signal(&g_PingConVar);
+											pthread_mutex_unlock(&g_PingMutex);
+										}
 									}
 								break;
 							case CMD_SUMMONWAVE:
