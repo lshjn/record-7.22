@@ -241,11 +241,16 @@ void waitping(pthread_cond_t *cond,pthread_mutex_t *mutex)
 	pthread_mutex_unlock(mutex);
 }
 
-void waitping2(pthread_cond_t *cond,pthread_mutex_t *mutex)
+void waitrcvok(int *sendok,int *timeout)
 {
-	pthread_mutex_lock(mutex);
-	pthread_cond_wait(cond, mutex);   //pthread_cond_wait 会先解除g_AdcMutex锁，再阻塞在条件变量
-	pthread_mutex_unlock(mutex);
+	//wait data rcv ok
+	*sendok = 1;
+	while(*timeout != 1)
+	{
+		usleep(1000*1);
+	}
+	*sendok  = 0;
+	*timeout = 0;
 }
 
 int thread_wait15ms(pthread_cond_t *cond,pthread_mutex_t *mutex)
@@ -438,13 +443,7 @@ int report_cc1101(int argc, char *argv[])
 		while(ret == 1); //timeout
 
 		//wait data rcv ok
-		summon_status.req_sendok = 1;
-		while(summon_status.res_rcvtimeout != 1)
-		{
-			usleep(1000*1);
-		}
-		summon_status.req_sendok = 0;
-		summon_status.res_rcvtimeout = 0;
+		waitrcvok(&summon_status.req_sendok,&summon_status.res_rcvtimeout);
 		
 		//data parsing
 		int i,j = 0;
