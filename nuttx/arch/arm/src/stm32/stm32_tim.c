@@ -542,6 +542,8 @@ struct stm32_tim_priv_s stm32_tim17_priv =
 static inline uint16_t stm32_getreg16(FAR struct stm32_tim_dev_s *dev,
                                       uint8_t offset)
 {
+	//add by liushuhe 2018.03.01
+	//spierr("<16>timer addr=%08x\n",(((struct stm32_tim_priv_s *)dev)->base + offset));
   return getreg16(((struct stm32_tim_priv_s *)dev)->base + offset);
 }
 
@@ -586,7 +588,8 @@ static inline void stm32_modifyreg16(FAR struct stm32_tim_dev_s *dev,
 static inline uint32_t stm32_getreg32(FAR struct stm32_tim_dev_s *dev,
                                       uint8_t offset)
 {
-	//spierr("timer addr=%08x\n",(((struct stm32_tim_priv_s *)dev)->base + offset));
+	//add by liushuhe 2018.03.01
+	//spierr("<32>timer addr=%08x\n",(((struct stm32_tim_priv_s *)dev)->base + offset));
   return getreg32(((struct stm32_tim_priv_s *)dev)->base + offset);
 }
 
@@ -912,7 +915,7 @@ static uint32_t stm32_tim_getcounter(FAR struct stm32_tim_dev_s *dev)
 {
   DEBUGASSERT(dev != NULL);
 
-//spierr("stm32_tim_getwidth=%d\n",stm32_tim_getwidth(dev));
+	//spierr("stm32_tim_getwidth=%d\n",stm32_tim_getwidth(dev));
 
   
   return stm32_tim_getwidth(dev) > 16 ?

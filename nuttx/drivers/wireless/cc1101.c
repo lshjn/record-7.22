@@ -317,6 +317,11 @@ FAR struct cc1101_upperhalf_s *cc1101_fd;
 #define SUCCESS                      		 1
 #define FAIL                      			 0
 
+#define TIMR1_CNT_ADDR 0x40010024
+#define TIMR2_CNT_ADDR 0x40000024
+
+
+
 #define ALIGN __attribute__((packed))
 
 
@@ -1237,7 +1242,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	static int crcerror = 0;
 
 	
-	cc1101_timer2_us = *(int*)0x40000024;
+	cc1101_timer2_us = *(int*)TIMR2_CNT_ADDR;
 
 #if 0
 	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
@@ -1254,6 +1259,8 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 		//spierr("status=%d\n",status);
 	    if(status&0x7f)
 	    {
+	    	//*(int*)TIMR1_CNT_ADDR= 0;
+			
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &nbytes, 1);
 			//spierr("nbytes=%d\n",nbytes);
 	    	//nbytes
@@ -1277,7 +1284,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 					//3:add+2crcbytes
 					DatePrint(&cc1101_rxtx_status.rxbuf[1],cc1101_rxtx_status.rx_len-3); 
 					cc1101_rxtx_status.rx_status = SUCCESS;
-					CC1101_pollnotify(cc1101_fd);		
+					//CC1101_pollnotify(cc1101_fd);		
 					//spierr("ok\n");
 				}
 			}
@@ -1290,7 +1297,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 				cc1101_rxtx_status.rx_status = FAIL;
 			}
 			//add by liushuhe 2018.03.01
-			//CC1101_pollnotify(cc1101_fd);	
+			CC1101_pollnotify(cc1101_fd);	
 			
 			//add by liushuhe 2017.12.04	  
 			//cc1101_receive((FAR struct cc1101_dev_s *)arg);

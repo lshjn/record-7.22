@@ -59,9 +59,15 @@ uint8_t   Reportdata_I[REPORTSIZE];
  * hello_main
  ****************************************************************************/
 #define TX_BUF 60
-#define CONFIG_EXAMPLES_TIMER_DEVNAME "/dev/timer2_gps"
-#define CONFIG_EXAMPLES_TIMER_INTERVAL (1000000)
+#define CONFIG_EXAMPLES_TIMER_DEVNAME 		"/dev/timer2_gps"
+#define CONFIG_EXAMPLES_TIMER_CC1101  		"/dev/timer1_cc1101"
+#define CONFIG_EXAMPLES_TIMER_INTERVAL 		(1000000)
+#define CONFIG_EXAMPLES_TIMERCC1101_INTERVAL (10000)
 #define CONFIG_EXAMPLES_TIMER_SIGNO 17
+#define CONFIG_EXAMPLES_TIMER_SIGNO_CC1101 18
+
+#define TIMR1_CNT_ADDR 0x40010024
+#define TIMR2_CNT_ADDR 0x40000024
 
 #define 	CMD_QUERYONLINE 		0
 #define 	CMD_GETTIMEROFFSET 	1
@@ -97,13 +103,12 @@ static		uint32_t	patch_systick = 0;
 static		uint32_t	patch_pos = 0;
 
 static		uint32_t	msgcmd_type = 0;
-//static		uint32_t	summon_ack = false;
+static		uint32_t	rcv_timeout = false;
 
 	struct timespec clock1;
 	struct timespec clock2;
 	struct timespec clock3;
-
-
+	
 //readn
 int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
 {
@@ -234,6 +239,7 @@ int GetReportdata(char * rxbuff,uint8_t *reportdata,uint8_t *reportindex)
 void	ActiveSignal(pthread_cond_t *cond,pthread_mutex_t *mutex)
 {
 	pthread_mutex_lock(mutex);
+	rcv_timeout = true;
 	pthread_cond_signal(cond);
 	pthread_mutex_unlock(mutex);
 }
@@ -252,11 +258,11 @@ void waitping(pthread_cond_t *cond,pthread_mutex_t *mutex)
 void waitTimeout(pthread_cond_t *cond,pthread_mutex_t *mutex)
 {
 	pthread_mutex_lock(mutex);
-	while(msgcmd_type != CMD_PING)
+	while(rcv_timeout != true)
 	{
 		pthread_cond_wait(cond, mutex);   //pthread_cond_wait 会先解除g_AdcMutex锁，再阻塞在条件变量
 	}
-	msgcmd_type = 0;
+	rcv_timeout = false;
 	pthread_mutex_unlock(mutex);
 }
 
@@ -415,10 +421,15 @@ int thread_waitnms(pthread_cond_t *cond,pthread_mutex_t *mutex,int nms)
 }
 
 
+static void timer1_sighandler(int signo, FAR siginfo_t *siginfo,FAR void *context)
+{
+	//*(int*)TIMR1_CNT_ADDR = 0;
+	//ActiveSignal(&g_TimerConVar, &g_TimerMutex);
+}
 static void timer2_sighandler(int signo, FAR siginfo_t *siginfo,FAR void *context)
 {
     systick++;
-	*(int*)0x40000024 = 0;
+	*(int*)TIMR2_CNT_ADDR = 0;
 }
 
 int  synctime(irqstate_t flags,int fd,int fd_timer,cc110x_timemsg * p_cc1101_msg_rx,char * rxbuff,cc110x_timemsg * p_cc1101_msg_tx)
@@ -494,6 +505,9 @@ int report_cc1101(int argc, char *argv[])
 {
 	irqstate_t irqflag;
 	uint8_t lost = 0;
+	struct timer_notify_s notify;
+	struct sigaction act;
+	int 	fd_timer1;
 	int ret = 0;
 	int fd;
 	int cnt = 0;
@@ -506,12 +520,55 @@ int report_cc1101(int argc, char *argv[])
 		printf("open cc1101 error:\n");
 	}
 
+
+	fd_timer1 = open(CONFIG_EXAMPLES_TIMER_CC1101, O_RDWR);
+	if (fd_timer1 < 0)
+	{
+		printf("ERROR: Failed to open %s: %d\n",CONFIG_EXAMPLES_TIMER_CC1101, errno);
+	}
+
+	ret = ioctl(fd_timer1, TCIOC_SETTIMEOUT, CONFIG_EXAMPLES_TIMERCC1101_INTERVAL);
+	if (ret < 0)
+	{
+		printf("ERROR: Failed to set the timer interval: %d\n", errno);
+	}
+	
+	act.sa_sigaction = timer1_sighandler;
+	act.sa_flags     = SA_SIGINFO;
+
+	(void)sigfillset(&act.sa_mask);
+	(void)sigdelset(&act.sa_mask, CONFIG_EXAMPLES_TIMER_SIGNO_CC1101);
+
+	ret = sigaction(CONFIG_EXAMPLES_TIMER_SIGNO_CC1101, &act, NULL);
+	if (ret != OK)
+	{
+		printf("ERROR: Fsigaction failed: %d\n", errno);
+	}
+	
+	notify.arg   = NULL;
+	notify.pid   = getpid();
+	notify.signo = CONFIG_EXAMPLES_TIMER_SIGNO_CC1101;
+	
+	ret = ioctl(fd_timer1, TCIOC_NOTIFICATION, (unsigned long)((uintptr_t)&notify));
+	if (ret < 0)
+	{
+		printf("ERROR: Failed to set the timer handler: %d\n", errno);
+	}
+
+#if 0
+	ret = ioctl(fd_timer1, TCIOC_START, 0);
+	if (ret < 0)
+	{
+		printf("ERROR: Failed to start the timer: %d\n", errno);
+	}
+#endif 
+
 	while(1)
 	{
 		//have request..................
 		//wait signal
 		waitping(&g_PingConVar,&g_PingMutex);
-		
+		summon_status.summon_status = NOACK;
 		while(summon_status.summon_status == NOACK)
 		{
 			//主动招波
@@ -520,16 +577,27 @@ int report_cc1101(int argc, char *argv[])
 			memset(Reportdata,0,sizeof(Reportdata));
 			memset(Reportdata_V,0,sizeof(Reportdata_V));
 			memset(Reportdata_I,0,sizeof(Reportdata_I));
-			waitTimeout(&g_TimerConVar, &g_TimerMutex);	
+		clock_gettime(CLOCK_REALTIME, &clock1);
+		
+			//*(int*)TIMR1_CNT_ADDR = 10*1000;
+			//ioctl(fd_timer1, TCIOC_START, 0);
+			waitTimeout(&g_TimerConVar, &g_TimerMutex);
+		    //ioctl(fd_timer1, TCIOC_STOP, 0);
+			
 			printf("t<%d>\n",cnt++);
 		}
 		summon_status.summon_status = NOACK;
+
+		clock_gettime(CLOCK_REALTIME, &clock2);
+		printf("1tv_nsec=%d\n",1000000000*(clock2.tv_sec-clock1.tv_sec) + clock2.tv_nsec-clock1.tv_nsec);
+		printf("1tv_nsec=%d\n",clock1.tv_nsec);
+		printf("2tv_nsec=%d\n",clock2.tv_nsec);
 		
 		printf("T\n");
 		//wait data rcv real ok
 		char getlost =0;
 		char newlost =0;
-		#if 1
+		#if 0
 		getlost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
 		printf("<%d>N0<%d>\n",summon_status.curball,getlost);
 		while(getlost)
@@ -548,9 +616,11 @@ int report_cc1101(int argc, char *argv[])
 		}
 		#endif	
 
-		printf("<%d>N1<%d>\n",summon_status.curball,getlost);
 		
+		printf("<%d>N1<%d>\n",summon_status.curball,getlost);
+	#if 0
 		//parsing patch
+		int nnnn = 0;
 		while(1)
 		{
 			lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
@@ -558,6 +628,9 @@ int report_cc1101(int argc, char *argv[])
 			{
 				break;
 			}
+
+			if(nnnn++ > 10)
+				break;
 
 			if(lost >= 20)
 			{
@@ -570,7 +643,7 @@ int report_cc1101(int argc, char *argv[])
 			waitTimeout(&g_TimerConVar, &g_TimerMutex);	
 			printf("<%d>N2<%d>\n",summon_status.curball,lost);
 		}
-		
+	#endif	
 		//parsing data
 		int i= 0;
 		int j= 0;
@@ -631,7 +704,6 @@ int report_cc1101(int argc, char *argv[])
  ****************************************************************************/
 int master_cc1101(int argc, char *argv[])
 {
-
 	int ret =-1;
 
 	irqstate_t flags;
@@ -639,13 +711,14 @@ int master_cc1101(int argc, char *argv[])
 
 	struct timer_notify_s notify;
 	struct sigaction act;
+
 	//struct timeval timeout;
 	//fd_set 	rfds;
 	
     char 	rxbuff[1024*4];
     char 	*P_data = NULL;
 	int 	fd;
-	int 	fd_timer;
+	int 	fd_timer2;
 	int  	iRet = 0;
 	int  	cc1101buf_datalen = 0;
 	int  	rBytes = 0;
@@ -666,13 +739,13 @@ int master_cc1101(int argc, char *argv[])
 		printf("open cc1101 error:\n");
 	}
 
-	fd_timer = open(CONFIG_EXAMPLES_TIMER_DEVNAME, O_RDWR);
-	if (fd_timer < 0)
+	fd_timer2 = open(CONFIG_EXAMPLES_TIMER_DEVNAME, O_RDWR);
+	if (fd_timer2 < 0)
 	{
 		printf("ERROR: Failed to open %s: %d\n",CONFIG_EXAMPLES_TIMER_DEVNAME, errno);
 	}
 
-	iRet = ioctl(fd_timer, TCIOC_SETTIMEOUT, CONFIG_EXAMPLES_TIMER_INTERVAL);
+	iRet = ioctl(fd_timer2, TCIOC_SETTIMEOUT, CONFIG_EXAMPLES_TIMER_INTERVAL);
 	if (iRet < 0)
 	{
 		printf("ERROR: Failed to set the timer interval: %d\n", errno);
@@ -694,18 +767,19 @@ int master_cc1101(int argc, char *argv[])
 	notify.pid   = getpid();
 	notify.signo = CONFIG_EXAMPLES_TIMER_SIGNO;
 	
-	iRet = ioctl(fd_timer, TCIOC_NOTIFICATION, (unsigned long)((uintptr_t)&notify));
+	iRet = ioctl(fd_timer2, TCIOC_NOTIFICATION, (unsigned long)((uintptr_t)&notify));
 	if (iRet < 0)
 	{
 		printf("ERROR: Failed to set the timer handler: %d\n", errno);
 	}
   
-	iRet = ioctl(fd_timer, TCIOC_START, 0);
+	iRet = ioctl(fd_timer2, TCIOC_START, 0);
 	if (iRet < 0)
 	{
 		printf("ERROR: Failed to start the timer: %d\n", errno);
 	}
 	/* Do we already hold the semaphore? */
+
 	while(1)
 	{
 		memset(fds, 0, sizeof(struct pollfd));
@@ -713,7 +787,7 @@ int master_cc1101(int argc, char *argv[])
 		fds[0].events   = POLLIN;
 		fds[0].revents  = 0;
 		//timeout 15ms
-		iRet = poll(fds, 1,20);
+		iRet = poll(fds, 1,10);
 		if (iRet < 0) 
 		{
 			//add by liushuhe 2018.01.19
@@ -723,18 +797,17 @@ int master_cc1101(int argc, char *argv[])
 			}
 			else
 			{
-			
+				;
 			}
 		}
 		else if(iRet == 0)
 		{
 			timeout_f = true;	
-			
 			ActiveSignal(&g_TimerConVar, &g_TimerMutex);
 
 			//clock_gettime(CLOCK_REALTIME, &clock1);
 			//printf("1tv_nsec=%d\n",clock1.tv_nsec);
-			printf("TT\n");
+			//printf("TT\n");
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
 		{
@@ -751,7 +824,7 @@ int master_cc1101(int argc, char *argv[])
 				ready_f = true;
 			}
 
-			ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen);
+			while((ret = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen)))
 			{
 				memset(rxbuff, 0, sizeof(rxbuff));
 			   	rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
@@ -768,7 +841,7 @@ int master_cc1101(int argc, char *argv[])
 	            /****************************************************************/
 				int msg_datalen = 0;
 				int ptr = 0;
-
+				int aaaa = 0;
 				do
 				{
 					msg_datalen = GetmsgStartaddrAndLen(&rxbuff[ptr],rBytes,(int **)&P_data);				
@@ -780,7 +853,7 @@ int master_cc1101(int argc, char *argv[])
 						{
 							case CMD_READTIME:
 									{
-										wBytes = synctime(flags,fd,fd_timer,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
+										wBytes = synctime(flags,fd,fd_timer2,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
 										if(wBytes != sizeof(cc110x_timemsg))
 										{
 											printf("send synctime fail!\n");
@@ -864,6 +937,7 @@ int master_cc1101(int argc, char *argv[])
 							case CMD_SUMMONWAVE:
 										if(P_data[4] == summon_status.curball)
 										{
+											printf("S\n");
 											switch(summon_status.curball)
 											{
 												case A_ADDR:
