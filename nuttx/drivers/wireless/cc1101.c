@@ -1289,7 +1289,9 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 				cc1101_rxtx_status.rx_len = 0;
 				cc1101_rxtx_status.rx_status = FAIL;
 			}
-
+			//add by liushuhe 2018.03.01
+			//CC1101_pollnotify(cc1101_fd);	
+			
 			//add by liushuhe 2017.12.04	  
 			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
 
