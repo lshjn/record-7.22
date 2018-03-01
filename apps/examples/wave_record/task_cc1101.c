@@ -36,6 +36,7 @@ cc110x_timemsg * P_cc1101_msg_tx = &_cc1101_msg_tx;
 
 struct report_req		summon_wave_req;
 struct report_res		summon_wave_res;
+struct patch_req_head   patch_head;
 struct report_status	summon_status;
 
 pthread_mutex_t g_TimerMutex		= PTHREAD_MUTEX_INITIALIZER;
@@ -47,6 +48,7 @@ pthread_cond_t  g_PingConVar		= PTHREAD_COND_INITIALIZER;
 //#define    REPORTSIZE  1920
 #define    REPORTSIZE  2000
 
+uint8_t   PatchIndex[32];
 uint8_t   ReportIndex[96];
 uint8_t   Reportdata[96][40];
 uint8_t   Reportdata_V[REPORTSIZE];
@@ -73,6 +75,9 @@ uint8_t   Reportdata_I[REPORTSIZE];
 #define 	ACK 		1
 #define 	NOACK 		0
 
+#define 	FULL 		96
+#define 	EMPTY 		0
+
 #define 	ONLINE 		1
 #define 	OFFLINE 	0
 
@@ -88,6 +93,9 @@ uint8_t   Reportdata_I[REPORTSIZE];
 #define  	GETCC1101BUF_BYTES  0x01
 
 static		uint32_t	systick = 0;
+static		uint32_t	patch_systick = 0;
+static		uint32_t	patch_pos = 0;
+
 static		uint32_t	msgcmd_type = 0;
 //static		uint32_t	summon_ack = false;
 
@@ -241,7 +249,92 @@ void waitping(pthread_cond_t *cond,pthread_mutex_t *mutex)
 	pthread_mutex_unlock(mutex);
 }
 
-void waitrcvok(int *sendok,int *timeout)
+uint8_t getPatch(uint8_t *patchsum,uint8_t *reportIndex)
+{
+	uint8_t * ptr_patch = patchsum;
+	uint8_t * ptr_report = reportIndex;
+	uint8_t lost = 0;
+	
+	uint8_t i = 0;
+	for(i=0;i<96;i++)
+	{
+		if(ptr_report[i] != 'Y')
+		{
+			lost++;
+			*ptr_patch++ = (i+1);
+		}
+	}
+	return lost;
+}
+
+void  calcPatchreport(irqstate_t flags,int fd,uint8_t lost,uint8_t *patchsum,uint8_t *reportIndex,struct patch_req_head* patchhead,uint8_t curball)
+{
+	int  wBytes = 0;		
+	char *p_buf	= NULL; 
+	char *p	= NULL; 
+	char *phead	= (char*)patchhead; 
+	char *patch	= (char*)patchsum; 
+	
+	//data parsing
+	p_buf=p=(char *)malloc((sizeof(struct patch_req_head)+lost + 1));  
+	if(p)
+	{
+		patchhead->start_flag	= MSG_START;
+		patchhead->msglen 		= (sizeof(struct patch_req_head)+lost + 1);
+		patchhead->type 		= CMD_PATCH;
+		switch(curball)
+		{
+			case A_ADDR:
+				 patchhead->dist	= A_ADDR;
+				break;
+			case B_ADDR:
+				 patchhead->dist	= B_ADDR;
+				break;
+			case C_ADDR:
+				 patchhead->dist	= C_ADDR;
+				break;			
+		}
+		patchhead->src 		= MASTER_ADDR;
+		patchhead->second 	= patch_systick;
+		patchhead->pos 		= patch_pos;
+		patchhead->len 		= lost;
+		int i;
+		//copy head
+		for(i=0;i<sizeof(struct patch_req_head);i++)
+		{
+			*p++ = *phead++;
+		}
+		//copy patch
+		for(i=0;i<lost;i++)
+		{
+			*p++ = *patch++;
+		}
+		//copy endflag
+		*p = MSG_END;
+#if 0		
+		char *p_debug	= p_buf; 
+		for(i=0;i<(sizeof(struct patch_req_head)+lost + 1);i++)
+		{
+			
+			printf("<%x>\n",*p_debug++);
+		}
+#endif
+
+		//send patch msg
+		flags   = enter_critical_section();
+		wBytes = write(fd, (char *)p_buf, (sizeof(struct patch_req_head)+lost + 1));
+	    //printf("<%x>wBytes\n",wBytes);
+		leave_critical_section(flags);
+	}
+	else
+	{
+		printf("malloc fail!\n");
+	}
+	
+	free(p_buf);
+	
+}
+void waitrcvok(uint8_t *sendok,uint8_t *timeout)
 {
 	//wait data rcv ok
 	*sendok = 1;
@@ -253,7 +346,7 @@ void waitrcvok(int *sendok,int *timeout)
 	*timeout = 0;
 }
 
-int thread_wait15ms(pthread_cond_t *cond,pthread_mutex_t *mutex)
+int thread_waitnms(pthread_cond_t *cond,pthread_mutex_t *mutex,int nms)
 {
 	struct timespec ts;
 	int status;
@@ -273,7 +366,7 @@ int thread_wait15ms(pthread_cond_t *cond,pthread_mutex_t *mutex)
 	
 	//sleep 10ms
 	ts.tv_sec += 0;
-	ts.tv_nsec += 1000 * 1000 * 15;
+	ts.tv_nsec += 1000 * 1000 * nms;
 
 	//wait awake
 	status = pthread_cond_timedwait(cond, mutex, &ts);
@@ -296,7 +389,7 @@ int thread_wait15ms(pthread_cond_t *cond,pthread_mutex_t *mutex)
 	}
 	else
 	{
-		printf("pthread_cond_timedwait:rcv ack!\n");
+		printf("sig\n");
 	   ret = 2;
 	}
 
@@ -349,14 +442,14 @@ int  synctime(irqstate_t flags,int fd,int fd_timer,cc110x_timemsg * p_cc1101_msg
 	return wBytes;
 }
 
-int  summon_wave(irqstate_t flags,int fd,struct report_req * P_summon_wave_req,uint8_t req_ballnum)
+int  summon_wave(irqstate_t flags,int fd,struct report_req * P_summon_wave_req,uint8_t curball)
 {
 	int  wBytes = 0;	
 
 	P_summon_wave_req->start_flag	= MSG_START;
 	P_summon_wave_req->msglen		= sizeof(struct report_req);
 	P_summon_wave_req->type		= CMD_SUMMONWAVE;
-	switch(req_ballnum)
+	switch(curball)
 	{
 		case A_ADDR:
 			 P_summon_wave_req->dist		= A_ADDR;
@@ -369,8 +462,10 @@ int  summon_wave(irqstate_t flags,int fd,struct report_req * P_summon_wave_req,u
 			break;			
 	}
 	P_summon_wave_req->src			= MASTER_ADDR;
-	P_summon_wave_req->second		= systick;
-	P_summon_wave_req->pos			= 0;
+	patch_systick = systick;
+	patch_pos = 10;
+	P_summon_wave_req->second		= patch_systick;
+	P_summon_wave_req->pos			= patch_pos;
 	P_summon_wave_req->endflag		= MSG_END;
 	
 	flags   = enter_critical_section();
@@ -387,11 +482,10 @@ int  summon_wave(irqstate_t flags,int fd,struct report_req * P_summon_wave_req,u
 int report_cc1101(int argc, char *argv[])
 {
 	irqstate_t irqflag;
+	uint8_t lost = 0;
 	int ret = 0;
 	int fd;
-	int num = 0;
 	int cnt = 0;
-
 
 	boardctl(BOARDIOC_TIME2_PPS_INIT, 0);
 	
@@ -404,32 +498,18 @@ int report_cc1101(int argc, char *argv[])
 	while(1)
 	{
 		//have request..................
-		num = 1;
-		switch(num)
-		{
-			case 0:
-				 summon_status.req_ballnum	= A_ADDR;
-				break;
-			case 1:
-				 summon_status.req_ballnum	= B_ADDR;
-				break;
-			case 2:
-				 summon_status.req_ballnum	= C_ADDR;
-				break;
-				
-		}
 		//wait signal
 		waitping(&g_PingConVar,&g_PingMutex);
 		
 		do
 		{
 			//Ö÷¶¯ÕÐ²¨
-			summon_wave(irqflag,fd,&summon_wave_req,summon_status.req_ballnum);
+			summon_wave(irqflag,fd,&summon_wave_req,summon_status.curball);
 			memset(ReportIndex,0,sizeof(ReportIndex));
 			memset(Reportdata,0,sizeof(Reportdata));
 			memset(Reportdata_V,0,sizeof(Reportdata_V));
 			memset(Reportdata_I,0,sizeof(Reportdata_I));
-			ret = thread_wait15ms(&g_TimerConVar, &g_TimerMutex);	
+			ret = thread_waitnms(&g_TimerConVar, &g_TimerMutex,15);	
 			if(ret == 1)
 			{
 				printf("t<%d>\n",cnt++);
@@ -441,13 +521,81 @@ int report_cc1101(int argc, char *argv[])
 			}
 		}
 		while(ret == 1); //timeout
-
-		//wait data rcv ok
-		waitrcvok(&summon_status.req_sendok,&summon_status.res_rcvtimeout);
 		
-		//data parsing
-		int i,j = 0;
+		clock_gettime(CLOCK_REALTIME, &clock1);		
+		//wait data rcv ok
+		usleep(1000*5*95);    //96-1 data min_time
+		waitrcvok(&summon_status.curball_sendok,&summon_status.curball_rcvtimeout);
+		clock_gettime(CLOCK_REALTIME, &clock2);
+		//printf("tv_nsec=%d\n",1000000000*(clock2.tv_sec-clock2.tv_sec)+(clock2.tv_nsec-clock1.tv_nsec));
+		//printf("1tv_nsec=%d\n",clock1.tv_nsec);
+		//printf("2tv_nsec=%d\n",clock2.tv_nsec);
+		printf("T\n");
+		//wait data rcv real ok
+		char getlost =0;
+		char newlost =0;
+		#if 1
+		getlost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+		printf("<%d>N0<%d>\n",summon_status.curball,getlost);
+		while(getlost)
+		{
+			waitrcvok(&summon_status.curball_sendok,&summon_status.curball_rcvtimeout);
+			printf("T1\n");
+			newlost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+			if(getlost != newlost)
+			{
+				getlost = newlost;
+			}
+			else
+			{
+				break;
+			}
+		}
+		#endif	
+		summon_status.disable_getdata = 1;
+		printf("<%d>N1<%d>\n",summon_status.curball,getlost);
+		//parsing patch
+		int  aaaaaa = 0;
+		do
+		{
+			do
+			{
+				lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+				char sendn = 0;
+				
+				if(lost >= 20)
+				{
+					sendn = 20;
+				}
+				else
+				{
+					sendn = lost;
+				}
+				//if(aaaaaa == 0)
+				{
+					aaaaaa = 1;
+					calcPatchreport(irqflag,fd,sendn,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&patch_head,summon_status.curball);			
+				}
+				if(lost == 0)
+				{
+					break;
+				}
+				usleep(5*sendn*1000);
+				ret = thread_waitnms(&g_TimerConVar, &g_TimerMutex,50);
+				printf("<%d>N<%d>\n",summon_status.curball,lost);
+			}while(ret==1);
+			//wait data rcv ok
+			waitrcvok(&summon_status.curball_sendok,&summon_status.curball_rcvtimeout);
+			lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+			printf("W<%d>\n",lost);
+		}
+		while(lost);
+		summon_status.disable_getdata = 0;
+		//parsing data
+		int i= 0;
+		int j= 0;
 		int total = 0;
+		int total2 = 0;
 		for(i=0;i<96;i++)
 		{
 			if(ReportIndex[i] == 'Y')
@@ -479,7 +627,20 @@ int report_cc1101(int argc, char *argv[])
 			}
 #endif			
 		}
-		printf("rcv total <%d>\n",total);
+		switch(summon_status.curball)
+		{
+			case A_ADDR:
+				 total2 = summon_status.ballA_rcvtotal;
+				break;	
+			case B_ADDR:
+				 total2 = summon_status.ballB_rcvtotal;
+				break;	
+			case C_ADDR:
+				 total2 = summon_status.ballC_rcvtotal;
+				break;	
+		}
+		
+		printf("<%d>rcv total1=<%d>,<%d>\n",summon_status.curball,total,total2);
 	}
 }
 
@@ -512,6 +673,7 @@ int master_cc1101(int argc, char *argv[])
 
 	int 	timeout_f = 0;
 	int 	ready_f = 0;
+	int 	qqqq = 0;
 	
 	struct timespec clock;
 				
@@ -571,7 +733,7 @@ int master_cc1101(int argc, char *argv[])
 		fds[0].events   = POLLIN;
 		fds[0].revents  = 0;
 		//timeout 15ms
-		iRet = poll(fds, 1,10);
+		iRet = poll(fds, 1,8);
 		if (iRet < 0) 
 		{
 			//add by liushuhe 2018.01.19
@@ -587,12 +749,25 @@ int master_cc1101(int argc, char *argv[])
 		else if(iRet == 0)
 		{
 			timeout_f = true;	
-			if(summon_status.req_sendok == 1)
+			if(summon_status.curball_sendok == 1)
 			{
-				summon_status.res_rcvtimeout = 1;
+				summon_status.curball_rcvtimeout = 1;
 			}
+			
+			qqqq++;
+			if(qqqq%2)
+			{
+				boardctl(BOARDIOC_TIME2_PPS_UP, 0);
+			}
+			else
+			{
+				boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
+			}
+
+			
 			//clock_gettime(CLOCK_REALTIME, &clock1);
 			//printf("1tv_nsec=%d\n",clock1.tv_nsec);
+			printf("TT\n");
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
 		{
@@ -609,17 +784,21 @@ int master_cc1101(int argc, char *argv[])
 				ready_f = true;
 			}
 
-			while((iRet = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen)) > 0)
+			//while((iRet = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen)) > 0)
+			iRet = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen);
 			{
 				memset(rxbuff, 0, sizeof(rxbuff));
 			   	rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
-#if 0
-				int k = 0;
-				for(k=0;k<rBytes;k++)
+#if 1
+				if(summon_status.disable_getdata == 1)
 				{
-					printf("<%d>=[%x]\n",k,rxbuff[k]);
+					//int k = 0;
+					//for(k=0;k<rBytes;k++)
+					//{
+					//	printf("<%d>=[%x]\n",k,rxbuff[k]);
+					//}
+					printf("r<%d>\n",rBytes);
 				}
-				//printf("r<%d>\n",rBytes);
 #endif			
 	            /****************************************************************/
 				int msg_datalen = 0;
@@ -645,7 +824,70 @@ int master_cc1101(int argc, char *argv[])
 								break;
 							case CMD_PING:
 									{
-										if(P_data[4] == summon_status.req_ballnum)
+										switch(P_data[4])
+										{
+										#if 1
+											//three ball
+											case A_ADDR:
+												  if((summon_status.ballB_rcvtotal == EMPTY)&&(summon_status.ballC_rcvtotal == EMPTY))
+												  {
+													  summon_status.curball = A_ADDR;
+												  }
+												  else if((summon_status.ballB_rcvtotal == FULL)&&(summon_status.ballC_rcvtotal == FULL))
+												  {
+													  summon_status.curball = A_ADDR;
+												  }
+												break;
+											case B_ADDR:
+												  if((summon_status.ballA_rcvtotal == EMPTY)&&(summon_status.ballC_rcvtotal == EMPTY))
+												  {
+													  summon_status.curball = B_ADDR;
+												  }
+												  else if((summon_status.ballA_rcvtotal == FULL)&&(summon_status.ballC_rcvtotal == FULL))
+												  {
+													  summon_status.curball = B_ADDR;
+												  }
+												break;
+											case C_ADDR:
+												  if((summon_status.ballA_rcvtotal == EMPTY)&&(summon_status.ballB_rcvtotal == EMPTY))
+												  {
+													  summon_status.curball = C_ADDR;
+												  }
+												  else if((summon_status.ballA_rcvtotal == FULL)&&(summon_status.ballB_rcvtotal == FULL))
+												  {
+													  summon_status.curball = C_ADDR;
+												  }
+												break;	
+										#endif
+										#if 0
+											//tree ball
+											case A_ADDR:
+												  if(summon_status.ballB_rcvtotal == EMPTY)
+												  {
+													  summon_status.curball = A_ADDR;
+												  }
+												  else if(summon_status.ballB_rcvtotal == FULL)
+												  {
+													  summon_status.curball = A_ADDR;
+													   printf("FULL---------------------------------------B_ADDR\n");
+												  }
+												break;
+											case B_ADDR:
+												  if(summon_status.ballA_rcvtotal == EMPTY)
+												  {
+													  summon_status.curball = B_ADDR;
+												  }
+												  else if(summon_status.ballA_rcvtotal == FULL)
+												  {
+													  summon_status.curball = B_ADDR;
+													   printf("FULL---------------------------------------A_ADDR\n");
+												  }
+												break;
+										#endif
+
+										
+										}
+										if(P_data[4] == summon_status.curball)
 										{
 											pthread_mutex_lock(&g_PingMutex);
 											msgcmd_type = CMD_PING;
@@ -655,10 +897,39 @@ int master_cc1101(int argc, char *argv[])
 									}
 								break;
 							case CMD_SUMMONWAVE:
+							case CMD_PATCH:
 									{
 										ActiveSignal(&g_TimerConVar, &g_TimerMutex);
-										if(P_data[4] == summon_status.req_ballnum)
+										if((P_data[4] == summon_status.curball)&&(summon_status.disable_getdata != 1))
 										{
+											switch(summon_status.curball)
+											{
+												case A_ADDR:
+													 summon_status.ballA_rcvtotal++;
+													break;	
+												case B_ADDR:
+													 summon_status.ballB_rcvtotal++;
+													break;	
+												case C_ADDR:
+													 summon_status.ballC_rcvtotal++;
+													break;	
+											}
+											GetReportdata(P_data,(uint8_t *)Reportdata,ReportIndex);
+										}
+										else if((P_data[2] == CMD_PATCH)&&(P_data[4] == summon_status.curball)&&(summon_status.disable_getdata == 1))
+										{
+											switch(summon_status.curball)
+											{
+												case A_ADDR:
+													 summon_status.ballA_rcvtotal++;
+													break;	
+												case B_ADDR:
+													 summon_status.ballB_rcvtotal++;
+													break;	
+												case C_ADDR:
+													 summon_status.ballC_rcvtotal++;
+													break;	
+											}
 											GetReportdata(P_data,(uint8_t *)Reportdata,ReportIndex);
 										}
 									}

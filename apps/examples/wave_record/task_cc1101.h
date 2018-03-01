@@ -55,9 +55,13 @@ struct report_data{
 #endif
 
 struct report_status{
-	uint8_t  req_ballnum;
-	uint8_t  req_sendok;
-	uint8_t  res_rcvtimeout;
+	uint8_t  curball;
+	uint8_t  ballA_rcvtotal;
+	uint8_t  ballB_rcvtotal;
+	uint8_t  ballC_rcvtotal;
+	uint8_t  curball_sendok;
+	uint8_t  curball_rcvtimeout;
+	uint8_t  disable_getdata;
 };
 
 //report_req
@@ -86,6 +90,23 @@ struct ALIGN report_res{
 	uint16_t data[FRAME_REPORT_SIZE << 1];         
 	uint8_t  endflag;        
 };
+
+
+//patch_req
+struct ALIGN patch_req_head{
+	uint8_t  start_flag;
+	uint8_t  msglen;
+	uint8_t  type;
+	uint8_t  dist;
+	uint8_t  src;
+	//private
+	uint32_t  second; 		    ////定时器中断累计值,第几秒数据
+	uint32_t  pos;           	//0-3999       
+	uint8_t  len;           	//patch 的个数    
+	//patch[max = 32]
+	//uint8_t  endflag;        
+};
+
 
 
 int master_cc1101(int argc, char *argv[]);

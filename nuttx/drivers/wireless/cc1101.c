@@ -605,9 +605,8 @@ struct c1101_rfsettings_s rfSettings = {
 */
 
 
-
 //lhc new3
-uint8_t PA_table[8] = {0x60,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+uint8_t PA_table[8] = {0x8e,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 struct c1101_rfsettings_s rfSettings = {
     .IOCFG2 = 0x06,    // GDO2 output pin configuration
     .IOCFG1 = 0x2e,    // GDO0 output pin configuration
@@ -1998,6 +1997,7 @@ static int fs_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup)
           ret = -EBUSY;
           goto out;
         }
+	  #if 0
       if ((cc1101_interrupt >0)&&(cc1101_rxtx_status.rx_status == SUCCESS)&&(cc1101_buf.g_iReadPos != cc1101_buf.g_iWritePos))
         {
         	cc1101_interrupt--;
@@ -2008,7 +2008,11 @@ static int fs_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup)
 			}
             //CC1101_pollnotify(priv);
         }
-
+	  #endif
+      if (cc1101_buf.g_iReadPos != cc1101_buf.g_iWritePos)
+        {
+            CC1101_pollnotify(priv);
+        }
     }
   else if (fds->priv)
     {
