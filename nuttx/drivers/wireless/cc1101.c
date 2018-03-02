@@ -1241,28 +1241,24 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	int temp = 0;
 	static int crcerror = 0;
 
-	
 	cc1101_timer2_us = *(int*)TIMR2_CNT_ADDR;
 
+	//add by liushuhe 2017.11.30
+	if(cc1101_rxtx_status.workmode == CC1101_MODE_RX)
+	{
 #if 0
 	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 	 int i=0;
 	 for(i=0;i<168*10;i++);
 	boardctl(BOARDIOC_TIME2_PPS_DOWN, 0);
 #endif	 
-	//add by liushuhe 2017.11.30
-	if(cc1101_rxtx_status.workmode == CC1101_MODE_RX)
-	{
 		cc1101_interrupt++;
-		
 		cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXBYTES, &status, 1);
-		//spierr("status=%d\n",status);
 	    if(status&0x7f)
 	    {
 	    	//*(int*)TIMR1_CNT_ADDR= 0;
 			
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, &nbytes, 1);
-			//spierr("nbytes=%d\n",nbytes);
 	    	//nbytes
 			if(nbytes > CC1101_PACKET_MAXTOTALLEN)
 			{
@@ -1275,7 +1271,6 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			
 			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);	
 
-#if 1			
 			if(cc1101_rxtx_status.rxbuf[cc1101_rxtx_status.rx_len-1]&0x80)
 			{
 				if(cc1101_rxtx_status.rx_len != 61)
@@ -1284,41 +1279,29 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 					//3:add+2crcbytes
 					DatePrint(&cc1101_rxtx_status.rxbuf[1],cc1101_rxtx_status.rx_len-3); 
 					cc1101_rxtx_status.rx_status = SUCCESS;
-					//CC1101_pollnotify(cc1101_fd);		
-					//spierr("ok\n");
 				}
 			}
 			else
 			{
-				//cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SFRX);
+				cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SFRX);
 				crcerror++;
-				//spierr("crc<%d>\n",crcerror);
 				cc1101_rxtx_status.rx_len = 0;
 				cc1101_rxtx_status.rx_status = FAIL;
 			}
 			//add by liushuhe 2018.03.01
 			CC1101_pollnotify(cc1101_fd);	
-			
-			//add by liushuhe 2017.12.04	  
-			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
-
-#endif		
+			cc1101_receive((FAR struct cc1101_dev_s *)arg);
 		}
-		#if 0
-		else
+		else if(status&0x80)
 		{
-			//add by liushuhe 2017.12.04	  
-			//cc1101_receive((FAR struct cc1101_dev_s *)arg);
-			//spierr("Error: cc1101 <%d> RX int status=%d  nbytes=%d\n",cc1101_interrupt,status,nbytes);
+			spierr("buf overflow\n");
 		}
-		#endif
+		
 	}
-	
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)
 	{		
 		//wait untill txbyte ok
-		cc1101_rxtx_status.tx_status = SUCCESS;
-		
+		cc1101_rxtx_status.tx_status = SUCCESS;	
 	}
 	else
 	{
@@ -1385,10 +1368,11 @@ int cc1101_init(FAR struct cc1101_dev_s *dev)
   //register isr pin  pin_int=GPIO_GDO2_C1100
   stm32_configgpio(dev->pin_int);
   //stm32_gpiosetevent(dev->pin_int, true, false, true, cc1101_eventcb, dev); 
-  stm32_gpiosetevent(dev->pin_int, false, true, true, cc1101_eventcb, dev); 
+  stm32_gpiosetevent(dev->pin_int, false, true, false, cc1101_eventcb, dev); 
 
   read_cc1101_setrf(dev, dev->rfsettings);
-
+  
+  cc1101_strobe(dev, CC1101_SFRX);
   cc1101_receive(dev);
 
 
@@ -1719,10 +1703,15 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
 	{
 	  packetlen = size;
 	}
+	//add by liushuhe 2018.03.02
+
+	//goto tx mode	
+    cc1101_rxtx_status.workmode  = CC1101_MODE_TX;
+	cc1101_rxtx_status.tx_status = FAIL;
 
 	cc1101_strobe(dev, CC1101_SIDLE);
 	cc1101_strobe(dev, CC1101_SFTX);
-			
+	
 	//len
 	uint8_t len = 0;
 	len = packetlen + 1;
@@ -1731,17 +1720,7 @@ int cc1101_write(FAR struct cc1101_dev_s *dev, const uint8_t *buf, size_t size)
     //addr
     uint8_t addr = 0;
 	addr = _Pcc1101_timemsg_tx->dist;
-	//spierr("addr=%x----------------------\n",addr);
 	cc1101_access(dev, CC1101_TXFIFO, &addr, -1);
-
-
-#if 0
-	int i = 0;
-	for(i=0;i<packetlen;i++)
-	{
-		spierr("<%d>=%x\n",i,buf[i]);
-	}
-#endif
 	
 	//data
 	ret = cc1101_access(dev, CC1101_TXFIFO, (FAR uint8_t *)buf, -(packetlen));
@@ -1759,8 +1738,6 @@ int cc1101_send(FAR struct cc1101_dev_s *dev)
 
 	cc1101_strobe(dev, CC1101_STX);
 
-
-
 	//wait untill txbyte ok
 #if 1
 	do
@@ -1769,6 +1746,7 @@ int cc1101_send(FAR struct cc1101_dev_s *dev)
 	}while((bytes &0x7F) != 0);
 
     //wait send ok
+    while(stm32_gpioread(dev->pin_miso));
 	int i=0;
 	for(i=0;i<168*10;i++);
 	
@@ -1905,16 +1883,9 @@ static ssize_t fs_read(FAR struct file *filep, FAR char *buffer, size_t buflen)
 		ret = lower->ops->read(lower->c1101_dev, (_uint8_t *)buffer, buflen);
 	}
 	
-	if((cc1101_buf.g_iReadPos == cc1101_buf.g_iWritePos)&&(cc1101_interrupt<=0))
-	{
-		//start rx
-		if (lower->ops->setmode_receive != NULL)
-		{
-			lower->ops->setmode_receive(lower->c1101_dev);
-		}
-
-	}
-
+	cc1101_interrupt -= ret;
+	//auto goto rcv mode
+	
 	return ret;
 }
 
@@ -1930,11 +1901,8 @@ static ssize_t fs_write(FAR struct file *filep, FAR const char *buffer, size_t b
 	
 	_Pcc1101_timemsg_tx = (_cc110x_timemsg *)buffer;
 
-	/* TODO: Should we check permissions here? */
-
-	/* Audio write operations get passed directly to the lower-level */
-
-	cc1101_sendmode(lower->c1101_dev);
+	//cc1101_sendmode(lower->c1101_dev);
+	
 	//set data to fifo
 	if (lower->ops->write != NULL)
 	{
@@ -2006,19 +1974,7 @@ static int fs_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup)
           ret = -EBUSY;
           goto out;
         }
-	  #if 0
-      if ((cc1101_interrupt >0)&&(cc1101_rxtx_status.rx_status == SUCCESS)&&(cc1101_buf.g_iReadPos != cc1101_buf.g_iWritePos))
-        {
-        	cc1101_interrupt--;
-        	if((cc1101_buf.g_iReadPos == cc1101_buf.g_iWritePos)&&(cc1101_interrupt<=0))
-        	{
-        		cc1101_interrupt = 0;
-				cc1101_rxtx_status.rx_status = FAIL;
-			}
-            //CC1101_pollnotify(priv);
-        }
-	  #endif
-      if (cc1101_buf.g_iReadPos != cc1101_buf.g_iWritePos)
+        if(cc1101_buf.g_iReadPos != cc1101_buf.g_iWritePos)
         {
             CC1101_pollnotify(priv);
         }

@@ -38,6 +38,7 @@ struct report_req		summon_wave_req;
 struct report_res		summon_wave_res;
 struct patch_req_head   patch_head;
 struct report_status	summon_status;
+struct work_status	    work_sts;
 
 pthread_mutex_t g_TimerMutex		= PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  g_TimerConVar		= PTHREAD_COND_INITIALIZER;
@@ -69,7 +70,7 @@ uint8_t   Reportdata_I[REPORTSIZE];
 #define TIMR1_CNT_ADDR 0x40010024
 #define TIMR2_CNT_ADDR 0x40000024
 
-#define POLL_TIMEOUT 	12
+#define POLL_TIMEOUT 	10
 
 #define 	CMD_QUERYONLINE 		0
 #define 	CMD_GETTIMEROFFSET 	1
@@ -93,10 +94,13 @@ uint8_t   Reportdata_I[REPORTSIZE];
 #define 	MSG_START	0xAA
 #define 	MSG_END		0x55
 
-#define 	CMD_READTIME      	 0X01
-#define 	CMD_PING	    	 0X02
-#define 	CMD_SUMMONWAVE    	 0X03
-#define 	CMD_PATCH			 0X04
+#define 	CMD_IDLE      	 	 	 0X00
+#define 	CMD_READTIME      	 	 0X01
+#define 	CMD_PING	    	 	 0X02
+#define 	CMD_SUMMONWAVE    	 	 0X03
+#define 	CMD_SUMMONWAVE_OK    	 0X13
+#define 	CMD_PATCH			 	 0X04
+#define 	CMD_PATCH_OK			 0X14
 
 #define  	GETCC1101BUF_BYTES  0x01
 
@@ -294,6 +298,11 @@ void  calcPatchreport(irqstate_t flags,int fd,uint8_t lost,uint8_t *patchsum,uin
 	char *p	= NULL; 
 	char *phead	= (char*)patchhead; 
 	char *patch	= (char*)patchsum; 
+
+	if(!lost)
+	{
+		return;
+	}
 	
 	//data parsing
 	p_buf=p=(char *)malloc((sizeof(struct patch_req_head)+lost + 1));  
@@ -628,7 +637,7 @@ int report_cc1101(int argc, char *argv[])
 					calcPatchreport(irqflag,fd,lost,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&patch_head,summon_status.curball);			
 				}
 				waitTimeout(&g_TimerConVar, &g_TimerMutex);	
-				waitTimeout(&g_TimerConVar, &g_TimerMutex);	
+				//waitTimeout(&g_TimerConVar, &g_TimerMutex);	
 				printf("<%d>N2<%d>\n",summon_status.curball,lost);
 			}
 		}
@@ -716,8 +725,8 @@ int master_cc1101(int argc, char *argv[])
 
 	int 	timeout_f = 0;
 	int 	ready_f = 0;
-	int 	qqqq = 0;
-	
+	int 	trypatch_n = 0;
+	int 	old_lost = 0;
 	struct timespec clock;
 				
     boardctl(BOARDIOC_TIME2_PPS_INIT, 0);
@@ -769,7 +778,9 @@ int master_cc1101(int argc, char *argv[])
 		printf("ERROR: Failed to start the timer: %d\n", errno);
 	}
 	/* Do we already hold the semaphore? */
-
+	
+	work_sts.work_mode = CMD_READTIME;
+	
 	while(1)
 	{
 		memset(fds, 0, sizeof(struct pollfd));
@@ -793,11 +804,77 @@ int master_cc1101(int argc, char *argv[])
 		else if(poll_ret == 0)
 		{
 			timeout_f = true;	
-			ActiveSignal(&g_TimerConVar, &g_TimerMutex);
 
-			//clock_gettime(CLOCK_REALTIME, &clock1);
-			//printf("1tv_nsec=%d\n",clock1.tv_nsec);
-			//printf("TT\n");
+			//summonwave parsing
+			if(work_sts.work_mode == CMD_SUMMONWAVE)
+			{
+				int res_lost = 0;
+				res_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+				if(res_lost)
+				{
+					work_sts.work_mode = CMD_PATCH;
+					printf("<%d>res_lost=%d\n",summon_status.curball,res_lost);
+					if(res_lost == 96)
+					{
+						continue;
+					}
+				}
+				else
+				{
+					work_sts.work_mode = CMD_SUMMONWAVE_OK;
+				}
+			}
+						
+			//patch parsing
+			if(work_sts.work_mode == CMD_PATCH)
+			{
+				int patch_lost = 0;
+				patch_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+				if(old_lost == patch_lost)
+				{
+					if(++trypatch_n > 9)
+					{
+						work_sts.work_mode = CMD_PATCH_OK;
+						trypatch_n = 0;
+						old_lost = 0;
+					}
+				}
+				else
+				{
+					old_lost = patch_lost;
+					trypatch_n = 0;
+				}
+
+				if(patch_lost >= 32)
+				{
+					calcPatchreport(flags,fd,32,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&patch_head,summon_status.curball);			
+				}
+				else
+				{
+					calcPatchreport(flags,fd,patch_lost,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&patch_head,summon_status.curball);			
+				}
+				
+				if(patch_lost)
+				{
+					printf("<%d>patch_lost=%d\n",summon_status.curball,patch_lost);
+				}
+				else
+				{
+					work_sts.work_mode = CMD_PATCH_OK;
+					old_lost = 0;
+				}
+			}
+
+			//rcv total
+			if((work_sts.work_mode == CMD_SUMMONWAVE_OK)||(work_sts.work_mode == CMD_PATCH_OK))
+			{
+				int total_lost = 0;
+				total_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+				work_sts.work_mode = CMD_READTIME;
+				printf("\n");
+				printf("<%d>rcv report data:total<%d>\n",summon_status.curball,96-total_lost);
+			}
+			
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
 		{
@@ -818,16 +895,6 @@ int master_cc1101(int argc, char *argv[])
 			{
 				memset(rxbuff, 0, sizeof(rxbuff));
 			   	rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
-#if 0
-				{
-					//int k = 0;
-					//for(k=0;k<rBytes;k++)
-					//{
-					//	printf("<%d>=[%x]\n",k,rxbuff[k]);
-					//}
-					printf("r<%d>\n",rBytes);
-				}
-#endif			
 	            /****************************************************************/
 				int msg_datalen = 0;
 				int ptr = 0;
@@ -842,10 +909,13 @@ int master_cc1101(int argc, char *argv[])
 						{
 							case CMD_READTIME:
 									{
-										wBytes = synctime(flags,fd,fd_timer2,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
-										if(wBytes != sizeof(cc110x_timemsg))
+										if(work_sts.work_mode == CMD_READTIME)
 										{
-											printf("send synctime fail!\n");
+											wBytes = synctime(flags,fd,fd_timer2,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
+											if(wBytes != sizeof(cc110x_timemsg))
+											{
+												printf("send synctime fail!\n");
+											}
 										}
 									}
 								break;
@@ -914,13 +984,13 @@ int master_cc1101(int argc, char *argv[])
 
 										
 										}
-										if(P_data[4] == summon_status.curball)
-										{
-											pthread_mutex_lock(&g_PingMutex);
-											msgcmd_type = CMD_PING;
-											pthread_cond_signal(&g_PingConVar);
-											pthread_mutex_unlock(&g_PingMutex);
-										}
+										summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
+										work_sts.work_mode = CMD_SUMMONWAVE;
+										memset(ReportIndex,0,sizeof(ReportIndex));
+										memset(Reportdata,0,sizeof(Reportdata));
+										memset(Reportdata_V,0,sizeof(Reportdata_V));
+										memset(Reportdata_I,0,sizeof(Reportdata_I));
+										printf("<%d>summon_wave\n",summon_status.curball);
 									}
 								break;
 							case CMD_SUMMONWAVE:

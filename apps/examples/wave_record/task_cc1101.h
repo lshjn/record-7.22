@@ -54,6 +54,11 @@ struct report_data{
 };
 #endif
 
+struct work_status{
+	uint8_t  work_mode;
+};
+
+
 struct report_status{
 	uint8_t  summon_status;
 
