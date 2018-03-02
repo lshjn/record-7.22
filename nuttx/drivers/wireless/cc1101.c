@@ -1246,6 +1246,8 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 	//add by liushuhe 2017.11.30
 	if(cc1101_rxtx_status.workmode == CC1101_MODE_RX)
 	{
+			//add by liushuhe 2018.03.01
+			//CC1101_pollnotify(cc1101_fd);	
 #if 0
 	boardctl(BOARDIOC_TIME2_PPS_UP, 0);
 	 int i=0;
@@ -1279,33 +1281,39 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 					//3:add+2crcbytes
 					DatePrint(&cc1101_rxtx_status.rxbuf[1],cc1101_rxtx_status.rx_len-3); 
 					cc1101_rxtx_status.rx_status = SUCCESS;
+			        //CC1101_pollnotify(cc1101_fd);	
 				}
 			}
 			else
 			{
-				cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SFRX);
 				crcerror++;
+				//spierr("crc<%d>\n",crcerror);
 				cc1101_rxtx_status.rx_len = 0;
 				cc1101_rxtx_status.rx_status = FAIL;
 			}
 			//add by liushuhe 2018.03.01
 			CC1101_pollnotify(cc1101_fd);	
-			cc1101_receive((FAR struct cc1101_dev_s *)arg);
 		}
 		else if(status&0x80)
 		{
 			spierr("buf overflow\n");
 		}
-		
+		cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SIDLE);
+		cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SFRX);
+		cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SRX);
 	}
 	else if(cc1101_rxtx_status.workmode == CC1101_MODE_TX)
 	{		
 		//wait untill txbyte ok
-		cc1101_rxtx_status.tx_status = SUCCESS;	
+		cc1101_rxtx_status.tx_status = SUCCESS;
+		cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SIDLE);
+		cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SFRX);
+		cc1101_strobe((FAR struct cc1101_dev_s *)arg, CC1101_SRX);
+		cc1101_rxtx_status.workmode = CC1101_MODE_RX;
 	}
 	else
 	{
-		cc1101_receive((FAR struct cc1101_dev_s *)arg);
+		spierr("error calc\n");
 	}
 	
 	
@@ -1372,6 +1380,7 @@ int cc1101_init(FAR struct cc1101_dev_s *dev)
 
   read_cc1101_setrf(dev, dev->rfsettings);
   
+  cc1101_strobe(dev, CC1101_SIDLE);
   cc1101_strobe(dev, CC1101_SFRX);
   cc1101_receive(dev);
 
@@ -1739,7 +1748,6 @@ int cc1101_send(FAR struct cc1101_dev_s *dev)
 	cc1101_strobe(dev, CC1101_STX);
 
 	//wait untill txbyte ok
-#if 1
 	do
 	{
 		cc1101_access(dev, CC1101_TXBYTES, &bytes, 1);
@@ -1749,18 +1757,6 @@ int cc1101_send(FAR struct cc1101_dev_s *dev)
     while(stm32_gpioread(dev->pin_miso));
 	int i=0;
 	for(i=0;i<168*10;i++);
-	
-#endif
-
-#if 0
-	while( SUCCESS != cc1101_rxtx_status.tx_status)
-	{
-		;
-	}
-#endif
-
-	//goto recv
-	cc1101_receive(dev);
 
 	return cc1101_rxtx_status.tx_len;
 }
@@ -1976,7 +1972,7 @@ static int fs_poll(FAR struct file *filep, FAR struct pollfd *fds,bool setup)
         }
         if(cc1101_buf.g_iReadPos != cc1101_buf.g_iWritePos)
         {
-            CC1101_pollnotify(priv);
+            //CC1101_pollnotify(priv);
         }
     }
   else if (fds->priv)

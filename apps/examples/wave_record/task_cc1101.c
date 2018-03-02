@@ -70,7 +70,6 @@ uint8_t   Reportdata_I[REPORTSIZE];
 #define TIMR1_CNT_ADDR 0x40010024
 #define TIMR2_CNT_ADDR 0x40000024
 
-#define POLL_TIMEOUT 	10
 
 #define 	CMD_QUERYONLINE 		0
 #define 	CMD_GETTIMEROFFSET 	1
@@ -110,6 +109,7 @@ static		uint32_t	patch_pos = 0;
 
 static		uint32_t	msgcmd_type = 0;
 static		uint32_t	rcv_timeout = false;
+static		uint32_t	POLL_TIMEOUT = 10;
 
 	struct timespec clock1;
 	struct timespec clock2;
@@ -816,7 +816,7 @@ int master_cc1101(int argc, char *argv[])
 					printf("<%d>res_lost=%d\n",summon_status.curball,res_lost);
 					if(res_lost == 96)
 					{
-						continue;
+						//continue;
 					}
 				}
 				else
@@ -853,10 +853,18 @@ int master_cc1101(int argc, char *argv[])
 				{
 					calcPatchreport(flags,fd,patch_lost,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&patch_head,summon_status.curball);			
 				}
+				//change poll timeout
+				//POLL_TIMEOUT = 3*patch_lost;
 				
 				if(patch_lost)
 				{
-					printf("<%d>patch_lost=%d\n",summon_status.curball,patch_lost);
+					static int time_old = 0;
+					int time_diff = 0;
+					clock_gettime(CLOCK_REALTIME, &clock1);
+					time_diff = clock1.tv_nsec/1000000 - time_old;
+					time_old =  clock1.tv_nsec/1000000;
+						
+					printf("<%d>patch_lost=%d,ms=%d\n",summon_status.curball,patch_lost,time_diff);
 				}
 				else
 				{
@@ -864,7 +872,6 @@ int master_cc1101(int argc, char *argv[])
 					old_lost = 0;
 				}
 			}
-
 			//rcv total
 			if((work_sts.work_mode == CMD_SUMMONWAVE_OK)||(work_sts.work_mode == CMD_PATCH_OK))
 			{
@@ -891,7 +898,7 @@ int master_cc1101(int argc, char *argv[])
 				ready_f = true;
 			}
 
-			ret = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen);
+			while((ret = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen)))
 			{
 				memset(rxbuff, 0, sizeof(rxbuff));
 			   	rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
