@@ -109,7 +109,7 @@ static		uint32_t	patch_pos = 0;
 
 static		uint32_t	msgcmd_type = 0;
 static		uint32_t	rcv_timeout = false;
-static		uint32_t	POLL_TIMEOUT = 15;
+static		uint32_t	POLL_TIMEOUT = 20;
 
 	struct timespec clock1;
 	struct timespec clock2;
