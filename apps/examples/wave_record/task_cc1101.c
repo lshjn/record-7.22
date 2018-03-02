@@ -508,6 +508,7 @@ int  summon_wave(irqstate_t flags,int fd,struct report_req * P_summon_wave_req,u
 
 	return wBytes;
 }
+#if 0
 /****************************************************************************
  * report_cc1101
  * liushuhe
@@ -694,7 +695,7 @@ int report_cc1101(int argc, char *argv[])
 		printf("<%d>rcv total1=<%d>,<%d>\n",summon_status.curball,total,total2);
 	}
 }
-
+#endif
 /****************************************************************************
  * master_cc1101
  * liushuhe
@@ -870,9 +871,34 @@ int master_cc1101(int argc, char *argv[])
 				int total_lost = 0;
 				total_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
 				work_sts.work_mode = CMD_READTIME;
+				switch(summon_status.curball)
+				{
+					case A_ADDR:
+						 summon_status.ballA_rcvtotal = 96-total_lost;
+						 summon_status.ballA_rcvState = ACK;
+						break;
+					case B_ADDR:
+						 summon_status.ballB_rcvtotal = 96-total_lost;
+						 summon_status.ballB_rcvState = ACK;
+						break;
+					case C_ADDR:
+						 summon_status.ballC_rcvtotal = 96-total_lost;
+						 summon_status.ballC_rcvState = ACK;
+						break;
+				}
 				printf("\n");
 				printf("<%d>rcv report data:total<%d>\n",summon_status.curball,96-total_lost);
 				printf("\n");
+				if((summon_status.ballA_rcvState == ACK)&&
+				    (summon_status.ballB_rcvState == ACK)&&
+					(summon_status.ballC_rcvState == ACK))
+				{
+					 summon_status.ballA_rcvState = ACK;
+					 summon_status.ballB_rcvState = ACK;
+					 summon_status.ballC_rcvState = ACK;
+					 printf("report seuccess:ballA<%d>,ballB<%d>ballC<%d>\n",summon_status.ballA_rcvtotal,
+					 						  summon_status.ballB_rcvtotal,summon_status.ballC_rcvtotal);
+				}
 			}
 			
 		}
@@ -908,131 +934,98 @@ int master_cc1101(int argc, char *argv[])
 						switch(P_data[2])
 						{
 							case CMD_READTIME:
+								if(work_sts.work_mode == CMD_READTIME)
+								{
+									wBytes = synctime(flags,fd,fd_timer2,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
+									if(wBytes != sizeof(cc110x_timemsg))
 									{
-										if(work_sts.work_mode == CMD_READTIME)
-										{
-											wBytes = synctime(flags,fd,fd_timer2,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
-											if(wBytes != sizeof(cc110x_timemsg))
-											{
-												printf("send synctime fail!\n");
-											}
-										}
+										printf("send synctime fail!\n");
 									}
+								}
 								break;
 							case CMD_PING:
+								if(work_sts.work_mode == CMD_READTIME)
+								{
+									switch(P_data[4])
 									{
-										switch(P_data[4])
-										{
-										#if 1
-											//three ball
-											case A_ADDR:
-												  if((summon_status.ballB_rcvtotal == EMPTY)&&(summon_status.ballC_rcvtotal == EMPTY))
-												  {
-													  summon_status.curball = A_ADDR;
-												  }
-												  else if((summon_status.ballB_rcvtotal == FULL)&&(summon_status.ballC_rcvtotal == FULL))
-												  {
-													  summon_status.curball = A_ADDR;
-												  }
-												break;
-											case B_ADDR:
-												  if((summon_status.ballA_rcvtotal == EMPTY)&&(summon_status.ballC_rcvtotal == EMPTY))
-												  {
-													  summon_status.curball = B_ADDR;
-												  }
-												  else if((summon_status.ballA_rcvtotal == FULL)&&(summon_status.ballC_rcvtotal == FULL))
-												  {
-													  summon_status.curball = B_ADDR;
-												  }
-												break;
-											case C_ADDR:
-												  if((summon_status.ballA_rcvtotal == EMPTY)&&(summon_status.ballB_rcvtotal == EMPTY))
-												  {
-													  summon_status.curball = C_ADDR;
-												  }
-												  else if((summon_status.ballA_rcvtotal == FULL)&&(summon_status.ballB_rcvtotal == FULL))
-												  {
-													  summon_status.curball = C_ADDR;
-												  }
-												break;	
-										#endif
-										#if 0
-											//tree ball
-											case A_ADDR:
-												  if(summon_status.ballB_rcvtotal == EMPTY)
-												  {
-													  summon_status.curball = A_ADDR;
-												  }
-												  else if(summon_status.ballB_rcvtotal == FULL)
-												  {
-													  summon_status.curball = A_ADDR;
-													   printf("FULL---------------------------------------B_ADDR\n");
-												  }
-												break;
-											case B_ADDR:
-												  if(summon_status.ballA_rcvtotal == EMPTY)
-												  {
-													  summon_status.curball = B_ADDR;
-												  }
-												  else if(summon_status.ballA_rcvtotal == FULL)
-												  {
-													  summon_status.curball = B_ADDR;
-													   printf("FULL---------------------------------------A_ADDR\n");
-												  }
-												break;
-										#endif
+										//three ball
+										case A_ADDR:
+											  if((summon_status.ballB_rcvState == NOACK)&&(summon_status.ballC_rcvState == NOACK))
+											  {
+												  summon_status.curball = A_ADDR;
+											  }
+											  else if(summon_status.ballC_rcvState == ACK)
+											  {
+												  summon_status.curball = A_ADDR;
+											  }
+											break;
+										case B_ADDR:
+											  if((summon_status.ballC_rcvState == NOACK)&&(summon_status.ballA_rcvState == NOACK))
+											  {
+												  summon_status.curball = B_ADDR;
+											  }
+											  else if(summon_status.ballA_rcvState == ACK)
+											  {
+												  summon_status.curball = B_ADDR;
+											  }
+											break;
+										case C_ADDR:
+											  if((summon_status.ballA_rcvState == NOACK)&&(summon_status.ballB_rcvState == NOACK))
+											  {
+												  summon_status.curball = C_ADDR;
+											  }
+											  else if(summon_status.ballB_rcvState == ACK)
+											  {
+												  summon_status.curball = C_ADDR;
+											  }
+											break;	
 
-										
-										}
-										summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
-										work_sts.work_mode = CMD_SUMMONWAVE;
-										memset(ReportIndex,0,sizeof(ReportIndex));
-										memset(Reportdata,0,sizeof(Reportdata));
-										memset(Reportdata_V,0,sizeof(Reportdata_V));
-										memset(Reportdata_I,0,sizeof(Reportdata_I));
-										printf("<%d>summon_wave\n",summon_status.curball);
 									}
+									summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
+									work_sts.work_mode = CMD_SUMMONWAVE;
+									memset(ReportIndex,0,sizeof(ReportIndex));
+									memset(Reportdata,0,sizeof(Reportdata));
+									memset(Reportdata_V,0,sizeof(Reportdata_V));
+									memset(Reportdata_I,0,sizeof(Reportdata_I));
+									printf("<%d>summon_wave\n",summon_status.curball);
+								}
 								break;
 							case CMD_SUMMONWAVE:
-
-										if(P_data[4] == summon_status.curball)
-										{
-											switch(summon_status.curball)
-											{
-												case A_ADDR:
-													 summon_status.ballA_rcvtotal++;
-													break;	
-												case B_ADDR:
-													 summon_status.ballB_rcvtotal++;
-													break;	
-												case C_ADDR:
-													 summon_status.ballC_rcvtotal++;
-													break;	
-											}
-											summon_status.summon_status = ACK;
-											GetReportdata(P_data,(uint8_t *)&Reportdata,(uint8_t *)&ReportIndex);
-										}
-									break;
-							case CMD_PATCH:
+								if(P_data[4] == summon_status.curball)
+								{
+									switch(summon_status.curball)
 									{
-										if(P_data[4] == summon_status.curball)
-										{
-											switch(summon_status.curball)
-											{
-												case A_ADDR:
-													 summon_status.ballA_rcvtotal++;
-													break;	
-												case B_ADDR:
-													 summon_status.ballB_rcvtotal++;
-													break;	
-												case C_ADDR:
-													 summon_status.ballC_rcvtotal++;
-													break;	
-											}
-											GetReportdata(P_data,(uint8_t *)&Reportdata,(uint8_t *)&ReportIndex);
-										}
+										case A_ADDR:
+											 summon_status.ballA_rcvtotal++;
+											break;	
+										case B_ADDR:
+											 summon_status.ballB_rcvtotal++;
+											break;	
+										case C_ADDR:
+											 summon_status.ballC_rcvtotal++;
+											break;	
 									}
-								break;		
+									GetReportdata(P_data,(uint8_t *)&Reportdata,(uint8_t *)&ReportIndex);
+								}
+								break;
+							case CMD_PATCH:
+								if(P_data[4] == summon_status.curball)
+								{
+									switch(summon_status.curball)
+									{
+										case A_ADDR:
+											 summon_status.ballA_rcvtotal++;
+											break;	
+										case B_ADDR:
+											 summon_status.ballB_rcvtotal++;
+											break;	
+										case C_ADDR:
+											 summon_status.ballC_rcvtotal++;
+											break;	
+									}
+									GetReportdata(P_data,(uint8_t *)&Reportdata,(uint8_t *)&ReportIndex);
+								}
+							break;		
 						}
 					}
 				}

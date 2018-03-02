@@ -187,7 +187,7 @@ int wave_record_main(int argc, FAR char *argv[])
       printf("master_CC1101: ERROR: Failed to start CC1101: %d\n",errcode);
       return EXIT_FAILURE;
     }
-
+#if 0
 	ret = task_create("report_cc1101", CONFIG_EXAMPLES_CC1101_PRIORITY,
 					CONFIG_EXAMPLES_CC1101_STACKSIZE, report_cc1101,
 					NULL);
@@ -197,7 +197,7 @@ int wave_record_main(int argc, FAR char *argv[])
 	  printf("report_cc1101: ERROR: Failed to start CC1101: %d\n",errcode);
 	  return EXIT_FAILURE;
 	}
-
+#endif
 
   
 	int cnt = 0;
@@ -208,7 +208,7 @@ int wave_record_main(int argc, FAR char *argv[])
   		usleep(2000*1000);
 		boardctl(BOARDIOC_LED4_OFF, 0);
   		usleep(2000*1000);
-		printf("<%d>----------------------------------------<%d>\n",cnt,cnt);
+		printf("wdog---------wdog------<%d>\n",cnt);
   }
 
   return EXIT_SUCCESS;

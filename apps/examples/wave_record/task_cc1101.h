@@ -60,17 +60,14 @@ struct work_status{
 
 
 struct report_status{
-	uint8_t  summon_status;
-
 	uint8_t  curball;
 	uint8_t  ballA_rcvtotal;
 	uint8_t  ballB_rcvtotal;
 	uint8_t  ballC_rcvtotal;
 	
-	uint8_t  curball_sendok;
-	uint8_t  curball_rcvtimeout;
-	uint8_t  disable_getdata;
-	
+	uint8_t  ballA_rcvState;
+	uint8_t  ballB_rcvState;
+	uint8_t  ballC_rcvState;
 };
 
 //report_req
