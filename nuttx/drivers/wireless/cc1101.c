@@ -1376,7 +1376,7 @@ int cc1101_init(FAR struct cc1101_dev_s *dev)
   //register isr pin  pin_int=GPIO_GDO2_C1100
   stm32_configgpio(dev->pin_int);
   //stm32_gpiosetevent(dev->pin_int, true, false, true, cc1101_eventcb, dev); 
-  stm32_gpiosetevent(dev->pin_int, false, true, false, cc1101_eventcb, dev); 
+  stm32_gpiosetevent(dev->pin_int, false, true, true, cc1101_eventcb, dev); 
 
   read_cc1101_setrf(dev, dev->rfsettings);
   
@@ -1754,7 +1754,7 @@ int cc1101_send(FAR struct cc1101_dev_s *dev)
 	}while((bytes &0x7F) != 0);
 
     //wait send ok
-    while(stm32_gpioread(dev->pin_miso));
+    //while(stm32_gpioread(dev->pin_miso));
 	int i=0;
 	for(i=0;i<168*10;i++);
 

@@ -60,6 +60,8 @@ struct work_status{
 
 
 struct report_status{
+	uint8_t  enAsk;
+	
 	uint8_t  curball;
 	uint8_t  ballA_rcvtotal;
 	uint8_t  ballB_rcvtotal;
