@@ -48,6 +48,8 @@ pthread_cond_t  g_TimerConVar		= PTHREAD_COND_INITIALIZER;
 pthread_mutex_t g_PingMutex		= PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  g_PingConVar		= PTHREAD_COND_INITIALIZER;
 
+pthread_mutex_t g_SummonMutex		= PTHREAD_MUTEX_INITIALIZER;
+
 //#define    REPORTSIZE  1920
 #define    REPORTSIZE  2000
 
@@ -112,7 +114,7 @@ static		uint32_t	patch_pos = 0;
 static		uint32_t	msgcmd_type = 0;
 static		uint32_t	rcv_timeout = false;
 
-#define		TIMEOUT_VALUE		20
+#define		TIMEOUT_VALUE		10
 static		uint32_t	POLL_TIMEOUT = TIMEOUT_VALUE;
 
 	struct timespec clock1;
@@ -381,6 +383,7 @@ int thread_waitnms(pthread_cond_t *cond,pthread_mutex_t *mutex,int nms)
 	struct timespec ts;
 	int status;
 	int ret = 0;
+	int time_ms = nms;
 
 	status = pthread_mutex_lock(mutex);
 	if (status != 0)
@@ -394,9 +397,9 @@ int thread_waitnms(pthread_cond_t *cond,pthread_mutex_t *mutex,int nms)
 		printf("thread_waiter: ERROR clock_gettime failed\n");
 	}
 	
-	//sleep 10ms
-	ts.tv_sec += 0;
-	ts.tv_nsec += 1000 * 1000 * nms;
+	//sleep nms
+	ts.tv_sec += time_ms/1000;
+	ts.tv_nsec += 1000 * 1000 * (time_ms%1000);
 
 	//wait awake
 	status = pthread_cond_timedwait(cond, mutex, &ts);
@@ -407,7 +410,7 @@ int thread_waitnms(pthread_cond_t *cond,pthread_mutex_t *mutex,int nms)
 	{
 		if (status == ETIMEDOUT)
 		{
-			  //printf("5ms timed out\n");
+			  printf("<%d>ms timed out\n",nms);
 			  ret = 1;
 		}
 		else
@@ -419,7 +422,7 @@ int thread_waitnms(pthread_cond_t *cond,pthread_mutex_t *mutex,int nms)
 	}
 	else
 	{
-		printf("sig\n");
+	   printf("sig\n");
 	   ret = 2;
 	}
 
@@ -548,7 +551,7 @@ int   initSummonState(void)
 	patch_systick =systick;
 	patch_pos = 10;
 
-	//summon_status.enAsk = true;
+	summon_status.enAsk = true;
 }
 
 /****************************************************************************
@@ -569,7 +572,7 @@ int report_cc1101(int argc, char *argv[])
 		
 		initSummonState();
 
-		thread_waitnms(&g_TimerConVar, &g_TimerMutex,6*1000);
+		thread_waitnms(&g_TimerConVar, &g_TimerMutex,5*1000);
 		
 		summon_status.enAsk = false;
 		
@@ -701,7 +704,9 @@ int master_cc1101(int argc, char *argv[])
 		}
 		else if(poll_ret == 0)
 		{
-			timeout_f = true;	
+			timeout_f = true;
+			//lock 
+			pthread_mutex_lock(&g_SummonMutex);
 			#if 0
 			//get timeout
 			static int time_old = 0;
@@ -805,7 +810,7 @@ int master_cc1101(int argc, char *argv[])
 					  ActiveSignal(&g_TimerConVar, &g_TimerMutex);
 				}
 			}
-			
+			pthread_mutex_unlock(&g_SummonMutex);
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
 		{
@@ -851,28 +856,55 @@ int master_cc1101(int argc, char *argv[])
 							case CMD_PING:
 								msgcmd_type = CMD_PING;
 								ActiveSignal(&g_PingConVar,&g_PingMutex);
-								if((work_sts.work_mode == CMD_READTIME)&&(summon_status.enAsk == true))
+								if((summon_status.enAsk == true)&&(work_sts.work_mode == CMD_READTIME))
 								{
-									switch(P_data[4])
+									if(!pthread_mutex_trylock(&g_SummonMutex))
 									{
-										//three ball
-										case A_ADDR:
-											  summon_status.curball = A_ADDR;
-											break;
-										case B_ADDR:
-											  summon_status.curball = B_ADDR;
-											break;
-										case C_ADDR:
-											  summon_status.curball = C_ADDR;
-											break;	
+										switch(P_data[4])
+										{
+											//three ball
+											case A_ADDR:
+												if(summon_status.ballA_rcvState != ACK)
+												{
+												  	summon_status.curball = A_ADDR;
+													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
+													work_sts.work_mode = CMD_SUMMONWAVE;
+													memset(ReportIndex,0,sizeof(ReportIndex));
+													memset(Reportdata,0,sizeof(Reportdata));
+													memset(Reportdata_V,0,sizeof(Reportdata_V));
+													memset(Reportdata_I,0,sizeof(Reportdata_I));
+													printf("<%d>summon_wave\n",summon_status.curball);
+												}
+												break;
+											case B_ADDR:
+												if(summon_status.ballB_rcvState != ACK)
+												{
+												    summon_status.curball = B_ADDR;
+													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
+													work_sts.work_mode = CMD_SUMMONWAVE;
+													memset(ReportIndex,0,sizeof(ReportIndex));
+													memset(Reportdata,0,sizeof(Reportdata));
+													memset(Reportdata_V,0,sizeof(Reportdata_V));
+													memset(Reportdata_I,0,sizeof(Reportdata_I));
+													printf("<%d>summon_wave\n",summon_status.curball);
+												}
+												break;
+											case C_ADDR:
+												if(summon_status.ballC_rcvState != ACK)
+												{
+												    summon_status.curball = C_ADDR;
+													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
+													work_sts.work_mode = CMD_SUMMONWAVE;
+													memset(ReportIndex,0,sizeof(ReportIndex));
+													memset(Reportdata,0,sizeof(Reportdata));
+													memset(Reportdata_V,0,sizeof(Reportdata_V));
+													memset(Reportdata_I,0,sizeof(Reportdata_I));
+													printf("<%d>summon_wave\n",summon_status.curball);
+												}
+												break;	
+										}
+										pthread_mutex_unlock(&g_SummonMutex);
 									}
-									summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
-									work_sts.work_mode = CMD_SUMMONWAVE;
-									memset(ReportIndex,0,sizeof(ReportIndex));
-									memset(Reportdata,0,sizeof(Reportdata));
-									memset(Reportdata_V,0,sizeof(Reportdata_V));
-									memset(Reportdata_I,0,sizeof(Reportdata_I));
-									printf("<%d>summon_wave\n",summon_status.curball);
 								}
 								break;
 							case CMD_SUMMONWAVE:
