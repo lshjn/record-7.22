@@ -561,6 +561,10 @@ int   initSummonState(void)
  ****************************************************************************/
 int report_cc1101(int argc, char *argv[])
 {
+	unsigned int total = 0;
+	unsigned int success = 0;
+	unsigned int fail = 0;
+
 	while(1)
 	{
 		waitping(&g_PingConVar,&g_PingMutex);
@@ -571,7 +575,9 @@ int report_cc1101(int argc, char *argv[])
 		}
 		
 		initSummonState();
-
+		
+		total++;
+		
 		thread_waitnms(&g_TimerConVar, &g_TimerMutex,5*1000);
 		
 		summon_status.enAsk = false;
@@ -580,6 +586,8 @@ int report_cc1101(int argc, char *argv[])
 		    (summon_status.ballB_rcvtotal == FULL)&&
 			(summon_status.ballC_rcvtotal == FULL))
 		{
+			success++;
+			
 			printf("report SUCCESS:ballA<%d>,ballB<%d>ballC<%d>\n",
 										summon_status.ballA_rcvtotal,
 									    summon_status.ballB_rcvtotal,
@@ -587,11 +595,16 @@ int report_cc1101(int argc, char *argv[])
 		}
 		else
 		{
+			fail++;
+			
 			printf("report FAIL:ballA<%d>,ballB<%d>ballC<%d>\n",
 										summon_status.ballA_rcvtotal,
 									    summon_status.ballB_rcvtotal,
 									    summon_status.ballC_rcvtotal);
 		}
+		
+		printf("SUMMON ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",total,success,fail);
+		
 	}
 }
 
@@ -800,9 +813,7 @@ int master_cc1101(int argc, char *argv[])
 						 summon_status.ballC_rcvState = ACK;
 						break;
 				}
-				printf("\n");
-				printf("<%d>rcv:total<%d>\n",summon_status.curball,FULL-total_lost);
-				printf("\n");
+				printf("<%d>rcv<%d>\n",summon_status.curball,FULL-total_lost);
 				if((summon_status.ballA_rcvState == ACK)&&
 				    (summon_status.ballB_rcvState == ACK)&&
 					(summon_status.ballC_rcvState == ACK))
