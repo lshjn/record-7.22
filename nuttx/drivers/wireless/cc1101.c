@@ -693,6 +693,7 @@ struct cc1101_status
 	
     uint8_t rxbuf[200]; 
 
+	int		rx_len_drv;
 	int		rx_len;
 	int		tx_len;
 };
@@ -1182,41 +1183,43 @@ void cc1101_setpacketctrl(FAR struct cc1101_dev_s *dev)
   /* WOREVT1:WOREVT0 - 16-bit timeout register */
 }
 
-extern int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr);
 #define 	MSG_START		0xAA
 #define 	MSG_END			0x55
 #define 	CMD_READTIME    0X01
 #define     CC1101_SYNCCODE_US  10
 
+
+extern int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr);
+
 void modifyTimer_us(uint32_t  timer2_us)
 {
     /****************************************************************/
-    char 	*P_data = NULL;
-	int 	msg_datalen = 0;
-	int 	loop = 0;
-	int 	ptr = 0;
-	int 	rBytes = 0;
+    char 	*kp_data = NULL;
+	int 	kmsg_datalen = 0;
+	int 	kloop = 0;
+	int 	kptr = 0;
+	int 	krBytes = 0;
 
-	rBytes = cc1101_rxtx_status.rx_len;
+	krBytes = cc1101_rxtx_status.rx_len;
 	do
 	{
-		msg_datalen = GetmsgStartaddrAndLen(&cc1101_rxtx_status.rxbuf[ptr],rBytes,&P_data);
-		ptr += msg_datalen;
-		rBytes -= msg_datalen;
-		if(MSG_START == P_data[0])
+		kmsg_datalen = GetmsgStartaddrAndLen(&cc1101_rxtx_status.rxbuf[kptr],krBytes,&kp_data);
+		kptr += kmsg_datalen;
+		krBytes -= kmsg_datalen;
+		if(MSG_START == kp_data[0])
 		{
-			switch(P_data[2])
+			switch(kp_data[2])
 			{
 				case CMD_READTIME:
 						{
-							_Pcc1101_timemsg_timer_rx = (_cc110x_timemsg *)P_data;
+							_Pcc1101_timemsg_timer_rx = (_cc110x_timemsg *)kp_data;
 							_Pcc1101_timemsg_timer_rx->us = (timer2_us - _Pcc1101_timemsg_timer_rx->us - CC1101_SYNCCODE_US);
-						}
+				        }
 					break;
 			}
 		}					
 	}
-	while(rBytes >0);			
+	while(krBytes >0);			
 }
 
 /****************************************************************************
@@ -1268,18 +1271,20 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			}
 			else
 			{
-				cc1101_rxtx_status.rx_len = nbytes+2;
+				cc1101_rxtx_status.rx_len_drv = nbytes+2;
+				cc1101_rxtx_status.rx_len = cc1101_rxtx_status.rx_len_drv - 3;
 			}
 			
-			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len);	
+			cc1101_access((FAR struct cc1101_dev_s *)arg, CC1101_RXFIFO, cc1101_rxtx_status.rxbuf, (cc1101_rxtx_status.rx_len_drv > sizeof(cc1101_rxtx_status.rxbuf)) ? sizeof(cc1101_rxtx_status.rxbuf) : cc1101_rxtx_status.rx_len_drv);	
 
-			if(cc1101_rxtx_status.rxbuf[cc1101_rxtx_status.rx_len-1]&0x80)
+			if(cc1101_rxtx_status.rxbuf[cc1101_rxtx_status.rx_len_drv-1]&0x80)
 			{
-				if(cc1101_rxtx_status.rx_len != 61)
+				if(cc1101_rxtx_status.rx_len_drv != 61)
 				{
+					//input 
 					modifyTimer_us(cc1101_timer2_us);
 					//3:add+2crcbytes
-					DatePrint(&cc1101_rxtx_status.rxbuf[1],cc1101_rxtx_status.rx_len-3); 
+					DatePrint(&cc1101_rxtx_status.rxbuf[1],cc1101_rxtx_status.rx_len); 
 					cc1101_rxtx_status.rx_status = SUCCESS;
 			        //CC1101_pollnotify(cc1101_fd);	
 				}

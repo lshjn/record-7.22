@@ -202,10 +202,7 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
     //find start_flag fail
 	if(0 == rlen)
 	{
-		while(MSG_START == **start_addr)
-		{
-			*start_addr +=1;	
-		}
+	    **start_addr = NULL;	
 		return nspace;
 	}
 
@@ -834,7 +831,7 @@ int master_cc1101(int argc, char *argv[])
 				int ptr = 0;
 				do
 				{
-					msg_datalen = GetmsgStartaddrAndLen(&rxbuff[ptr],rBytes,(int **)&P_data);				
+					msg_datalen = GetmsgStartaddrAndLen(&rxbuff[ptr],rBytes,&P_data);				
 					ptr += msg_datalen;
 					rBytes -= msg_datalen;
 					if(MSG_START == P_data[0])
