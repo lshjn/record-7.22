@@ -109,7 +109,9 @@ static		uint32_t	patch_pos = 0;
 
 static		uint32_t	msgcmd_type = 0;
 static		uint32_t	rcv_timeout = false;
-static		uint32_t	POLL_TIMEOUT = 20;
+
+#define		TIMEOUT_VALUE		20
+static		uint32_t	POLL_TIMEOUT = TIMEOUT_VALUE;
 
 	struct timespec clock1;
 	struct timespec clock2;
@@ -805,7 +807,14 @@ int master_cc1101(int argc, char *argv[])
 		else if(poll_ret == 0)
 		{
 			timeout_f = true;	
-
+			
+			//get timeout
+			static int time_old = 0;
+			int time_diff = 0;
+			clock_gettime(CLOCK_REALTIME, &clock1);
+			time_diff = clock1.tv_nsec/1000000 - time_old;
+			time_old =  clock1.tv_nsec/1000000;
+			printf("%dms\n",time_diff);
 			//summonwave parsing
 			if(work_sts.work_mode == CMD_SUMMONWAVE)
 			{
@@ -814,7 +823,7 @@ int master_cc1101(int argc, char *argv[])
 				if(res_lost)
 				{
 					work_sts.work_mode = CMD_PATCH;
-					printf("<%d>res_lost=%d\n",summon_status.curball,res_lost);
+					printf("<%d>Rn=%d\n",summon_status.curball,res_lost);
 					if(res_lost == 96)
 					{
 						continue;
@@ -833,17 +842,21 @@ int master_cc1101(int argc, char *argv[])
 				patch_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
 				if(old_lost == patch_lost)
 				{
-					if(++trypatch_n > 9)
+					trypatch_n++;
+					POLL_TIMEOUT +=3; 
+					if(trypatch_n > 9)
 					{
 						work_sts.work_mode = CMD_PATCH_OK;
 						trypatch_n = 0;
 						old_lost = 0;
+						POLL_TIMEOUT = TIMEOUT_VALUE;
 					}
 				}
 				else
 				{
 					old_lost = patch_lost;
 					trypatch_n = 0;
+					POLL_TIMEOUT = TIMEOUT_VALUE;
 				}
 
 				if(patch_lost >= 32)
@@ -857,7 +870,7 @@ int master_cc1101(int argc, char *argv[])
 				
 				if(patch_lost)
 				{
-					printf("<%d>patch_lost=%d\n",summon_status.curball,patch_lost);
+					printf("<%d>Pn=%d\n",summon_status.curball,patch_lost);
 				}
 				else
 				{
