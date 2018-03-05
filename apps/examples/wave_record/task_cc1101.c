@@ -117,9 +117,28 @@ static		uint32_t	rcv_timeout = false;
 #define		TIMEOUT_VALUE		25
 static		uint32_t	POLL_TIMEOUT = TIMEOUT_VALUE;
 
-	struct timespec clock1;
-	struct timespec clock2;
-	struct timespec clock3;
+struct timespec clock1;
+struct timespec clock2;
+struct timespec clock3;
+
+
+unsigned int totalA = 0;
+unsigned int successA = 0;
+unsigned int failA = 0;
+
+unsigned int totalB = 0;
+unsigned int successB = 0;
+unsigned int failB = 0;
+
+unsigned int totalC = 0;
+unsigned int successC = 0;
+unsigned int failC = 0;
+
+unsigned int total = 0;
+unsigned int success = 0;
+unsigned int fail = 0;
+
+
 	
 //readn
 int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
@@ -561,9 +580,6 @@ int   initSummonState(void)
  ****************************************************************************/
 int report_cc1101(int argc, char *argv[])
 {
-	unsigned int total = 0;
-	unsigned int success = 0;
-	unsigned int fail = 0;
 
 	while(1)
 	{
@@ -604,6 +620,9 @@ int report_cc1101(int argc, char *argv[])
 		}
 		
 		printf("SUMMON ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",total,success,fail);
+		printf("A ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",totalA,successA,failA);
+		printf("B ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",totalB,successB,failB);
+		printf("C ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",totalC,successC,failC);
 		
 	}
 }
@@ -641,6 +660,7 @@ int master_cc1101(int argc, char *argv[])
 	int 	ready_f = 0;
 	int 	trypatch_n = 0;
 	int 	old_lost = 0;
+
 	struct timespec clock;
 				
     boardctl(BOARDIOC_TIME2_PPS_INIT, 0);
@@ -812,14 +832,38 @@ int master_cc1101(int argc, char *argv[])
 					case A_ADDR:
 						 summon_status.ballA_rcvtotal = FULL-total_lost;
 						 summon_status.ballA_rcvState = ACK;
+						 if(summon_status.ballA_rcvtotal == FULL)
+						 {
+							 successA++;
+						 }
+						 else
+						 {
+							  failA++;
+						 }
 						break;
 					case B_ADDR:
 						 summon_status.ballB_rcvtotal = FULL-total_lost;
 						 summon_status.ballB_rcvState = ACK;
+						 if(summon_status.ballB_rcvtotal == FULL)
+						 {
+							 successB++;
+						 }
+						 else
+						 {
+							  failB++;
+						 }
 						break;
 					case C_ADDR:
 						 summon_status.ballC_rcvtotal = FULL-total_lost;
 						 summon_status.ballC_rcvState = ACK;
+						 if(summon_status.ballC_rcvtotal == FULL)
+						 {
+							 successC++;
+						 }
+						 else
+						 {
+							  failC++;
+						 }
 						break;
 				}
 				printf("<%d>rcv<%d>\n",summon_status.curball,FULL-total_lost);
@@ -886,6 +930,7 @@ int master_cc1101(int argc, char *argv[])
 											case A_ADDR:
 												if(summon_status.ballA_rcvState != ACK)
 												{
+													totalA++;
 												  	summon_status.curball = A_ADDR;
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
 													work_sts.work_mode = CMD_SUMMONWAVE;
@@ -899,6 +944,7 @@ int master_cc1101(int argc, char *argv[])
 											case B_ADDR:
 												if(summon_status.ballB_rcvState != ACK)
 												{
+													totalB++;
 												    summon_status.curball = B_ADDR;
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
 													work_sts.work_mode = CMD_SUMMONWAVE;
@@ -912,6 +958,7 @@ int master_cc1101(int argc, char *argv[])
 											case C_ADDR:
 												if(summon_status.ballC_rcvState != ACK)
 												{
+													totalC++;
 												    summon_status.curball = C_ADDR;
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
 													work_sts.work_mode = CMD_SUMMONWAVE;
