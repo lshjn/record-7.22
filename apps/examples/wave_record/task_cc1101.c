@@ -114,7 +114,7 @@ static		uint32_t	patch_pos = 0;
 static		uint32_t	msgcmd_type = 0;
 static		uint32_t	rcv_timeout = false;
 
-#define		TIMEOUT_VALUE		10
+#define		TIMEOUT_VALUE		25
 static		uint32_t	POLL_TIMEOUT = TIMEOUT_VALUE;
 
 	struct timespec clock1;
@@ -757,8 +757,17 @@ int master_cc1101(int argc, char *argv[])
 				if(old_lost == patch_lost)
 				{
 					trypatch_n++;
-					POLL_TIMEOUT +=3; 
-					if(trypatch_n > 9)
+					#if 0
+					if(patch_lost >= 32)
+					{
+						POLL_TIMEOUT +=5*32; 
+					}
+					else
+					{
+						POLL_TIMEOUT +=5*patch_lost; 
+					}
+					#endif
+					if(trypatch_n > 20)
 					{
 						work_sts.work_mode = CMD_PATCH_OK;
 						trypatch_n = 0;

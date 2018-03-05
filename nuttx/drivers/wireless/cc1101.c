@@ -1292,7 +1292,7 @@ int cc1101_eventcb(int irq, FAR void *context,FAR void *arg)
 			else
 			{
 				crcerror++;
-				//spierr("crc<%d>\n",crcerror);
+				spierr("crc<%d>\n",crcerror);
 				cc1101_rxtx_status.rx_len = 0;
 				cc1101_rxtx_status.rx_status = FAIL;
 			}
