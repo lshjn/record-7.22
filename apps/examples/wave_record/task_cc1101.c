@@ -194,7 +194,7 @@ int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
 	return (max_len-bytes_left) ;	  
 }
 
-int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
+int GetmsgStartaddrAndLen(char *databuff,int maxlen,char **start_addr)
 {
 	char *ptr = (char*)databuff;
 	int  msglen = maxlen;
@@ -208,7 +208,7 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
     {
 		if(MSG_START == *ptr)
 		{
-			*start_addr = ptr;
+			*start_addr = (char *)ptr;
 			ptr++;
 			rlen++;
 			msglen--;
@@ -223,7 +223,7 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
     //find start_flag fail
 	if(0 == rlen)
 	{
-	    **start_addr = NULL;	
+	    **start_addr = (char )NULL;	
 		return nspace;
 	}
 
@@ -572,7 +572,139 @@ int   initSummonState(void)
 
 	summon_status.enAsk = true;
 }
+int  SummonwaveParsing(struct work_status * workstatus,uint8_t *patchindex,uint8_t *reportindex,int curball)
+{
+	int res_lost = 0;
+	//summonwave parsing
+	if(workstatus->work_mode == CMD_SUMMONWAVE)
+	{
+		res_lost = getPatch(patchindex,reportindex);
+		if(res_lost)
+		{
+			workstatus->work_mode = CMD_PATCH;
+			printf("<%d>Rn=%d\n",curball,res_lost);
+		}
+		else
+		{
+			workstatus->work_mode = CMD_SUMMONWAVE_OK;
+		}
+	}
+	return res_lost;
+}
 
+void PatchParsing(irqstate_t flags,int fd,struct work_status * workstatus,struct patch_req_head * patchhead,uint8_t *patchindex,uint8_t *reportindex,int curball)
+{
+	static int 	trypatch_n = 0;
+	static int 	old_lost = 0;
+	
+	if(workstatus->work_mode == CMD_PATCH)
+	{
+		int patch_lost = 0;
+		patch_lost = getPatch(patchindex,reportindex);
+		if(old_lost == patch_lost)
+		{
+			trypatch_n++;
+			#if 0
+			if(patch_lost >= 32)
+			{
+				POLL_TIMEOUT +=5*32; 
+			}
+			else
+			{
+				POLL_TIMEOUT +=5*patch_lost; 
+			}
+			#endif
+			if(trypatch_n > 20)
+			{
+				workstatus->work_mode = CMD_PATCH_OK;
+				trypatch_n = 0;
+				old_lost = 0;
+				POLL_TIMEOUT = TIMEOUT_VALUE;
+			}
+		}
+		else
+		{
+			old_lost = patch_lost;
+			trypatch_n = 0;
+			POLL_TIMEOUT = TIMEOUT_VALUE;
+		}
+
+		if(patch_lost >= 32)
+		{
+			calcPatchreport(flags,fd,32,patchindex,reportindex,patchhead,curball);			
+		}
+		else
+		{
+			calcPatchreport(flags,fd,patch_lost,patchindex,reportindex,patchhead,curball);			
+		}
+		
+		if(patch_lost)
+		{
+			printf("<%d>Pn=%d\n",curball,patch_lost);
+		}
+		else
+		{
+			workstatus->work_mode = CMD_PATCH_OK;
+			old_lost = 0;
+		}
+	}
+}
+void RcvdataParsing(struct work_status * workstatus,struct report_status *summon,uint8_t *patchindex,uint8_t *reportindex,pthread_cond_t *cond,pthread_mutex_t *mutex)
+{
+	int total_lost = 0;
+	if((workstatus->work_mode == CMD_SUMMONWAVE_OK)||(workstatus->work_mode == CMD_PATCH_OK))
+	{
+		total_lost = getPatch(patchindex,reportindex);
+		workstatus->work_mode = CMD_READTIME;
+		switch(summon->curball)
+		{
+			case A_ADDR:
+				 summon->ballA_rcvtotal = FULL-total_lost;
+				 summon->ballA_rcvState = ACK;
+				 if(summon->ballA_rcvtotal == FULL)
+				 {
+					 successA++;
+				 }
+				 else
+				 {
+					  failA++;
+				 }
+				break;
+			case B_ADDR:
+				 summon->ballB_rcvtotal = FULL-total_lost;
+				 summon->ballB_rcvState = ACK;
+				 if(summon->ballB_rcvtotal == FULL)
+				 {
+					 successB++;
+				 }
+				 else
+				 {
+					  failB++;
+				 }
+				break;
+			case C_ADDR:
+				 summon->ballC_rcvtotal = FULL-total_lost;
+				 summon->ballC_rcvState = ACK;
+				 if(summon->ballC_rcvtotal == FULL)
+				 {
+					 successC++;
+				 }
+				 else
+				 {
+					  failC++;
+				 }
+				break;
+		}
+		printf("<%d>rcv<%d>\n",summon->curball,FULL-total_lost);
+		if((summon->ballA_rcvState == ACK)&&
+		    (summon->ballB_rcvState == ACK)&&
+			(summon->ballC_rcvState == ACK))
+		{
+			  ActiveSignal(cond, mutex);
+		}
+	}
+
+}
 /****************************************************************************
  * report_cc1101
  * liushuhe
@@ -646,7 +778,7 @@ int master_cc1101(int argc, char *argv[])
 	//struct timeval timeout;
 	//fd_set 	rfds;
 	
-    char 	rxbuff[1024*4];
+    char 	rxbuff[1024];
     char 	*P_data = NULL;
 	int 	fd;
 	int 	fd_timer2;
@@ -658,8 +790,6 @@ int master_cc1101(int argc, char *argv[])
 
 	int 	timeout_f = 0;
 	int 	ready_f = 0;
-	int 	trypatch_n = 0;
-	int 	old_lost = 0;
 
 	struct timespec clock;
 				
@@ -750,130 +880,17 @@ int master_cc1101(int argc, char *argv[])
 			printf("%dms\n",time_diff);
 			#endif
 			//summonwave parsing
-			if(work_sts.work_mode == CMD_SUMMONWAVE)
+			int lost = 0;
+			lost = SummonwaveParsing(&work_sts,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,summon_status.curball);	
+			if(lost == FULL)
 			{
-				int res_lost = 0;
-				res_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
-				if(res_lost)
-				{
-					work_sts.work_mode = CMD_PATCH;
-					printf("<%d>Rn=%d\n",summon_status.curball,res_lost);
-					if(res_lost == FULL)
-					{
-						continue;
-					}
-				}
-				else
-				{
-					work_sts.work_mode = CMD_SUMMONWAVE_OK;
-				}
+				continue;
 			}
-						
 			//patch parsing
-			if(work_sts.work_mode == CMD_PATCH)
-			{
-				int patch_lost = 0;
-				patch_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
-				if(old_lost == patch_lost)
-				{
-					trypatch_n++;
-					#if 0
-					if(patch_lost >= 32)
-					{
-						POLL_TIMEOUT +=5*32; 
-					}
-					else
-					{
-						POLL_TIMEOUT +=5*patch_lost; 
-					}
-					#endif
-					if(trypatch_n > 20)
-					{
-						work_sts.work_mode = CMD_PATCH_OK;
-						trypatch_n = 0;
-						old_lost = 0;
-						POLL_TIMEOUT = TIMEOUT_VALUE;
-					}
-				}
-				else
-				{
-					old_lost = patch_lost;
-					trypatch_n = 0;
-					POLL_TIMEOUT = TIMEOUT_VALUE;
-				}
-
-				if(patch_lost >= 32)
-				{
-					calcPatchreport(flags,fd,32,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&patch_head,summon_status.curball);			
-				}
-				else
-				{
-					calcPatchreport(flags,fd,patch_lost,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&patch_head,summon_status.curball);			
-				}
-				
-				if(patch_lost)
-				{
-					printf("<%d>Pn=%d\n",summon_status.curball,patch_lost);
-				}
-				else
-				{
-					work_sts.work_mode = CMD_PATCH_OK;
-					old_lost = 0;
-				}
-			}
+			PatchParsing(flags,fd,&work_sts,&patch_head,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,summon_status.curball);
 			//rcv total
-			if((work_sts.work_mode == CMD_SUMMONWAVE_OK)||(work_sts.work_mode == CMD_PATCH_OK))
-			{
-				int total_lost = 0;
-				total_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
-				work_sts.work_mode = CMD_READTIME;
-				switch(summon_status.curball)
-				{
-					case A_ADDR:
-						 summon_status.ballA_rcvtotal = FULL-total_lost;
-						 summon_status.ballA_rcvState = ACK;
-						 if(summon_status.ballA_rcvtotal == FULL)
-						 {
-							 successA++;
-						 }
-						 else
-						 {
-							  failA++;
-						 }
-						break;
-					case B_ADDR:
-						 summon_status.ballB_rcvtotal = FULL-total_lost;
-						 summon_status.ballB_rcvState = ACK;
-						 if(summon_status.ballB_rcvtotal == FULL)
-						 {
-							 successB++;
-						 }
-						 else
-						 {
-							  failB++;
-						 }
-						break;
-					case C_ADDR:
-						 summon_status.ballC_rcvtotal = FULL-total_lost;
-						 summon_status.ballC_rcvState = ACK;
-						 if(summon_status.ballC_rcvtotal == FULL)
-						 {
-							 successC++;
-						 }
-						 else
-						 {
-							  failC++;
-						 }
-						break;
-				}
-				printf("<%d>rcv<%d>\n",summon_status.curball,FULL-total_lost);
-				if((summon_status.ballA_rcvState == ACK)&&
-				    (summon_status.ballB_rcvState == ACK)&&
-					(summon_status.ballC_rcvState == ACK))
-				{
-					  ActiveSignal(&g_TimerConVar, &g_TimerMutex);
-				}
-			}
+			RcvdataParsing	(&work_sts,&summon_status,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&g_TimerConVar,&g_TimerMutex);
+
 			pthread_mutex_unlock(&g_SummonMutex);
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
@@ -893,6 +910,10 @@ int master_cc1101(int argc, char *argv[])
 
 			while((ret = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen)))
 			{
+				if(cc1101buf_datalen > sizeof(rxbuff))
+				{
+					cc1101buf_datalen = sizeof(rxbuff);
+				}
 				memset(rxbuff, 0, sizeof(rxbuff));
 			   	rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
 	            /****************************************************************/
