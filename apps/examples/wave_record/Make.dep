@@ -8,6 +8,8 @@ wave_record.o: wave_record.c \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/stdbool.h \
  /work/record-7.22/nuttx/include/stdlib.h \
  /work/record-7.22/nuttx/include/sys/types.h \
@@ -42,6 +44,7 @@ wave_record.o: wave_record.c \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -62,7 +65,8 @@ wave_record.o: wave_record.c \
  /work/record-7.22/nuttx/include/nuttx/i2c/i2c_master.h task_flash.h \
  task_adc.h /work/record-7.22/nuttx/include/nuttx/analog/adc.h \
  /work/record-7.22/nuttx/include/poll.h \
- /work/record-7.22/nuttx/include/nuttx/spi/spi.h task_cc1101.h tmp431.h
+ /work/record-7.22/nuttx/include/nuttx/spi/spi.h task_eth.h task_cc1101.h \
+ tmp431.h
 task_4g.o: task_4g.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \
@@ -72,6 +76,8 @@ task_4g.o: task_4g.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/strings.h \
  /work/record-7.22/nuttx/include/string.h \
  /work/record-7.22/nuttx/include/stddef.h \
@@ -109,6 +115,7 @@ task_4g.o: task_4g.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -134,6 +141,8 @@ task_bluetooth.o: task_bluetooth.c \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/stdbool.h \
  /work/record-7.22/nuttx/include/stdlib.h \
  /work/record-7.22/nuttx/include/sys/types.h \
@@ -168,6 +177,7 @@ task_bluetooth.o: task_bluetooth.c \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -183,19 +193,16 @@ task_bluetooth.o: task_bluetooth.c \
  /work/record-7.22/nuttx/include/termios.h \
  /work/record-7.22/nuttx/include/strings.h task_bluetooth.h task_gprs.h \
  task_flash.h
-task_eth.o: task_eth.c /work/record-7.22/nuttx/include/sys/ioctl.h \
+task_eth.o: task_eth.c /work/record-7.22/nuttx/include/sys/wait.h \
+ /work/record-7.22/nuttx/include/sys/types.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \
- /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \
- /work/record-7.22/nuttx/include/nuttx/serial/tioctl.h \
- /work/record-7.22/nuttx/include/stdint.h \
  /work/record-7.22/nuttx/include/nuttx/compiler.h \
+ /work/record-7.22/nuttx/include/stdint.h \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
- /work/record-7.22/nuttx/include/strings.h \
- /work/record-7.22/nuttx/include/string.h \
- /work/record-7.22/nuttx/include/stddef.h \
- /work/record-7.22/nuttx/include/sys/types.h \
+ /work/record-7.22/nuttx/include/signal.h \
+ /work/record-7.22/nuttx/include/time.h \
  /work/record-7.22/nuttx/include/stdlib.h \
  /work/record-7.22/nuttx/include/stdio.h \
  /usr/lib/gcc/arm-none-eabi/4.9.3/include/stdarg.h \
@@ -203,8 +210,6 @@ task_eth.o: task_eth.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/stdbool.h \
  /work/record-7.22/nuttx/include/nuttx/sched.h \
  /work/record-7.22/nuttx/include/queue.h \
- /work/record-7.22/nuttx/include/signal.h \
- /work/record-7.22/nuttx/include/time.h \
  /work/record-7.22/nuttx/include/semaphore.h \
  /work/record-7.22/nuttx/include/pthread.h \
  /work/record-7.22/nuttx/include/sys/prctl.h \
@@ -229,21 +234,16 @@ task_eth.o: task_eth.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
- /work/record-7.22/nuttx/include/fcntl.h \
- /work/record-7.22/nuttx/include/errno.h \
- /work/record-7.22/nuttx/include/nuttx/leds/userled.h \
- /work/record-7.22/nuttx/include/nuttx/board.h \
- /work/record-7.22/nuttx/include/sys/boardctl.h \
- /work/record-7.22/nuttx/include/nuttx/analog/adc.h \
- /work/record-7.22/nuttx/include/poll.h \
- /work/record-7.22/nuttx/include/nuttx/spi/spi.h \
- /work/record-7.22/nuttx/include/nuttx/analog/ioctl.h \
- /work/record-7.22/nuttx/include/nuttx/drivers/pwm.h \
- /work/record-7.22/nuttx/include/fixedmath.h \
- /work/record-7.22/nuttx/include/nuttx/ioexpander/gpio.h
+ /work/record-7.22/nuttx/include/netinet/in.h \
+ /work/record-7.22/nuttx/include/arpa/inet.h \
+ /work/record-7.22/nuttx/include/net/if.h \
+ /work/record-7.22/apps/include/netutils/netlib.h \
+ /work/record-7.22/nuttx/include/nuttx/net/netconfig.h \
+ /work/record-7.22/nuttx/include/errno.h
 task_flash.o: task_flash.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \
@@ -253,6 +253,8 @@ task_flash.o: task_flash.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/strings.h \
  /work/record-7.22/nuttx/include/string.h \
  /work/record-7.22/nuttx/include/stddef.h \
@@ -290,6 +292,7 @@ task_flash.o: task_flash.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -313,6 +316,8 @@ task_gprs.o: task_gprs.c /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/stdbool.h \
  /work/record-7.22/nuttx/include/stdlib.h \
  /work/record-7.22/nuttx/include/sys/types.h \
@@ -347,6 +352,7 @@ task_gprs.o: task_gprs.c /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -375,6 +381,8 @@ task_gps.o: task_gps.c /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/stdbool.h \
  /work/record-7.22/nuttx/include/stdlib.h \
  /work/record-7.22/nuttx/include/sys/types.h \
@@ -409,6 +417,7 @@ task_gps.o: task_gps.c /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -434,6 +443,8 @@ task_i2c_sensor.o: task_i2c_sensor.c \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/strings.h \
  /work/record-7.22/nuttx/include/string.h \
  /work/record-7.22/nuttx/include/stddef.h \
@@ -471,6 +482,7 @@ task_i2c_sensor.o: task_i2c_sensor.c \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -496,6 +508,8 @@ task_monitor.o: task_monitor.c \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/strings.h \
  /work/record-7.22/nuttx/include/string.h \
  /work/record-7.22/nuttx/include/stddef.h \
@@ -533,6 +547,7 @@ task_monitor.o: task_monitor.c \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -559,6 +574,8 @@ task_rtc.o: task_rtc.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/strings.h \
  /work/record-7.22/nuttx/include/string.h \
  /work/record-7.22/nuttx/include/stddef.h \
@@ -596,6 +613,7 @@ task_rtc.o: task_rtc.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -620,6 +638,8 @@ task_sdcard.o: task_sdcard.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/strings.h \
  /work/record-7.22/nuttx/include/string.h \
  /work/record-7.22/nuttx/include/stddef.h \
@@ -657,6 +677,7 @@ task_sdcard.o: task_sdcard.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -681,6 +702,8 @@ task_adc.o: task_adc.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/strings.h \
  /work/record-7.22/nuttx/include/string.h \
  /work/record-7.22/nuttx/include/stddef.h \
@@ -718,6 +741,7 @@ task_adc.o: task_adc.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
@@ -751,6 +775,8 @@ tmp431.o: tmp431.c /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/serial/tioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/fcntl.h \
  /work/record-7.22/nuttx/include/errno.h \
  /work/record-7.22/nuttx/include/unistd.h \
@@ -787,6 +813,8 @@ ds1338.o: ds1338.c /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/serial/tioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/fcntl.h \
  /work/record-7.22/nuttx/include/errno.h \
  /work/record-7.22/nuttx/include/unistd.h \
@@ -816,6 +844,8 @@ task_cc1101.o: task_cc1101.c \
  /work/record-7.22/nuttx/include/arch/types.h \
  /work/record-7.22/nuttx/include/limits.h \
  /work/record-7.22/nuttx/include/arch/limits.h \
+ /work/record-7.22/nuttx/include/nuttx/net/ioctl.h \
+ /work/record-7.22/nuttx/include/nuttx/wireless/ioctl.h \
  /work/record-7.22/nuttx/include/stdbool.h \
  /work/record-7.22/nuttx/include/stdlib.h \
  /work/record-7.22/nuttx/include/sys/types.h \
@@ -850,6 +880,7 @@ task_cc1101.o: task_cc1101.c \
  /work/record-7.22/nuttx/include/syslog.h \
  /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
  /work/record-7.22/nuttx/include/nuttx/net/net.h \
+ /work/record-7.22/nuttx/include/sys/socket.h \
  /work/record-7.22/nuttx/include/arch/arch.h \
  /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
  /work/record-7.22/nuttx/include/nuttx/addrenv.h \
