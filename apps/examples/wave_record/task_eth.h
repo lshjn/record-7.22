@@ -5,7 +5,7 @@
  extern "C" {
 #endif 
 
-
+int report_tcp(int argc, FAR char *argv[]);
 
 #ifdef __cplusplus
 }
