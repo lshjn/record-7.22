@@ -93,7 +93,6 @@ int wave_record_main(int argc, FAR char *argv[])
 #endif
 {
   int ret;
-#if 1
 
   ret = task_create("master_flash", CONFIG_EXAMPLES_FLASH_PRIORITY,
                     CONFIG_EXAMPLES_FLASH_STACKSIZE, master_flash,
@@ -116,7 +115,6 @@ int wave_record_main(int argc, FAR char *argv[])
       printf("master_monitor: ERROR: Failed to start monitor: %d\n",errcode);
       return EXIT_FAILURE;
     }
-#if 1
   ret = task_create("gprs", CONFIG_EXAMPLES_GPRS_PRIORITY,
                     CONFIG_EXAMPLES_GPRS_STACKSIZE, master_gprs,
                     NULL);
@@ -126,7 +124,6 @@ int wave_record_main(int argc, FAR char *argv[])
       printf("gprs_main: ERROR: Failed to start gprs: %d\n",errcode);
       return EXIT_FAILURE;
     }
-#endif  
   ret = task_create("gps", CONFIG_EXAMPLES_GPS_PRIORITY,
                     CONFIG_EXAMPLES_GPS_STACKSIZE, master_gps,
                     NULL);
@@ -196,19 +193,17 @@ int wave_record_main(int argc, FAR char *argv[])
 	  printf("report_cc1101: ERROR: Failed to start CC1101: %d\n",errcode);
 	  return EXIT_FAILURE;
 	}
-#if 1
+	
 	ret = task_create("report_tcp", CONFIG_EXAMPLES_CC1101_PRIORITY,
 					CONFIG_EXAMPLES_CC1101_STACKSIZE, report_tcp,
 					NULL);
 	if (ret < 0)
 	{
 	  int errcode = errno;
-	  printf("report_cc1101: ERROR: Failed to start CC1101: %d\n",errcode);
+	  printf("report_tcp: ERROR: Failed to start report_tcp: %d\n",errcode);
 	  return EXIT_FAILURE;
 	}
-#endif
-
-#endif
+	
 	int cnt = 0;
   while(1)	
   {

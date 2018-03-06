@@ -1,4 +1,3 @@
-
 #include <sys/wait.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -10,17 +9,23 @@
 #include <sys/socket.h>
 #include <net/if.h>
 #include "netutils/netlib.h"
-
-
 #include <debug.h>
 #include <errno.h>
-//#define HTONS(a)       htons(a)
-//#define HTONL(a)       htonl(a)
 
-#define DEVNAME "eth0"
+#define ETH0_DEVNAME "eth0"
+#define CONFIG_ETH0_MACADDR   0x00e0deadbeef
+#define CONFIG_ETH0_IPADDR    0xc0a803f1      //192.168.3.241
+#define CONFIG_ETH0_GATEWAY   0xc0a803f0		//192.168.3.240
+#define CONFIG_ETH0_NETMASK   0xffffff00     //255.255.255.0
+
+#define CONFIG_SVER_IPADDR    0xc0a803f0      //server IP :192.168.1.240
+#define CONFIG_SVER_PORT      5000      		//server port :5000
+
 
 #define BUFSIZE   20
-in_addr_t server_ipv4 = HTONL(0xc0a80140);
+
+in_addr_t server_ipv4 = HTONL(CONFIG_SVER_IPADDR);
+
 
 void tcp_client(void)
 {
@@ -41,25 +46,26 @@ void tcp_client(void)
 
   /* Create a new TCP socket */
 
-  sockfd = socket(PF_INET, SOCK_STREAM, 0);
+  sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0)
     {
       printf("client socket failure %d\n", errno);
     }
 
   /* Set up the server address */
-
+  memset(&server,0,sizeof(server));
+  
   server.sin_family             = AF_INET;
-  server.sin_port               = HTONS(5000);
-  server.sin_addr.s_addr        = (in_addr_t)server_ipv4;
+  server.sin_port               = htons(CONFIG_SVER_PORT);
+  server.sin_addr.s_addr        = inet_addr("192.168.3.240");
   addrlen                       = sizeof(struct sockaddr_in);
 
-  printf("Connecting to IPv4 Address: %08lx\n", (unsigned long)server_ipv4);
+  printf("Connecting to IPv4 Address: %x\n", (unsigned long)server_ipv4);
 
-  if (connect( sockfd, (struct sockaddr*)&server, addrlen) < 0)
-    {
-      printf("client: connect failure: %d\n", errno);
-    }
+  if(connect( sockfd, (struct sockaddr*)&server, addrlen) < 0)
+  {
+	  printf("client: connect failure: %d\n", errno);
+  }
 
   printf("client: Connected\n");
 
@@ -71,17 +77,18 @@ void tcp_client(void)
 
   //for (;;)
     {
-      nbytessent = send(sockfd, outbuf, BUFSIZE, 0);
-      if (nbytessent < 0)
-        {
-          printf("client: send failed: %d\n", errno);
-        }
-      else if (nbytessent != BUFSIZE)
-        {
-          printf("client: Bad send length=%d: %d of \n",nbytessent, BUFSIZE);
-        }
+		nbytessent = send(sockfd, outbuf, BUFSIZE, 0);
+		if (nbytessent < 0)
+		{
+			printf("client: send failed: %d\n", errno);
+		}
+		else if (nbytessent != BUFSIZE)
+		{
+			printf("client: Bad send length=%d: %d of \n",nbytessent, BUFSIZE);
+		}
 
-        printf("Sent %d bytes\n", nbytessent);
+		printf("Sent %d bytes\n", nbytessent);
+		usleep(100*1000);
     }
   printf("client: Terminating\n");
   
@@ -90,44 +97,59 @@ void tcp_client(void)
   return;
 }
 
-
-void nettest_initialize(void)
+static void eth0_set_macaddr(void)
 {
-  struct in_addr addr;
-  
-  uint8_t mac[6];
+	uint8_t mac[IFHWADDRLEN];
+	mac[0] = (CONFIG_ETH0_MACADDR >> (8 * 5)) & 0xff;
+	mac[1] = (CONFIG_ETH0_MACADDR >> (8 * 4)) & 0xff;
+	mac[2] = (CONFIG_ETH0_MACADDR >> (8 * 3)) & 0xff;
+	mac[3] = (CONFIG_ETH0_MACADDR >> (8 * 2)) & 0xff;
+	mac[4] = (CONFIG_ETH0_MACADDR >> (8 * 1)) & 0xff;
+	mac[5] = (CONFIG_ETH0_MACADDR >> (8 * 0)) & 0xff;
+	netlib_setmacaddr(ETH0_DEVNAME, mac);
+}
+
+static void eth0_set_ipaddrs(void)
+{
+	struct in_addr addr;
+	addr.s_addr = HTONL(CONFIG_ETH0_IPADDR);
+	netlib_set_ipv4addr(ETH0_DEVNAME, &addr);
+
+	addr.s_addr = HTONL(CONFIG_ETH0_GATEWAY);
+	netlib_set_dripv4addr(ETH0_DEVNAME, &addr);
+
+	addr.s_addr = HTONL(CONFIG_ETH0_NETMASK);
+	netlib_set_ipv4netmask(ETH0_DEVNAME, &addr);
+}
+
+static void eth0_bringup(void)
+{
+	netlib_ifup(ETH0_DEVNAME);
+}
 
 
-  mac[0] = 0x00;
-  mac[1] = 0xe0;
-  mac[2] = 0xde;
-  mac[3] = 0xad;
-  mac[4] = 0xbe;
-  mac[5] = 0xef;
-  netlib_setmacaddr(DEVNAME, mac);
 
-  /* Set up our host address */
-  addr.s_addr = HTONL(0xc0a80145);
-  netlib_set_ipv4addr(DEVNAME, &addr);
-
-  /* Set up the default router address */
-  addr.s_addr = HTONL(0xc0a80101);
-  netlib_set_dripv4addr(DEVNAME, &addr);
-
-  /* Setup the subnet mask */
-  addr.s_addr = HTONL(0xffffff00);
-  netlib_set_ipv4netmask(DEVNAME, &addr);
-
-  netlib_ifup(DEVNAME);
+static void eth0_configure(void)
+{
+	eth0_set_macaddr();
+	eth0_set_ipaddrs();
+	eth0_bringup();
 }
 
 
 int report_tcp(int argc, FAR char *argv[])
 {
+	//sleep(5);
+	eth0_configure();
+	printf("111ETH:eth0 up.....\n");
 
-  nettest_initialize();
-
-  tcp_client();
+	while(1)
+	{
+		printf("222ETH:eth0 up.....\n");
+		sleep(10);
+		printf("333ETH:eth0 up.....\n");
+		tcp_client();
+	}
 
   return EXIT_SUCCESS;
 }

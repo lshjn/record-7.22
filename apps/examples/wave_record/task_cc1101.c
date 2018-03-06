@@ -28,7 +28,7 @@
 #include <nuttx/timers/timer.h>
 
 #include "task_cc1101.h"
-
+#include "task_eth.h"
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -854,7 +854,7 @@ int report_cc1101(int argc, char *argv[])
 int master_cc1101(int argc, char *argv[])
 {
 	int ret =-1;
-
+	
 	irqstate_t flags;
   	struct pollfd fds[1];
 
