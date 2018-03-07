@@ -20,7 +20,7 @@
 #define CONFIG_ETH0_NETMASK   0xffffff00     //255.255.255.0
 
 #define CONFIG_SVER_IPADDR    0xc0a803f0      //server IP :192.168.1.240
-#define CONFIG_SVER_PORT      4000      		//server port :5000
+#define CONFIG_SVER_PORT      4001      		//server port :5000
 
 
 #define BUFSIZE   50
@@ -72,37 +72,42 @@ void udp_client()
 
 void tcp_client(void)
 {
-  struct sockaddr_in server;
-  char *outbuf;
+	struct sockaddr_in server;
+	char *outbuf;
+	static int sockfd = -1;
+	
+	socklen_t addrlen;
+	int nbytessent;
+	int nbytesrecvd;
+	int totalbytesrecvd;
 
-  int sockfd;
-  socklen_t addrlen;
-  int nbytessent;
-  int nbytesrecvd;
-  int totalbytesrecvd;
-
-
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0)
+	if(sockfd < 0)
 	{
-		printf("client socket failure %d\n", errno);
+		sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		if (sockfd < 0)
+		{
+			close(sockfd);
+			printf("client socket failure %d\n", errno);
+			return;
+		}
+
+		memset(&server,0,sizeof(server));
+		server.sin_family             = AF_INET;
+		server.sin_port               = htons(CONFIG_SVER_PORT);
+		server.sin_addr.s_addr        = inet_addr("192.168.3.240");
+		addrlen                       = sizeof(struct sockaddr_in);
+
+		printf("Connecting to IPv4 Address: %x\n", (unsigned long)server_ipv4);
+
+		if(connect( sockfd, (struct sockaddr*)&server, addrlen) < 0)
+		{
+			close(sockfd);
+			printf("client: connect failure: %d\n", errno);
+			return;
+		}
+
+		printf("client: Connected OK\n");
 	}
-
-  memset(&server,0,sizeof(server));
-  server.sin_family             = AF_INET;
-  server.sin_port               = htons(CONFIG_SVER_PORT);
-  server.sin_addr.s_addr        = inet_addr("192.168.3.240");
-  addrlen                       = sizeof(struct sockaddr_in);
-
-  printf("Connecting to IPv4 Address: %x\n", (unsigned long)server_ipv4);
-
-  if(connect( sockfd, (struct sockaddr*)&server, addrlen) < 0)
-  {
-	  printf("client: connect failure: %d\n", errno);
-  }
-
-  printf("client: Connected OK\n");
-
 
   outbuf = (char*)&Reportdata_V[0][0];
 
@@ -112,6 +117,8 @@ void tcp_client(void)
 		nbytessent = send(sockfd, outbuf, sizeof(Reportdata_V), 0);
 		if (nbytessent < 0)
 		{
+			close(sockfd);
+			sockfd = -1;
 			printf("client:V send failed: %d\n", errno);
 		}
 		else if (nbytessent != sizeof(Reportdata_V))
@@ -120,7 +127,7 @@ void tcp_client(void)
 		}
 		printf("V:Sent %d bytes\n", nbytessent);
 		
-		usleep(200*1000);
+		sleep(1);
 #if 0		
 		//send I
 		if(nbytessent == sizeof(Reportdata_V))
@@ -141,8 +148,7 @@ void tcp_client(void)
     }
   printf("client: Terminating\n");
   
-  close(sockfd);
-  free(outbuf);
+  //close(sockfd);
   return;
 }
 
