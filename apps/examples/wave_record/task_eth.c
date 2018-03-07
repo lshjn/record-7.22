@@ -22,9 +22,51 @@
 #define CONFIG_SVER_PORT      5000      		//server port :5000
 
 
-#define BUFSIZE   20
+#define BUFSIZE   50
 
 in_addr_t server_ipv4 = HTONL(CONFIG_SVER_IPADDR);
+
+
+void  udp_clisend(int sock)
+{
+	int			ret;
+	char		sendbuf[1024] = {0};
+
+	struct		sockaddr_in servaddr;
+	memset(&servaddr,0,sizeof(servaddr));
+	servaddr.sin_family			= AF_INET;
+	servaddr.sin_port			= htons(5000);
+	servaddr.sin_addr.s_addr	= inet_addr("192.168.3.240");
+	
+	int ch = 0x30;
+	int i = 0;
+	for (i = 0; i < BUFSIZE; i++ )
+	{
+		sendbuf[i] = ch+i;
+	}
+
+		
+    sendto(sock,sendbuf,strlen(sendbuf),0,(struct sockaddr*)&servaddr,sizeof(servaddr));
+
+	memset(sendbuf,0,sizeof(sendbuf));
+	close(sock);
+}
+
+
+void udp_client()
+{
+	
+    int  sock;
+	
+    if((sock = socket(PF_INET,SOCK_DGRAM,0)) < 0)
+   	{
+		printf("socket error \n");
+	}
+
+	udp_clisend(sock);
+	
+    return 0;  
+}
 
 
 void tcp_client(void)
@@ -67,7 +109,7 @@ void tcp_client(void)
 	  printf("client: connect failure: %d\n", errno);
   }
 
-  printf("client: Connected\n");
+  printf("client: Connected OK\n");
 
   ch = 0x30;
   for (i = 0; i < BUFSIZE; i++ )
@@ -139,16 +181,14 @@ static void eth0_configure(void)
 
 int report_tcp(int argc, FAR char *argv[])
 {
-	//sleep(5);
+	sleep(2);
 	eth0_configure();
-	printf("111ETH:eth0 up.....\n");
-
+	sleep(2);
 	while(1)
 	{
-		printf("222ETH:eth0 up.....\n");
-		sleep(10);
-		printf("333ETH:eth0 up.....\n");
-		tcp_client();
+		//tcp_client();
+		udp_client();
+		sleep(3);
 	}
 
   return EXIT_SUCCESS;

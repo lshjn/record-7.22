@@ -896,5 +896,4 @@ task_cc1101.o: task_cc1101.c \
  /work/record-7.22/nuttx/include/termios.h \
  /work/record-7.22/nuttx/include/strings.h \
  /work/record-7.22/nuttx/include/poll.h \
- /work/record-7.22/nuttx/include/nuttx/timers/timer.h task_cc1101.h \
- task_eth.h
+ /work/record-7.22/nuttx/include/nuttx/timers/timer.h task_cc1101.h

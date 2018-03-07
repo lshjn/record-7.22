@@ -93,7 +93,7 @@ int wave_record_main(int argc, FAR char *argv[])
 #endif
 {
   int ret;
-
+#if 1
   ret = task_create("master_flash", CONFIG_EXAMPLES_FLASH_PRIORITY,
                     CONFIG_EXAMPLES_FLASH_STACKSIZE, master_flash,
                     NULL);
@@ -193,7 +193,7 @@ int wave_record_main(int argc, FAR char *argv[])
 	  printf("report_cc1101: ERROR: Failed to start CC1101: %d\n",errcode);
 	  return EXIT_FAILURE;
 	}
-	
+#endif	
 	ret = task_create("report_tcp", CONFIG_EXAMPLES_CC1101_PRIORITY,
 					CONFIG_EXAMPLES_CC1101_STACKSIZE, report_tcp,
 					NULL);
