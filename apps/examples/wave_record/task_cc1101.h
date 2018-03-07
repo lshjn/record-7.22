@@ -8,6 +8,23 @@
 #define ALIGN __attribute__((packed))
 #define FRAME_REPORT_SIZE  10
 
+extern pthread_mutex_t g_TimerMutex;
+extern pthread_cond_t  g_TimerConVar;
+//ping
+extern pthread_mutex_t g_PingMutex;
+extern pthread_cond_t  g_PingConVar;
+
+//tcp
+extern pthread_mutex_t g_TcpMutex;
+extern pthread_cond_t  g_TcpConVar;
+
+#define    REPORTSIZE  1920
+
+extern uint8_t   PatchIndex[32];
+extern uint8_t   ReportIndex[96];
+extern uint8_t   Reportdata[96][40];
+extern uint8_t   Reportdata_V[3][REPORTSIZE];
+extern uint8_t   Reportdata_I[3][REPORTSIZE];
 
 
 struct cc110x_msg1{

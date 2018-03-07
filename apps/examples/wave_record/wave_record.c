@@ -185,7 +185,7 @@ int wave_record_main(int argc, FAR char *argv[])
       return EXIT_FAILURE;
     }
 	ret = task_create("report_cc1101", CONFIG_EXAMPLES_CC1101_PRIORITY,
-					CONFIG_EXAMPLES_CC1101_STACKSIZE, report_cc1101,
+					2048, report_cc1101,
 					NULL);
 	if (ret < 0)
 	{
@@ -195,7 +195,7 @@ int wave_record_main(int argc, FAR char *argv[])
 	}
 #endif	
 	ret = task_create("report_tcp", CONFIG_EXAMPLES_CC1101_PRIORITY,
-					CONFIG_EXAMPLES_CC1101_STACKSIZE, report_tcp,
+					2048, report_tcp,
 					NULL);
 	if (ret < 0)
 	{

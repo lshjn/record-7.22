@@ -11,6 +11,7 @@
 #include "netutils/netlib.h"
 #include <debug.h>
 #include <errno.h>
+#include "task_cc1101.h"
 
 #define ETH0_DEVNAME "eth0"
 #define CONFIG_ETH0_MACADDR   0x00e0deadbeef
@@ -19,7 +20,7 @@
 #define CONFIG_ETH0_NETMASK   0xffffff00     //255.255.255.0
 
 #define CONFIG_SVER_IPADDR    0xc0a803f0      //server IP :192.168.1.240
-#define CONFIG_SVER_PORT      5000      		//server port :5000
+#define CONFIG_SVER_PORT      4000      		//server port :5000
 
 
 #define BUFSIZE   50
@@ -79,24 +80,15 @@ void tcp_client(void)
   int nbytessent;
   int nbytesrecvd;
   int totalbytesrecvd;
-  int ch;
-  int i;
 
-  /* Allocate buffers */
-
-  outbuf = (char*)malloc(BUFSIZE);
-
-  /* Create a new TCP socket */
 
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0)
-    {
-      printf("client socket failure %d\n", errno);
-    }
+	if (sockfd < 0)
+	{
+		printf("client socket failure %d\n", errno);
+	}
 
-  /* Set up the server address */
   memset(&server,0,sizeof(server));
-  
   server.sin_family             = AF_INET;
   server.sin_port               = htons(CONFIG_SVER_PORT);
   server.sin_addr.s_addr        = inet_addr("192.168.3.240");
@@ -111,26 +103,41 @@ void tcp_client(void)
 
   printf("client: Connected OK\n");
 
-  ch = 0x30;
-  for (i = 0; i < BUFSIZE; i++ )
-    {
-      outbuf[i] = ch+i;
-    }
+
+  outbuf = (char*)&Reportdata_V[0][0];
 
   //for (;;)
     {
-		nbytessent = send(sockfd, outbuf, BUFSIZE, 0);
+		//send V
+		nbytessent = send(sockfd, outbuf, sizeof(Reportdata_V), 0);
 		if (nbytessent < 0)
 		{
-			printf("client: send failed: %d\n", errno);
+			printf("client:V send failed: %d\n", errno);
 		}
-		else if (nbytessent != BUFSIZE)
+		else if (nbytessent != sizeof(Reportdata_V))
 		{
-			printf("client: Bad send length=%d: %d of \n",nbytessent, BUFSIZE);
+			printf("client:V send length=%d: total=%d of \n",nbytessent, sizeof(Reportdata_V));
 		}
-
-		printf("Sent %d bytes\n", nbytessent);
-		usleep(100*1000);
+		printf("V:Sent %d bytes\n", nbytessent);
+		
+		usleep(200*1000);
+#if 0		
+		//send I
+		if(nbytessent == sizeof(Reportdata_V))
+		{
+			outbuf = (char*)&Reportdata_I[0][0];
+			nbytessent = send(sockfd, outbuf, sizeof(Reportdata_I), 0);
+			if (nbytessent < 0)
+			{
+				printf("client:I send failed: %d\n", errno);
+			}
+			else if (nbytessent != sizeof(Reportdata_I))
+			{
+				printf("client:I send length=%d: total=%d of \n",nbytessent, sizeof(Reportdata_I));
+			}
+			printf("I:Sent %d bytes\n", nbytessent);
+		}
+#endif		
     }
   printf("client: Terminating\n");
   
@@ -187,9 +194,13 @@ int report_tcp(int argc, FAR char *argv[])
      printf("eth0 up....\n");
 	while(1)
 	{
+     	printf("wait report signal....\n");
+
+		pthread_mutex_lock(&g_TcpMutex);
+		pthread_cond_wait(&g_TcpConVar, &g_TcpMutex);   //pthread_cond_wait 会先解除g_AdcMutex锁，再阻塞在条件变量
+		pthread_mutex_unlock(&g_TcpMutex);
+	
 		tcp_client();
-		//udp_client();
-		sleep(3);
 	}
 
   return EXIT_SUCCESS;

@@ -28,7 +28,7 @@
 #include <nuttx/timers/timer.h>
 
 #include "task_cc1101.h"
-#include "task_eth.h"
+
 /****************************************************************************
  * Private Data
  ****************************************************************************/
@@ -48,14 +48,10 @@ pthread_cond_t  g_TimerConVar		= PTHREAD_COND_INITIALIZER;
 pthread_mutex_t g_PingMutex		= PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t  g_PingConVar		= PTHREAD_COND_INITIALIZER;
 
-//tcp
-pthread_mutex_t g_TcpMutex			= PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t  g_TcpConVar		= PTHREAD_COND_INITIALIZER;
-
-
-
 pthread_mutex_t g_SummonMutex		= PTHREAD_MUTEX_INITIALIZER;
 
+#define    REPORTSIZE  1920
+//#define    REPORTSIZE  2000
 
 uint8_t   PatchIndex[32];
 uint8_t   ReportIndex[96];
@@ -198,7 +194,7 @@ int myreadn(int fd,char* rxbuff,int max_len,int * timeout,int * ready)
 	return (max_len-bytes_left) ;	  
 }
 
-int GetmsgStartaddrAndLen(char *databuff,int maxlen,char **start_addr)
+int GetmsgStartaddrAndLen(char *databuff,int maxlen,int **start_addr)
 {
 	char *ptr = (char*)databuff;
 	int  msglen = maxlen;
@@ -212,7 +208,7 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,char **start_addr)
     {
 		if(MSG_START == *ptr)
 		{
-			*start_addr = (char *)ptr;
+			*start_addr = ptr;
 			ptr++;
 			rlen++;
 			msglen--;
@@ -531,7 +527,6 @@ int  summon_wave(irqstate_t flags,int fd,struct report_req * P_summon_wave_req,u
 	wBytes = write(fd, (char *)P_summon_wave_req, sizeof(struct report_req));
 	leave_critical_section(flags);
 
-	printf("<%d>s:%d,us:%d\n",curball,P_summon_wave_req->second,P_summon_wave_req->pos);
 	return wBytes;
 }
 
@@ -564,12 +559,6 @@ int   getSystimeFlag(void)
  ****************************************************************************/
 int   initSummonState(void)
 {
-
-		clock1.tv_sec = 0;
-		clock2.tv_sec = 0;
-		clock1.tv_nsec = 0;
-		clock2.tv_nsec = 0;
-
 	
 	summon_status.ballA_rcvState = NOACK;
 	summon_status.ballB_rcvState = NOACK;
@@ -577,15 +566,65 @@ int   initSummonState(void)
 	summon_status.ballA_rcvtotal = EMPTY;
 	summon_status.ballB_rcvtotal = EMPTY;
 	summon_status.ballC_rcvtotal = EMPTY;
-
-	memset(Reportdata_V,0,sizeof(Reportdata_V));
-	memset(Reportdata_I,0,sizeof(Reportdata_I));
-
 	
 	patch_systick =systick;
 	patch_pos = 10;
 
 	summon_status.enAsk = true;
+}
+
+/****************************************************************************
+ * report_cc1101
+ * liushuhe
+ * 2018.02.23
+ ****************************************************************************/
+int report_cc1101(int argc, char *argv[])
+{
+
+	while(1)
+	{
+		waitping(&g_PingConVar,&g_PingMutex);
+		
+		while(!getSystimeFlag())
+		{
+			usleep(500*1000);
+		}
+		
+		initSummonState();
+		
+		total++;
+		
+		thread_waitnms(&g_TimerConVar, &g_TimerMutex,5*1000);
+		
+		summon_status.enAsk = false;
+		
+		if((summon_status.ballA_rcvtotal == FULL)&&
+		    (summon_status.ballB_rcvtotal == FULL)&&
+			(summon_status.ballC_rcvtotal == FULL))
+		{
+			success++;
+			
+			printf("report SUCCESS:ballA<%d>,ballB<%d>ballC<%d>\n",
+										summon_status.ballA_rcvtotal,
+									    summon_status.ballB_rcvtotal,
+									    summon_status.ballC_rcvtotal);
+		}
+		else
+		{
+			fail++;
+			
+			printf("report FAIL:ballA<%d>,ballB<%d>ballC<%d>\n",
+										summon_status.ballA_rcvtotal,
+									    summon_status.ballB_rcvtotal,
+									    summon_status.ballC_rcvtotal);
+		}
+		
+		printf("SUMMON ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",total,success,fail);
+		printf("A ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",totalA,successA,failA);
+		printf("B ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",totalB,successB,failB);
+		printf("C ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",totalC,successC,failC);
+		
+	}
 }
 
 void GetballData(int curball,uint8_t *reportindex,uint8_t *reportdata,uint8_t (*data_V)[REPORTSIZE],uint8_t (*data_I)[REPORTSIZE])
@@ -614,243 +653,6 @@ void GetballData(int curball,uint8_t *reportindex,uint8_t *reportdata,uint8_t (*
 }
 
 
-int  SummonwaveParsing(struct work_status * workstatus,uint8_t *patchindex,uint8_t *reportindex,int curball)
-{
-	int res_lost = 0;
-	//summonwave parsing
-	if(workstatus->work_mode == CMD_SUMMONWAVE)
-	{
-		res_lost = getPatch(patchindex,reportindex);
-		if(res_lost)
-		{
-			workstatus->work_mode = CMD_PATCH;
-			printf("<%d>Rn=%d\n",curball,res_lost);
-		}
-		else
-		{
-			workstatus->work_mode = CMD_SUMMONWAVE_OK;
-		}
-	}
-	return res_lost;
-}
-
-void PatchParsing(irqstate_t flags,int fd,struct work_status * workstatus,struct patch_req_head * patchhead,uint8_t *patchindex,uint8_t *reportindex,int curball)
-{
-	static int 	trypatch_n = 0;
-	static int 	old_lost = 0;
-	
-	if(workstatus->work_mode == CMD_PATCH)
-	{
-		int patch_lost = 0;
-		patch_lost = getPatch(patchindex,reportindex);
-		if(old_lost == patch_lost)
-		{
-			trypatch_n++;
-			#if 0
-			if(patch_lost >= 32)
-			{
-				POLL_TIMEOUT +=5*32; 
-			}
-			else
-			{
-				POLL_TIMEOUT +=5*patch_lost; 
-			}
-			#endif
-			if(trypatch_n > 20)
-			{
-				workstatus->work_mode = CMD_PATCH_OK;
-				trypatch_n = 0;
-				old_lost = 0;
-				POLL_TIMEOUT = TIMEOUT_VALUE;
-			}
-		}
-		else
-		{
-			old_lost = patch_lost;
-			trypatch_n = 0;
-			POLL_TIMEOUT = TIMEOUT_VALUE;
-		}
-
-		if(patch_lost >= 32)
-		{
-			calcPatchreport(flags,fd,32,patchindex,reportindex,patchhead,curball);			
-		}
-		else
-		{
-			calcPatchreport(flags,fd,patch_lost,patchindex,reportindex,patchhead,curball);			
-		}
-		
-		if(patch_lost)
-		{
-			printf("<%d>Pn=%d\n",curball,patch_lost);
-		}
-		else
-		{
-			workstatus->work_mode = CMD_PATCH_OK;
-			old_lost = 0;
-		}
-	}
-}
-void RcvdataParsing(struct work_status * workstatus,struct report_status *summon,uint8_t *patchindex,uint8_t *reportindex,uint8_t *reportdata,pthread_cond_t *cond,pthread_mutex_t *mutex,uint8_t (*data_V)[REPORTSIZE],uint8_t (*data_I)[REPORTSIZE])
-{
-	int total_lost = 0;
-	if((workstatus->work_mode == CMD_SUMMONWAVE_OK)||(workstatus->work_mode == CMD_PATCH_OK))
-	{
-		clock_gettime(CLOCK_REALTIME, &clock2);
-
-#if 1
-		//printf("<%d>clock1:%ds,%dms\n",summon->curball,clock1.tv_sec,clock1.tv_nsec/1000000);
-		unsigned int time_diff = 0;
-		time_diff = (1000000000*(clock2.tv_sec - clock1.tv_sec) + (clock2.tv_nsec - clock1.tv_nsec));
-		time_diff = time_diff/1000000;
-#endif
-		total_lost = getPatch(patchindex,reportindex);
-		workstatus->work_mode = CMD_READTIME;
-		switch(summon->curball)
-		{
-			case A_ADDR:
-				 summon->ballA_rcvtotal = FULL-total_lost;
-				 summon->ballA_rcvState = ACK;
-				 if(summon->ballA_rcvtotal == FULL)
-				 {
-					 successA++;
-				 }
-				 else
-				 {
-					  failA++;
-				 }
-				break;
-			case B_ADDR:
-				 summon->ballB_rcvtotal = FULL-total_lost;
-				 summon->ballB_rcvState = ACK;
-				 if(summon->ballB_rcvtotal == FULL)
-				 {
-					 successB++;
-				 }
-				 else
-				 {
-					  failB++;
-				 }
-				break;
-			case C_ADDR:
-				 summon->ballC_rcvtotal = FULL-total_lost;
-				 summon->ballC_rcvState = ACK;
-				 if(summon->ballC_rcvtotal == FULL)
-				 {
-					 successC++;
-				 }
-				 else
-				 {
-					  failC++;
-				 }
-				break;
-		}
-	 	GetballData(summon->curball,reportindex,reportdata,data_V,data_I);
-#if 1
-		printf("<%d>:%dms\n",summon->curball,time_diff);
-		//printf("<%d>clock2:%ds,%dms\n",summon->curball,clock2.tv_sec,clock2.tv_nsec/1000000);
-
-		clock1.tv_sec = 0;
-		clock2.tv_sec = 0;
-		clock1.tv_nsec = 0;
-		clock2.tv_nsec = 0;		
-#endif
-		printf("<%d>rcv<%d>\n",summon->curball,FULL-total_lost);
-		if((summon->ballA_rcvState == ACK)&&
-		    (summon->ballB_rcvState == ACK)&&
-			(summon->ballC_rcvState == ACK))
-		{
-			  ActiveSignal(cond, mutex);
-		}
-	}
-
-}
-/****************************************************************************
- * report_cc1101
- * liushuhe
- * 2018.02.23
- ****************************************************************************/
-int report_cc1101(int argc, char *argv[])
-{
-
-	while(1)
-	{
-		waitping(&g_PingConVar,&g_PingMutex);
-		
-		while(!getSystimeFlag())
-		{
-			usleep(500*1000);
-		}
-		
-		initSummonState();
-		
-		total++;
-		
-		thread_waitnms(&g_TimerConVar, &g_TimerMutex,5*1000);
-		
-		summon_status.enAsk = false;
-
-		//wake up tcp
-		ActiveSignal(&g_TcpConVar,&g_TcpMutex);
-
-		if((summon_status.ballA_rcvtotal == FULL)&&
-		    (summon_status.ballB_rcvtotal == FULL)&&
-			(summon_status.ballC_rcvtotal == FULL))
-		{
-			success++;
-			
-			printf("report SUCCESS:ballA<%d>,ballB<%d>ballC<%d>\n",
-										summon_status.ballA_rcvtotal,
-									    summon_status.ballB_rcvtotal,
-									    summon_status.ballC_rcvtotal);
-		}
-		else
-		{
-			fail++;
-			
-			printf("report FAIL:ballA<%d>,ballB<%d>ballC<%d>\n",
-										summon_status.ballA_rcvtotal,
-									    summon_status.ballB_rcvtotal,
-									    summon_status.ballC_rcvtotal);
-		}
-
-
-		
-		printf("SUMMON ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",total,success,fail);
-		printf("A ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",totalA,successA,failA);
-		printf("B ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",totalB,successB,failB);
-		printf("C ASK:<%d>  SUCCESS:<%d>  FAIL:<%d>\n",totalC,successC,failC);
-#if 0 
-		int i = 0;
-		int j = 0;
-		for(i=0;i<3;i++)
-		{
-			printf("<%d>-ball\n",i);
-			printf("V<%d>:\n",i);
-			for(j=0;j<REPORTSIZE;j++)
-			{
-				if(j%50 == 0)
-				{
-					printf("\n");
-				}
-				printf("<%d> ",Reportdata_V[i][j]);
-			}
-			printf("\n");
-			printf("I<%d>:\n",i);
-			for(j=0;j<REPORTSIZE;j++)
-			{
-				if(j%50 == 0)
-				{
-					printf("\n");
-				}
-				printf("<%d> ",Reportdata_I[i][j]);
-			}
-			printf("\n");
-		}
-#endif		
-	}
-}
-
 
 /****************************************************************************
  * master_cc1101
@@ -860,7 +662,7 @@ int report_cc1101(int argc, char *argv[])
 int master_cc1101(int argc, char *argv[])
 {
 	int ret =-1;
-	
+
 	irqstate_t flags;
   	struct pollfd fds[1];
 
@@ -870,7 +672,7 @@ int master_cc1101(int argc, char *argv[])
 	//struct timeval timeout;
 	//fd_set 	rfds;
 	
-    char 	rxbuff[1024];
+    char 	rxbuff[1024*4];
     char 	*P_data = NULL;
 	int 	fd;
 	int 	fd_timer2;
@@ -882,6 +684,8 @@ int master_cc1101(int argc, char *argv[])
 
 	int 	timeout_f = 0;
 	int 	ready_f = 0;
+	int 	trypatch_n = 0;
+	int 	old_lost = 0;
 
 	struct timespec clock;
 				
@@ -962,17 +766,152 @@ int master_cc1101(int argc, char *argv[])
 			timeout_f = true;
 			//lock 
 			pthread_mutex_lock(&g_SummonMutex);
+			#if 0
+			//get timeout
+			static int time_old = 0;
+			int time_diff = 0;
+			clock_gettime(CLOCK_REALTIME, &clock1);
+			time_diff = clock1.tv_nsec/1000000 - time_old;
+			time_old =  clock1.tv_nsec/1000000;
+			printf("%dms\n",time_diff);
+			#endif
 			//summonwave parsing
-			int lost = 0;
-			lost = SummonwaveParsing(&work_sts,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,summon_status.curball);	
-			if(lost == FULL)
+			if(work_sts.work_mode == CMD_SUMMONWAVE)
 			{
-				continue;
+				int res_lost = 0;
+				res_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+				if(res_lost)
+				{
+					work_sts.work_mode = CMD_PATCH;
+					printf("<%d>Rn=%d\n",summon_status.curball,res_lost);
+					if(res_lost == FULL)
+					{
+						continue;
+					}
+				}
+				else
+				{
+					work_sts.work_mode = CMD_SUMMONWAVE_OK;
+				}
 			}
+						
 			//patch parsing
-			PatchParsing(flags,fd,&work_sts,&patch_head,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,summon_status.curball);
+			if(work_sts.work_mode == CMD_PATCH)
+			{
+				int patch_lost = 0;
+				patch_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+				if(old_lost == patch_lost)
+				{
+					trypatch_n++;
+					#if 0
+					if(patch_lost >= 32)
+					{
+						POLL_TIMEOUT +=5*32; 
+					}
+					else
+					{
+						POLL_TIMEOUT +=5*patch_lost; 
+					}
+					#endif
+					if(trypatch_n > 20)
+					{
+						work_sts.work_mode = CMD_PATCH_OK;
+						trypatch_n = 0;
+						old_lost = 0;
+						POLL_TIMEOUT = TIMEOUT_VALUE;
+					}
+				}
+				else
+				{
+					old_lost = patch_lost;
+					trypatch_n = 0;
+					POLL_TIMEOUT = TIMEOUT_VALUE;
+				}
+
+				if(patch_lost >= 32)
+				{
+					calcPatchreport(flags,fd,32,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&patch_head,summon_status.curball);			
+				}
+				else
+				{
+					calcPatchreport(flags,fd,patch_lost,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&patch_head,summon_status.curball);			
+				}
+				
+				if(patch_lost)
+				{
+					printf("<%d>Pn=%d\n",summon_status.curball,patch_lost);
+				}
+				else
+				{
+					work_sts.work_mode = CMD_PATCH_OK;
+					old_lost = 0;
+				}
+			}
 			//rcv total
-			RcvdataParsing	(&work_sts,&summon_status,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,(uint8_t *)&Reportdata,&g_TimerConVar,&g_TimerMutex,Reportdata_V,Reportdata_I);
+			if((work_sts.work_mode == CMD_SUMMONWAVE_OK)||(work_sts.work_mode == CMD_PATCH_OK))
+			{
+				int total_lost = 0;
+				total_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+#if 1
+		clock_gettime(CLOCK_REALTIME, &clock2);
+		printf("<%d>:%ds,%dms\n",summon_status.curball,clock1.tv_sec,clock1.tv_nsec/1000000);
+		printf("<%d>:%ds,%dms\n",summon_status.curball,clock2.tv_sec,clock2.tv_nsec/1000000);
+		unsigned int time_diff = 0;
+		time_diff = (1000000000*(clock2.tv_sec - clock1.tv_sec) + (clock2.tv_nsec - clock1.tv_nsec));
+		time_diff = time_diff/1000000;
+#endif
+				work_sts.work_mode = CMD_READTIME;
+				switch(summon_status.curball)
+				{
+					case A_ADDR:
+						 summon_status.ballA_rcvtotal = FULL-total_lost;
+						 summon_status.ballA_rcvState = ACK;
+						 if(summon_status.ballA_rcvtotal == FULL)
+						 {
+							 successA++;
+						 }
+						 else
+						 {
+							  failA++;
+						 }
+						break;
+					case B_ADDR:
+						 summon_status.ballB_rcvtotal = FULL-total_lost;
+						 summon_status.ballB_rcvState = ACK;
+						 if(summon_status.ballB_rcvtotal == FULL)
+						 {
+							 successB++;
+						 }
+						 else
+						 {
+							  failB++;
+						 }
+						break;
+					case C_ADDR:
+						 summon_status.ballC_rcvtotal = FULL-total_lost;
+						 summon_status.ballC_rcvState = ACK;
+						 if(summon_status.ballC_rcvtotal == FULL)
+						 {
+							 successC++;
+						 }
+						 else
+						 {
+							  failC++;
+						 }
+						break;
+				}
+
+			 	GetballData(summon_status.curball,(uint8_t *)&ReportIndex,(uint8_t *)&Reportdata,Reportdata_V,Reportdata_V);
+				
+				printf("<%d>rcv<%d>\n",summon_status.curball,FULL-total_lost);
+				printf("<%d>:%dms\n",summon_status.curball,time_diff);
+				if((summon_status.ballA_rcvState == ACK)&&
+				    (summon_status.ballB_rcvState == ACK)&&
+					(summon_status.ballC_rcvState == ACK))
+				{
+					  ActiveSignal(&g_TimerConVar, &g_TimerMutex);
+				}
+			}
 			pthread_mutex_unlock(&g_SummonMutex);
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
@@ -992,10 +931,6 @@ int master_cc1101(int argc, char *argv[])
 
 			while((ret = ioctl(fd, GETCC1101BUF_BYTES, (unsigned long)&cc1101buf_datalen)))
 			{
-				if(cc1101buf_datalen > sizeof(rxbuff))
-				{
-					cc1101buf_datalen = sizeof(rxbuff);
-				}
 				memset(rxbuff, 0, sizeof(rxbuff));
 			   	rBytes = myreadn(fd,rxbuff,cc1101buf_datalen,&timeout_f,&ready_f);
 	            /****************************************************************/
@@ -1034,14 +969,15 @@ int master_cc1101(int argc, char *argv[])
 												if(summon_status.ballA_rcvState != ACK)
 												{
 													clock_gettime(CLOCK_REALTIME, &clock1);
-													//printf("<%d>clock1:%ds,%dms\n",P_data[4],clock1.tv_sec,clock1.tv_nsec/1000000);
-
+													printf("<%d>:%ds,%dms\n",summon_status.curball,clock1.tv_sec,clock1.tv_nsec/1000000);
 													totalA++;
 												  	summon_status.curball = A_ADDR;
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
 													work_sts.work_mode = CMD_SUMMONWAVE;
 													memset(ReportIndex,0,sizeof(ReportIndex));
 													memset(Reportdata,0,sizeof(Reportdata));
+													memset(Reportdata_V,0,sizeof(Reportdata_V));
+													memset(Reportdata_I,0,sizeof(Reportdata_I));
 													printf("<%d>summon_wave\n",summon_status.curball);
 												}
 												break;
@@ -1049,14 +985,15 @@ int master_cc1101(int argc, char *argv[])
 												if(summon_status.ballB_rcvState != ACK)
 												{
 													clock_gettime(CLOCK_REALTIME, &clock1);
-													//printf("<%d>clock1:%ds,%dms\n",P_data[4],clock1.tv_sec,clock1.tv_nsec/1000000);
-													
+													printf("<%d>:%ds,%dms\n",summon_status.curball,clock1.tv_sec,clock1.tv_nsec/1000000);
 													totalB++;
 												    summon_status.curball = B_ADDR;
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
 													work_sts.work_mode = CMD_SUMMONWAVE;
 													memset(ReportIndex,0,sizeof(ReportIndex));
 													memset(Reportdata,0,sizeof(Reportdata));
+													memset(Reportdata_V,0,sizeof(Reportdata_V));
+													memset(Reportdata_I,0,sizeof(Reportdata_I));
 													printf("<%d>summon_wave\n",summon_status.curball);
 												}
 												break;
@@ -1064,14 +1001,15 @@ int master_cc1101(int argc, char *argv[])
 												if(summon_status.ballC_rcvState != ACK)
 												{
 													clock_gettime(CLOCK_REALTIME, &clock1);
-													//printf("<%d>clock1:%ds,%dms\n",P_data[4],clock1.tv_sec,clock1.tv_nsec/1000000);
-
+													printf("<%d>:%ds,%dms\n",summon_status.curball,clock1.tv_sec,clock1.tv_nsec/1000000);
 													totalC++;
 												    summon_status.curball = C_ADDR;
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
 													work_sts.work_mode = CMD_SUMMONWAVE;
 													memset(ReportIndex,0,sizeof(ReportIndex));
 													memset(Reportdata,0,sizeof(Reportdata));
+													memset(Reportdata_V,0,sizeof(Reportdata_V));
+													memset(Reportdata_I,0,sizeof(Reportdata_I));
 													printf("<%d>summon_wave\n",summon_status.curball);
 												}
 												break;	
