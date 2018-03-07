@@ -187,7 +187,7 @@ int report_tcp(int argc, FAR char *argv[])
      printf("eth0 up....\n");
 	while(1)
 	{
-		//tcp_client();
+		tcp_client();
 		//udp_client();
 		sleep(3);
 	}
