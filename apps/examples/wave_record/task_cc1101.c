@@ -826,6 +826,14 @@ int master_cc1101(int argc, char *argv[])
 			{
 				int total_lost = 0;
 				total_lost = getPatch((uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex);
+#if 1
+		clock_gettime(CLOCK_REALTIME, &clock2);
+		printf("<%d>:%ds,%dms\n",summon_status.curball,clock1.tv_sec,clock1.tv_nsec/1000000);
+		printf("<%d>:%ds,%dms\n",summon_status.curball,clock2.tv_sec,clock2.tv_nsec/1000000);
+		unsigned int time_diff = 0;
+		time_diff = (1000000000*(clock2.tv_sec - clock1.tv_sec) + (clock2.tv_nsec - clock1.tv_nsec));
+		time_diff = time_diff/1000000;
+#endif
 				work_sts.work_mode = CMD_READTIME;
 				switch(summon_status.curball)
 				{
@@ -867,6 +875,7 @@ int master_cc1101(int argc, char *argv[])
 						break;
 				}
 				printf("<%d>rcv<%d>\n",summon_status.curball,FULL-total_lost);
+				printf("<%d>:%dms\n",summon_status.curball,time_diff);
 				if((summon_status.ballA_rcvState == ACK)&&
 				    (summon_status.ballB_rcvState == ACK)&&
 					(summon_status.ballC_rcvState == ACK))
@@ -930,6 +939,8 @@ int master_cc1101(int argc, char *argv[])
 											case A_ADDR:
 												if(summon_status.ballA_rcvState != ACK)
 												{
+													clock_gettime(CLOCK_REALTIME, &clock1);
+													printf("<%d>:%ds,%dms\n",summon_status.curball,clock1.tv_sec,clock1.tv_nsec/1000000);
 													totalA++;
 												  	summon_status.curball = A_ADDR;
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
@@ -944,6 +955,8 @@ int master_cc1101(int argc, char *argv[])
 											case B_ADDR:
 												if(summon_status.ballB_rcvState != ACK)
 												{
+													clock_gettime(CLOCK_REALTIME, &clock1);
+													printf("<%d>:%ds,%dms\n",summon_status.curball,clock1.tv_sec,clock1.tv_nsec/1000000);
 													totalB++;
 												    summon_status.curball = B_ADDR;
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
@@ -958,6 +971,8 @@ int master_cc1101(int argc, char *argv[])
 											case C_ADDR:
 												if(summon_status.ballC_rcvState != ACK)
 												{
+													clock_gettime(CLOCK_REALTIME, &clock1);
+													printf("<%d>:%ds,%dms\n",summon_status.curball,clock1.tv_sec,clock1.tv_nsec/1000000);
 													totalC++;
 												    summon_status.curball = C_ADDR;
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);

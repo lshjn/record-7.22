@@ -203,7 +203,6 @@ int wave_record_main(int argc, FAR char *argv[])
 	  printf("report_tcp: ERROR: Failed to start report_tcp: %d\n",errcode);
 	  return EXIT_FAILURE;
 	}
-	
 	int cnt = 0;
   while(1)	
   {

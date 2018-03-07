@@ -184,10 +184,11 @@ int report_tcp(int argc, FAR char *argv[])
 	sleep(2);
 	eth0_configure();
 	sleep(2);
+     printf("eth0 up....\n");
 	while(1)
 	{
 		//tcp_client();
-		udp_client();
+		//udp_client();
 		sleep(3);
 	}
 
