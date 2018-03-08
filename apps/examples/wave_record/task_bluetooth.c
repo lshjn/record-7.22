@@ -90,6 +90,8 @@ int master_bluetooth(int argc, char *argv[])
 	int  	iBytes = 0;
 	int		fd_flash = 0;
 
+
+
 	g_bluetooth_started = true;
 
 	fd_blue = open(CONFIG_EXAMPLES_BLUETOOTH_DEVPATH, O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
@@ -101,6 +103,11 @@ int master_bluetooth(int argc, char *argv[])
 	}
 
 	printf("boardctl init bluetooth gpiopin !\n");
+
+    //power on
+	boardctl(BOARDIOC_BLUEDEV_POWER_ENABLE, 0);			//power on
+	usleep(1000*1000L);
+
 
     /*
 	//gpio init

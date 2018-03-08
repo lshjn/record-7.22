@@ -41,12 +41,12 @@
 #include <nuttx/config.h>
 #include <stdio.h>
 
-#include <netinet/in.h> // for sockaddr_in
-#include <stdio.h>      // for printf
-#include <stdlib.h>     // for exit
-#include <string.h>     // for bzero
-#include <sys/socket.h> // for socket
-#include <sys/types.h>  // for socket
+#include <netinet/in.h>  // for sockaddr_in
+#include <stdio.h>       // for printf
+#include <stdlib.h>      // for exit
+#include <string.h>      // for bzero
+#include <sys/socket.h>  // for socket
+#include <sys/types.h>   // for socket
 /****************************************************************************
  * Public Functions
  ****************************************************************************/
@@ -63,21 +63,26 @@ int hello_main(int argc, char *argv[])
 {
   int fd = -1;
   struct sockaddr_in addr;
+  static char buf[8000];
   printf("tcp test\n");
   fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (fd < 0) {
-    printf("scoket error\n");
-    return -1;
-  }
-  memset(&addr,0,sizeof(addr));
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(5000);
+  if (fd < 0)
+    {
+      printf("scoket error\n");
+      return -1;
+    }
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family      = AF_INET;
+  addr.sin_port        = htons(4001);
   addr.sin_addr.s_addr = inet_addr("192.168.3.240");
-  if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-    printf("connect error\n");
-    return -1;
-  }
+  if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+      printf("connect error\n");
+      return -1;
+    }
+  write(fd, buf, sizeof(buf));
   printf("connect ok\n");
+  sleep(1);
   close(fd);
   printf("Hello, World!!\n");
   return 0;

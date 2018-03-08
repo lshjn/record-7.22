@@ -121,6 +121,10 @@ void timeint_upload_process(int fd,struct gprs_data	*gprsdata,struct adc_msg *ad
  ****************************************************************************/
 int master_monitor(int argc, char *argv[])
 {
+	//gprs
+	boardctl(BOARDIOC_GPRS_PWRON, 0);
+	usleep(1000*1000L);
+
 	int fd_gprs_copy;
 	fd_gprs_copy = open(CONFIG_EXAMPLES_GPRS_DEVPATH, O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
 	if (fd_gprs_copy < 0)
@@ -128,22 +132,6 @@ int master_monitor(int argc, char *argv[])
 		int errcode = errno;
 		printf("gprs: ERROR: Failed to open %s: %d\n",CONFIG_EXAMPLES_GPRS_DEVPATH, errcode);
 	}
-
-    //power on
-	boardctl(BOARDIOC_BLUEDEV_POWER_ENABLE, 0);			//power on
-	usleep(500*1000L);
-	//gprs
-	boardctl(BOARDIOC_GPRS_PWRON, 0);
-	usleep(500*1000);
-	//gps power
-	boardctl(BOARDIOC_GPS_PWRON, 0);
-	usleep(500*1000);
-	//433 power
-	boardctl(BOARDIOC_433_PWRON, 0);
-	usleep(500*1000);
-	//433 power
-	boardctl(BOARDIOC_4G_PWRON, 0);
-	usleep(500*1000);
 	sleep(5);                                     //sleep 100ms
 	while(1)
 	{

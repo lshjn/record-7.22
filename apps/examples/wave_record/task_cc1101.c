@@ -862,9 +862,12 @@ int master_cc1101(int argc, char *argv[])
 	int 	ready_f = 0;
 
 	struct timespec clock;
-				
+
+	usleep(1000*1000L);				
     boardctl(BOARDIOC_TIME2_PPS_INIT, 0);
-    boardctl(BOARDIOC_433_PWRON, 0);
+	//433 power
+	boardctl(BOARDIOC_433_PWRON, 0);
+	usleep(1000*1000L);
 
 	fd = open("/dev/cc1101", O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
 	if (fd < 0)

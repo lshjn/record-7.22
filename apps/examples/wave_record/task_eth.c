@@ -72,83 +72,36 @@ void udp_client()
 
 void tcp_client(void)
 {
-	struct sockaddr_in server;
-	char *outbuf;
-	static int sockfd = -1;
-	
-	socklen_t addrlen;
-	int nbytessent;
-	int nbytesrecvd;
-	int totalbytesrecvd;
-
-	if(sockfd < 0)
-	{
-		sockfd = socket(AF_INET, SOCK_STREAM, 0);
-		if (sockfd < 0)
-		{
-			close(sockfd);
-			printf("client socket failure %d\n", errno);
-			return;
-		}
-
-		memset(&server,0,sizeof(server));
-		server.sin_family             = AF_INET;
-		server.sin_port               = htons(CONFIG_SVER_PORT);
-		server.sin_addr.s_addr        = inet_addr("192.168.3.240");
-		addrlen                       = sizeof(struct sockaddr_in);
-
-		printf("Connecting to IPv4 Address: %x\n", (unsigned long)server_ipv4);
-
-		if(connect( sockfd, (struct sockaddr*)&server, addrlen) < 0)
-		{
-			close(sockfd);
-			printf("client: connect failure: %d\n", errno);
-			return;
-		}
-
-		printf("client: Connected OK\n");
-	}
-
-  outbuf = (char*)&Reportdata_V[0][0];
-
-  //for (;;)
-    {
-		//send V
-		nbytessent = send(sockfd, outbuf, sizeof(Reportdata_V), 0);
-		if (nbytessent < 0)
-		{
-			close(sockfd);
-			sockfd = -1;
-			printf("client:V send failed: %d\n", errno);
-		}
-		else if (nbytessent != sizeof(Reportdata_V))
-		{
-			printf("client:V send length=%d: total=%d of \n",nbytessent, sizeof(Reportdata_V));
-		}
-		printf("V:Sent %d bytes\n", nbytessent);
-		
-		sleep(1);
-#if 0		
-		//send I
-		if(nbytessent == sizeof(Reportdata_V))
-		{
-			outbuf = (char*)&Reportdata_I[0][0];
-			nbytessent = send(sockfd, outbuf, sizeof(Reportdata_I), 0);
-			if (nbytessent < 0)
-			{
-				printf("client:I send failed: %d\n", errno);
-			}
-			else if (nbytessent != sizeof(Reportdata_I))
-			{
-				printf("client:I send length=%d: total=%d of \n",nbytessent, sizeof(Reportdata_I));
-			}
-			printf("I:Sent %d bytes\n", nbytessent);
-		}
-#endif		
-    }
-  printf("client: Terminating\n");
+  int fd = -1;
+  struct sockaddr_in addr;
   
-  //close(sockfd);
+  char * out = NULL;
+  
+  printf("tcp test\n");
+  fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (fd < 0)
+    {
+      printf("scoket error\n");
+      return -1;
+    }
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family      = AF_INET;
+  addr.sin_port        = htons(4001);
+  addr.sin_addr.s_addr = inet_addr("192.168.3.240");
+  if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+    {
+      printf("connect error\n");
+      return -1;
+    }
+
+  out = (char *)&Reportdata_V[0][0];
+  
+  write(fd, out, sizeof(Reportdata_V));
+  printf("connect ok\n");
+  
+  sleep(3);
+  close(fd);
+  
   return;
 }
 
@@ -195,7 +148,7 @@ static void eth0_configure(void)
 int report_tcp(int argc, FAR char *argv[])
 {
 	sleep(2);
-	eth0_configure();
+	//eth0_configure();
 	sleep(2);
      printf("eth0 up....\n");
 	while(1)

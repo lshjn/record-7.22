@@ -259,6 +259,11 @@ int master_gps(int argc, char *argv[])
 		close(fd_pps);
 	}
 
+	//gps power
+	boardctl(BOARDIOC_GPS_PWRON, 0);
+	usleep(1000*1000L);
+
+
 	//signal
 	memset(&act, 0, sizeof(struct sigaction));
 	act.sa_sigaction = pps_action;

@@ -623,6 +623,14 @@ int master_gprs(int argc, char *argv[])
 		goto errout;
 	}
 
+	//gprs
+	boardctl(BOARDIOC_GPRS_PWRON, 0);
+	usleep(1000*1000L);
+	//4g power
+	boardctl(BOARDIOC_4G_PWRON, 0);
+	usleep(1000*1000L);
+
+
 	/*
 	//gprs power
 	boardctl(BOARDIOC_GPRS_PWRON, 0);
