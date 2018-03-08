@@ -27,6 +27,10 @@ extern uint8_t   Reportdata_V[3][REPORTSIZE];
 extern uint8_t   Reportdata_I[3][REPORTSIZE];
 
 
+extern uint16_t   Reportdata_VV[3][80*12];
+extern uint16_t   Reportdata_II[3][80*12];
+
+
 struct cc110x_msg1{
 	uint8_t cmd;
 	uint8_t online_A;

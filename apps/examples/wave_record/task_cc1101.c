@@ -60,9 +60,12 @@ pthread_mutex_t g_SummonMutex		= PTHREAD_MUTEX_INITIALIZER;
 uint8_t   PatchIndex[32];
 uint8_t   ReportIndex[96];
 uint8_t   Reportdata[96][40];
+
 uint8_t   Reportdata_V[3][REPORTSIZE];
 uint8_t   Reportdata_I[3][REPORTSIZE];
 
+uint16_t   Reportdata_VV[3][80*12];
+uint16_t   Reportdata_II[3][80*12];
 
 /****************************************************************************
  * hello_main
@@ -262,10 +265,26 @@ int GetReportdata(char * rxbuff,uint8_t *reportdata,uint8_t *reportindex)
 	char * ptr_index = (char *)reportindex;
 	
 	ptr_index[P_summon_wave_res->pos-1] = 'Y';
+#if 0	
 	for(j=0;j<40;j++)
 	{
 		ptr_dst[(P_summon_wave_res->pos-1)*40 + j] = *ptr_src++;
 	}
+#else
+	for(j=0;j<10;j++)
+	{
+		printf("%02x ",rxbuff[j]);
+	}
+		printf("\n");
+		
+printf("src=%d\n",P_summon_wave_res->src);
+
+	for(j=0;j<FRAME_REPORT_SIZE;j++)
+	{
+		Reportdata_VV[P_summon_wave_res->src-A_ADDR][j+(P_summon_wave_res->pos-1)*FRAME_REPORT_SIZE] = P_summon_wave_res->data[(j<<1)];
+		Reportdata_II[P_summon_wave_res->src-A_ADDR][j+(P_summon_wave_res->pos-1)*FRAME_REPORT_SIZE] = P_summon_wave_res->data[(j<<1) + 1];
+	}
+#endif	
 }
 
 
@@ -595,23 +614,34 @@ void GetballData(int curball,uint8_t *reportindex,uint8_t *reportdata,uint8_t (*
 	uint8_t * p_data = reportdata;
 	
 	for(i=0;i<96;i++)
-	{					
+	{		
+	    //printf("V:%d\n",i);
 		if(reportindex[i] == 'Y')
-		{						
+		{		
+			#if 0
 			for(j=0;j<40;j++)	
 			{	
 				if(j < 20)	
 				{			
 					data_V[curball-1][i*20 + j] = *(p_data + i*40 + j); 
-					//printf("v%d:<%d>:<%x> ",i,j,data_V[curball-1][i*20 + j]);
+					printf("%d, ",data_V[curball-1][i*20 + j]);
 				}							
 				else							
 				{						
 					data_I[curball-1][i*20 + j-20] = *(p_data + i*40 + j); 
-				}						
+				}	
 			}	
+			#endif
 			//printf("\n");
-			
+			int k = 0;
+			for(k=0;k<10;k++)
+			{
+				data_V[curball-1][i*20 + k*2 + 0] = *(p_data + i*40 + k*4 + 0); 
+				data_V[curball-1][i*20 + k*2 + 1] = *(p_data + i*40 + k*4 + 1); 
+
+				data_I[curball-1][i*20 + k*2 + 0] = *(p_data + i*40 + k*4 + 2); 
+				data_I[curball-1][i*20 + k*2 + 1] = *(p_data + i*40 + k*4 + 3); 
+			}
 		}				
 	}
 }
@@ -702,7 +732,7 @@ void RcvdataParsing(struct work_status * workstatus,struct report_status *summon
 		clock_gettime(CLOCK_REALTIME, &clock2);
 
 #if 1
-		printf("<%d>clock1:%ds,%dms\n",summon->curball,clock1.tv_sec,clock1.tv_nsec/1000000);
+		printf("add[%x]<%d>clock1:%ds,%dms\n",&clock1,summon->curball,clock1.tv_sec,clock1.tv_nsec/1000000);
 		unsigned int time_diff = 0;
 		time_diff = (1000000000*(clock2.tv_sec - clock1.tv_sec) + (clock2.tv_nsec - clock1.tv_nsec));
 		time_diff = time_diff/1000000;
@@ -747,7 +777,7 @@ void RcvdataParsing(struct work_status * workstatus,struct report_status *summon
 				 }
 				break;
 		}
-	 	GetballData(summon->curball,reportindex,reportdata,data_V,data_I);
+	 	//GetballData(summon->curball,reportindex,reportdata,data_V,data_I);
 		workstatus->work_mode = CMD_READTIME;
 #if 1
 		printf("<%d>:%dms\n",summon->curball,time_diff);
@@ -763,8 +793,9 @@ void RcvdataParsing(struct work_status * workstatus,struct report_status *summon
 		    (summon->ballB_rcvState == ACK)&&
 			(summon->ballC_rcvState == ACK))
 		{
-			  ActiveSignal(cond, mutex);
+			  //ActiveSignal(cond, mutex);
 		}
+			  ActiveSignal(cond, mutex);
 	}
 
 }
