@@ -59,10 +59,10 @@ pthread_mutex_t g_SummonMutex		= PTHREAD_MUTEX_INITIALIZER;
 
 uint8_t   PatchIndex[32];
 uint8_t   ReportIndex[96];
-uint8_t   Reportdata[96][40];
+//uint8_t   Reportdata[96][40];
 
-uint8_t   Reportdata_V[3][REPORTSIZE];
-uint8_t   Reportdata_I[3][REPORTSIZE];
+//uint8_t   Reportdata_V[3][REPORTSIZE];
+//uint8_t   Reportdata_I[3][REPORTSIZE];
 
 uint16_t   Reportdata_VV[3][80*12];
 uint16_t   Reportdata_II[3][80*12];
@@ -256,35 +256,23 @@ int GetmsgStartaddrAndLen(char *databuff,int maxlen,char **start_addr)
 	return rlen;
 }
 
-int GetReportdata(char * rxbuff,uint8_t *reportdata,uint8_t *reportindex)
+int GetReportdata(char * rxbuff,uint8_t *reportindex)
 {
 	int j = 0;
 	struct report_res * P_summon_wave_res = (struct report_res *)rxbuff;
-	char * ptr_src = (char *)P_summon_wave_res->data;
-	char * ptr_dst = (char *)reportdata;
 	char * ptr_index = (char *)reportindex;
 	
 	ptr_index[P_summon_wave_res->pos-1] = 'Y';
 #if 0	
-	for(j=0;j<40;j++)
-	{
-		ptr_dst[(P_summon_wave_res->pos-1)*40 + j] = *ptr_src++;
-	}
-#else
-	for(j=0;j<10;j++)
-	{
-		printf("%02x ",rxbuff[j]);
-	}
-		printf("\n");
-		
-printf("src=%d\n",P_summon_wave_res->src);
+	printf("\n");		
+	printf("src=%d\n",P_summon_wave_res->src);
+#endif
 
 	for(j=0;j<FRAME_REPORT_SIZE;j++)
 	{
 		Reportdata_VV[P_summon_wave_res->src-A_ADDR][j+(P_summon_wave_res->pos-1)*FRAME_REPORT_SIZE] = P_summon_wave_res->data[(j<<1)];
 		Reportdata_II[P_summon_wave_res->src-A_ADDR][j+(P_summon_wave_res->pos-1)*FRAME_REPORT_SIZE] = P_summon_wave_res->data[(j<<1) + 1];
 	}
-#endif	
 }
 
 
@@ -597,8 +585,10 @@ int   initSummonState(void)
 	summon_status.ballB_rcvtotal = EMPTY;
 	summon_status.ballC_rcvtotal = EMPTY;
 
-	memset(Reportdata_V,0,sizeof(Reportdata_V));
-	memset(Reportdata_I,0,sizeof(Reportdata_I));
+//	memset(Reportdata_V,0,sizeof(Reportdata_V));
+//	memset(Reportdata_I,0,sizeof(Reportdata_I));
+	memset(Reportdata_VV,0,sizeof(Reportdata_VV));
+	memset(Reportdata_II,0,sizeof(Reportdata_II));
 
 	
 	patch_systick =systick;
@@ -607,8 +597,10 @@ int   initSummonState(void)
 	summon_status.enAsk = true;
 }
 
-void GetballData(int curball,uint8_t *reportindex,uint8_t *reportdata,uint8_t (*data_V)[REPORTSIZE],uint8_t (*data_I)[REPORTSIZE])
+void GetballData(int curball,uint8_t *reportindex)
 {
+			#if 0
+
 	//data parsing	
 	int i,j = 0;
 	uint8_t * p_data = reportdata;
@@ -618,7 +610,6 @@ void GetballData(int curball,uint8_t *reportindex,uint8_t *reportdata,uint8_t (*
 	    //printf("V:%d\n",i);
 		if(reportindex[i] == 'Y')
 		{		
-			#if 0
 			for(j=0;j<40;j++)	
 			{	
 				if(j < 20)	
@@ -631,7 +622,6 @@ void GetballData(int curball,uint8_t *reportindex,uint8_t *reportdata,uint8_t (*
 					data_I[curball-1][i*20 + j-20] = *(p_data + i*40 + j); 
 				}	
 			}	
-			#endif
 			//printf("\n");
 			int k = 0;
 			for(k=0;k<10;k++)
@@ -644,6 +634,7 @@ void GetballData(int curball,uint8_t *reportindex,uint8_t *reportdata,uint8_t (*
 			}
 		}				
 	}
+	#endif
 }
 
 
@@ -724,7 +715,7 @@ void PatchParsing(irqstate_t flags,int fd,struct work_status * workstatus,struct
 		}
 	}
 }
-void RcvdataParsing(struct work_status * workstatus,struct report_status *summon,uint8_t *patchindex,uint8_t *reportindex,uint8_t *reportdata,pthread_cond_t *cond,pthread_mutex_t *mutex,uint8_t (*data_V)[REPORTSIZE],uint8_t (*data_I)[REPORTSIZE])
+void RcvdataParsing(struct work_status * workstatus,struct report_status *summon,uint8_t *patchindex,uint8_t *reportindex,pthread_cond_t *cond,pthread_mutex_t *mutex)
 {
 	int total_lost = 0;
 	if((workstatus->work_mode == CMD_SUMMONWAVE_OK)||(workstatus->work_mode == CMD_PATCH_OK))
@@ -777,7 +768,6 @@ void RcvdataParsing(struct work_status * workstatus,struct report_status *summon
 				 }
 				break;
 		}
-	 	//GetballData(summon->curball,reportindex,reportdata,data_V,data_I);
 		workstatus->work_mode = CMD_READTIME;
 #if 1
 		printf("<%d>:%dms\n",summon->curball,time_diff);
@@ -793,9 +783,9 @@ void RcvdataParsing(struct work_status * workstatus,struct report_status *summon
 		    (summon->ballB_rcvState == ACK)&&
 			(summon->ballC_rcvState == ACK))
 		{
-			  //ActiveSignal(cond, mutex);
-		}
 			  ActiveSignal(cond, mutex);
+		}
+			  //ActiveSignal(cond, mutex);
 	}
 
 }
@@ -984,7 +974,7 @@ int master_cc1101(int argc, char *argv[])
 			//patch parsing
 			PatchParsing(flags,fd,&work_sts,&patch_head,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,summon_status.curball);
 			//rcv total
-			RcvdataParsing	(&work_sts,&summon_status,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,(uint8_t *)&Reportdata,&g_TimerConVar,&g_TimerMutex,Reportdata_V,Reportdata_I);
+			RcvdataParsing	(&work_sts,&summon_status,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&g_TimerConVar,&g_TimerMutex);
 			pthread_mutex_unlock(&g_SummonMutex);
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
@@ -1054,7 +1044,6 @@ int master_cc1101(int argc, char *argv[])
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
 													work_sts.work_mode = CMD_SUMMONWAVE;
 													memset(ReportIndex,0,sizeof(ReportIndex));
-													memset(Reportdata,0,sizeof(Reportdata));
 													printf("<%d>summon_wave\n",summon_status.curball);
 												}
 												break;
@@ -1069,7 +1058,6 @@ int master_cc1101(int argc, char *argv[])
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
 													work_sts.work_mode = CMD_SUMMONWAVE;
 													memset(ReportIndex,0,sizeof(ReportIndex));
-													memset(Reportdata,0,sizeof(Reportdata));
 													printf("<%d>summon_wave\n",summon_status.curball);
 												}
 												break;
@@ -1084,7 +1072,6 @@ int master_cc1101(int argc, char *argv[])
 													summon_wave(flags,fd,&summon_wave_req,summon_status.curball);
 													work_sts.work_mode = CMD_SUMMONWAVE;
 													memset(ReportIndex,0,sizeof(ReportIndex));
-													memset(Reportdata,0,sizeof(Reportdata));
 													printf("<%d>summon_wave\n",summon_status.curball);
 												}
 												break;	
@@ -1096,13 +1083,13 @@ int master_cc1101(int argc, char *argv[])
 							case CMD_SUMMONWAVE:
 								if(P_data[4] == summon_status.curball)
 								{
-									GetReportdata(P_data,(uint8_t *)&Reportdata,(uint8_t *)&ReportIndex);
+									GetReportdata(P_data,(uint8_t *)&ReportIndex);
 								}
 								break;
 							case CMD_PATCH:
 								if(P_data[4] == summon_status.curball)
 								{
-									GetReportdata(P_data,(uint8_t *)&Reportdata,(uint8_t *)&ReportIndex);
+									GetReportdata(P_data,(uint8_t *)&ReportIndex);
 								}
 							break;		
 						}

@@ -22,9 +22,10 @@ extern pthread_cond_t  g_TcpConVar;
 
 extern uint8_t   PatchIndex[32];
 extern uint8_t   ReportIndex[96];
-extern uint8_t   Reportdata[96][40];
-extern uint8_t   Reportdata_V[3][REPORTSIZE];
-extern uint8_t   Reportdata_I[3][REPORTSIZE];
+//extern uint8_t   Reportdata[96][40];
+
+//extern uint8_t   Reportdata_V[3][REPORTSIZE];
+//extern uint8_t   Reportdata_I[3][REPORTSIZE];
 
 
 extern uint16_t   Reportdata_VV[3][80*12];
