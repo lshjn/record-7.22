@@ -597,47 +597,6 @@ int   initSummonState(void)
 	summon_status.enAsk = true;
 }
 
-void GetballData(int curball,uint8_t *reportindex)
-{
-			#if 0
-
-	//data parsing	
-	int i,j = 0;
-	uint8_t * p_data = reportdata;
-	
-	for(i=0;i<96;i++)
-	{		
-	    //printf("V:%d\n",i);
-		if(reportindex[i] == 'Y')
-		{		
-			for(j=0;j<40;j++)	
-			{	
-				if(j < 20)	
-				{			
-					data_V[curball-1][i*20 + j] = *(p_data + i*40 + j); 
-					printf("%d, ",data_V[curball-1][i*20 + j]);
-				}							
-				else							
-				{						
-					data_I[curball-1][i*20 + j-20] = *(p_data + i*40 + j); 
-				}	
-			}	
-			//printf("\n");
-			int k = 0;
-			for(k=0;k<10;k++)
-			{
-				data_V[curball-1][i*20 + k*2 + 0] = *(p_data + i*40 + k*4 + 0); 
-				data_V[curball-1][i*20 + k*2 + 1] = *(p_data + i*40 + k*4 + 1); 
-
-				data_I[curball-1][i*20 + k*2 + 0] = *(p_data + i*40 + k*4 + 2); 
-				data_I[curball-1][i*20 + k*2 + 1] = *(p_data + i*40 + k*4 + 3); 
-			}
-		}				
-	}
-	#endif
-}
-
-
 int  SummonwaveParsing(struct work_status * workstatus,uint8_t *patchindex,uint8_t *reportindex,int curball)
 {
 	int res_lost = 0;
@@ -722,7 +681,7 @@ void RcvdataParsing(struct work_status * workstatus,struct report_status *summon
 	{
 		clock_gettime(CLOCK_REALTIME, &clock2);
 
-#if 1
+#if 0
 		printf("add[%x]<%d>clock1:%ds,%dms\n",&clock1,summon->curball,clock1.tv_sec,clock1.tv_nsec/1000000);
 		unsigned int time_diff = 0;
 		time_diff = (1000000000*(clock2.tv_sec - clock1.tv_sec) + (clock2.tv_nsec - clock1.tv_nsec));
@@ -769,7 +728,7 @@ void RcvdataParsing(struct work_status * workstatus,struct report_status *summon
 				break;
 		}
 		workstatus->work_mode = CMD_READTIME;
-#if 1
+#if 0
 		printf("<%d>:%dms\n",summon->curball,time_diff);
 		printf("<%d>clock2:%ds,%dms\n",summon->curball,clock2.tv_sec,clock2.tv_nsec/1000000);
 
@@ -1015,6 +974,7 @@ int master_cc1101(int argc, char *argv[])
 						{
 							case CMD_READTIME:
 								if(work_sts.work_mode == CMD_READTIME)
+								//if((summon_status.enAsk == true)&&(work_sts.work_mode == CMD_READTIME))
 								{
 									wBytes = synctime(flags,fd,fd_timer2,P_cc1101_msg_rx,P_data,P_cc1101_msg_tx);
 									if(wBytes != sizeof(cc110x_timemsg))
@@ -1037,7 +997,7 @@ int master_cc1101(int argc, char *argv[])
 												if(summon_status.ballA_rcvState != ACK)
 												{
 													clock_gettime(CLOCK_REALTIME, &clock1);
-													printf("<%d>clock1:%ds,%dms\n",P_data[4],clock1.tv_sec,clock1.tv_nsec/1000000);
+													//printf("<%d>clock1:%ds,%dms\n",P_data[4],clock1.tv_sec,clock1.tv_nsec/1000000);
 
 													totalA++;
 												  	summon_status.curball = A_ADDR;
@@ -1051,7 +1011,7 @@ int master_cc1101(int argc, char *argv[])
 												if(summon_status.ballB_rcvState != ACK)
 												{
 													clock_gettime(CLOCK_REALTIME, &clock1);
-													printf("<%d>clock1:%ds,%dms\n",P_data[4],clock1.tv_sec,clock1.tv_nsec/1000000);
+													//printf("<%d>clock1:%ds,%dms\n",P_data[4],clock1.tv_sec,clock1.tv_nsec/1000000);
 													
 													totalB++;
 												    summon_status.curball = B_ADDR;
@@ -1065,7 +1025,7 @@ int master_cc1101(int argc, char *argv[])
 												if(summon_status.ballC_rcvState != ACK)
 												{
 													clock_gettime(CLOCK_REALTIME, &clock1);
-													printf("<%d>clock1:%ds,%dms\n",P_data[4],clock1.tv_sec,clock1.tv_nsec/1000000);
+													//printf("<%d>clock1:%ds,%dms\n",P_data[4],clock1.tv_sec,clock1.tv_nsec/1000000);
 
 													totalC++;
 												    summon_status.curball = C_ADDR;
