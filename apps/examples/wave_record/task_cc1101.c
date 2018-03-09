@@ -974,7 +974,7 @@ int master_cc1101(int argc, char *argv[])
 			//patch parsing
 			PatchParsing(flags,fd,&work_sts,&patch_head,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,summon_status.curball);
 			//rcv total
-			RcvdataParsing	(&work_sts,&summon_status,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&g_TimerConVar,&g_TimerMutex);
+			RcvdataParsing(&work_sts,&summon_status,(uint8_t *)&PatchIndex,(uint8_t *)&ReportIndex,&g_TimerConVar,&g_TimerMutex);
 			pthread_mutex_unlock(&g_SummonMutex);
 		}
 		else if ((fds[0].revents & POLLERR) && (fds[0].revents & POLLHUP))
