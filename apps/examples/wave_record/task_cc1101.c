@@ -57,8 +57,11 @@ pthread_cond_t  g_TcpConVar		= PTHREAD_COND_INITIALIZER;
 pthread_mutex_t g_SummonMutex		= PTHREAD_MUTEX_INITIALIZER;
 
 
+//80 * 12* 3 = 2880 bytes
+//2880 /(15*3) = 64
+
 uint8_t   PatchIndex[32];
-uint8_t   ReportIndex[96];
+uint8_t   ReportIndex[FULL];
 //uint8_t   Reportdata[96][40];
 
 //uint8_t   Reportdata_V[3][REPORTSIZE];
@@ -66,6 +69,9 @@ uint8_t   ReportIndex[96];
 
 uint16_t   Reportdata_VV[3][80*12];
 uint16_t   Reportdata_II[3][80*12];
+
+
+uint16_t   Reportdata_SEND[3][80*12];
 
 /****************************************************************************
  * hello_main
@@ -94,8 +100,6 @@ uint16_t   Reportdata_II[3][80*12];
 #define 	ACK 		1
 #define 	NOACK 		0
 
-#define 	FULL 		96
-#define 	EMPTY 		0
 
 #define 	ONLINE 		1
 #define 	OFFLINE 	0
@@ -265,14 +269,30 @@ int GetReportdata(char * rxbuff,uint8_t *reportindex)
 	ptr_index[P_summon_wave_res->pos-1] = 'Y';
 #if 0	
 	printf("\n");		
-	printf("src=%d\n",P_summon_wave_res->src);
+	printf("size=%d\n",sizeof(struct report_res));
 #endif
 
 	for(j=0;j<FRAME_REPORT_SIZE;j++)
 	{
-		Reportdata_VV[P_summon_wave_res->src-A_ADDR][j+(P_summon_wave_res->pos-1)*FRAME_REPORT_SIZE] = P_summon_wave_res->data[(j<<1)];
-		Reportdata_II[P_summon_wave_res->src-A_ADDR][j+(P_summon_wave_res->pos-1)*FRAME_REPORT_SIZE] = P_summon_wave_res->data[(j<<1) + 1];
+		Reportdata_VV[P_summon_wave_res->src-A_ADDR][j+(P_summon_wave_res->pos-1)*FRAME_REPORT_SIZE] = P_summon_wave_res->data[j].voltage;
+		Reportdata_II[P_summon_wave_res->src-A_ADDR][j+(P_summon_wave_res->pos-1)*FRAME_REPORT_SIZE] = P_summon_wave_res->data[j].current;
+
+		if((P_summon_wave_res->data[j].voltage > 3000) || (P_summon_wave_res->data[j].voltage < 1000))
+		{
+			printf("I<%d>:%d.............\n",P_summon_wave_res->pos,P_summon_wave_res->data[j].voltage);
+		}
 	}
+
+#if 0
+	printf("<%d><%d>\n",P_summon_wave_res->src-A_ADDR,P_summon_wave_res->pos);
+	
+    for(j=0;j<FRAME_REPORT_SIZE;j++)
+    {
+		printf("%d ",Reportdata_VV[P_summon_wave_res->src-A_ADDR][j+(P_summon_wave_res->pos-1)*FRAME_REPORT_SIZE]);
+	}
+	printf("\n");
+#endif
+	
 }
 
 
@@ -742,9 +762,9 @@ void RcvdataParsing(struct work_status * workstatus,struct report_status *summon
 		    (summon->ballB_rcvState == ACK)&&
 			(summon->ballC_rcvState == ACK))
 		{
-			  ActiveSignal(cond, mutex);
-		}
 			  //ActiveSignal(cond, mutex);
+		}
+			  ActiveSignal(cond, mutex);
 	}
 
 }
@@ -774,6 +794,9 @@ int report_cc1101(int argc, char *argv[])
 		{
 			ret = 0;
 			//wake up tcp
+			memset(Reportdata_SEND,0,sizeof(Reportdata_SEND));
+			memcpy(Reportdata_SEND,Reportdata_VV,sizeof(Reportdata_VV));
+
 			ActiveSignal(&g_TcpConVar,&g_TcpMutex);
 		}
 		summon_status.enAsk = false;

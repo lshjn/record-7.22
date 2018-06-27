@@ -61,29 +61,13 @@ int main(int argc, FAR char *argv[])
 int hello_main(int argc, char *argv[])
 #endif
 {
-  int fd = -1;
-  struct sockaddr_in addr;
-  static char buf[8000];
-  printf("tcp test\n");
-  fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (fd < 0)
-    {
-      printf("scoket error\n");
-      return -1;
-    }
-  memset(&addr, 0, sizeof(addr));
-  addr.sin_family      = AF_INET;
-  addr.sin_port        = htons(4001);
-  addr.sin_addr.s_addr = inet_addr("192.168.3.240");
-  if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-      printf("connect error\n");
-      return -1;
-    }
-  write(fd, buf, sizeof(buf));
-  printf("connect ok\n");
-  sleep(1);
-  close(fd);
-  printf("Hello, World!!\n");
-  return 0;
+   while(1)	
+  {
+  		cnt++;
+		boardctl(BOARDIOC_LED5_ON, 0);
+  		usleep(2000*1000);
+		boardctl(BOARDIOC_LED5_OFF, 0);
+  		usleep(2000*1000);
+		//printf("wdog---------wdog------<%d>\n",cnt);
+  }
 }

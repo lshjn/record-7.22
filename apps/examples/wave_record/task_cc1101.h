@@ -5,8 +5,13 @@
  extern "C" {
 #endif 
 
+#define 	FULL 		64
+#define 	EMPTY 		0
+
+
 #define ALIGN __attribute__((packed))
-#define FRAME_REPORT_SIZE  10
+
+#define FRAME_REPORT_SIZE  15
 
 extern pthread_mutex_t g_TimerMutex;
 extern pthread_cond_t  g_TimerConVar;
@@ -21,7 +26,7 @@ extern pthread_cond_t  g_TcpConVar;
 #define    REPORTSIZE  1920
 
 extern uint8_t   PatchIndex[32];
-extern uint8_t   ReportIndex[96];
+extern uint8_t   ReportIndex[FULL];
 //extern uint8_t   Reportdata[96][40];
 
 //extern uint8_t   Reportdata_V[3][REPORTSIZE];
@@ -30,6 +35,8 @@ extern uint8_t   ReportIndex[96];
 
 extern uint16_t   Reportdata_VV[3][80*12];
 extern uint16_t   Reportdata_II[3][80*12];
+
+extern uint16_t   Reportdata_SEND[3][80*12];
 
 
 struct cc110x_msg1{
@@ -108,6 +115,15 @@ struct ALIGN report_req{
 };
 
 //report_res
+struct ALIGN metadata{
+	//12bit 4096
+	unsigned int voltage:12;
+	unsigned int current:12;
+};
+
+typedef struct metadata metadata_t;
+
+//report_res
 struct ALIGN report_res{
 	uint8_t  start_flag;
 	uint8_t  msglen;
@@ -117,7 +133,7 @@ struct ALIGN report_res{
 	//private
 	uint8_t  sum; 		    //总包数
 	uint8_t  pos;           //第几包         
-	uint16_t data[FRAME_REPORT_SIZE << 1];         
+	metadata_t data[FRAME_REPORT_SIZE];         
 	uint8_t  endflag;        
 };
 

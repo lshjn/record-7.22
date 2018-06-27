@@ -1114,6 +1114,7 @@ int cc1101_checkpart(FAR struct cc1101_dev_s *dev)
       return ERROR;
     }
 /******************************************************************************/
+spierr("version=%d\n",version);
     return OK;  
 
 	if (partnum == CC1101_PARTNUM_VALUE && version == CC1101_VERSION_VALUE)

@@ -87,7 +87,7 @@
  * HSE - On-board crystal frequency is 8MHz
  * LSE - 32.768 kHz
  */
-
+//add by liushuhe 2017.11.03
 #define STM32_BOARD_XTAL        25000000ul
 
 #define STM32_HSI_FREQUENCY     16000000ul
@@ -107,6 +107,7 @@
  *         =  PLL_VCO / PLLQ
  *         = 48,000,000
  */
+//add by liushuhe 2017.11.03
 
 #define STM32_PLLCFG_PLLM       RCC_PLLCFG_PLLM(25)
 #define STM32_PLLCFG_PLLN       RCC_PLLCFG_PLLN(336)
@@ -268,32 +269,6 @@
 #  define GPIO_USART2_RX GPIO_USART2_RX_2
 #  define GPIO_USART2_TX GPIO_USART2_TX_2
 
-/* UART3: (Used in pseudoterm configuration) */
-//add by liushuhe 2017.11.03
-#define GPIO_USART3_TX GPIO_USART3_TX_3
-#define GPIO_USART3_RX GPIO_USART3_RX_3
-
-/* UART4: (Used in pseudoterm configuration) */
-//add by liushuhe 2017.12.21
-
-#define GPIO_UART4_RX    GPIO_UART4_RX_2       
-#define GPIO_UART4_TX    GPIO_UART4_TX_2    
-
-/* UART5: (Used in pseudoterm configuration) */
-//add by liushuhe 2017.12.21
-
-#define GPIO_UART5_RX    (GPIO_ALT|GPIO_AF8|GPIO_PULLUP|GPIO_SPEED_100MHz|GPIO_PUSHPULL|GPIO_PORTD|GPIO_PIN2)       
-#define GPIO_UART5_TX    (GPIO_ALT|GPIO_AF8|GPIO_PULLUP|GPIO_SPEED_100MHz|GPIO_PUSHPULL|GPIO_PORTC|GPIO_PIN12)    
-
-
-/* UART6:
- *
- * The STM32F4DIS-BB base board provides RS-232 drivers and a DB9 connector
- * for USART6.  This is the preferred serial console for use with the STM32F4DIS-BB.
- */
-
-#define GPIO_USART6_RX GPIO_USART6_RX_1
-#define GPIO_USART6_TX GPIO_USART6_TX_1
 
 /* PWM
  *

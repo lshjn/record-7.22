@@ -1,0 +1,214 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+config EXAMPLES_TEC_POWER
+	bool "tec_power app"
+	default n
+	---help---
+		Enable tec_power app
+
+
+if EXAMPLES_TEC_POWER
+
+config EXAMPLES_TEC_POWER_PROGNAME
+	string "Program name"
+	default "tec_power"
+	depends on BUILD_KERNEL
+	---help---
+		This is the name of the program that will be use when the NSH ELF
+		program is installed.
+
+config EXAMPLES_TEC_POWER_PRIORITY
+	int "task_main priority"
+	default 100
+
+config EXAMPLES_TEC_POWER_STACKSIZE
+	int "stack_mian size"
+	default 2048
+
+#monitor
+config EXAMPLES_TEC_POWER_MONITOR
+	bool "monitor task"
+	default n
+	depends on EXAMPLES_TEC_POWER
+	---help---
+		Enable the monitor task
+
+if EXAMPLES_TEC_POWER_MONITOR
+
+config EXAMPLES_MONITOR_PRIORITY
+	int "monitor task priority"
+	default 100
+
+config EXAMPLES_MONITOR_STACKSIZE
+	int "monitor stack size"
+	default 2048
+	
+endif #monitor
+
+#modbus
+config EXAMPLES_TEC_POWER_MODBUS
+	bool "modbus task"
+	default n
+	depends on EXAMPLES_TEC_POWER
+	---help---
+		Enable the modbus task
+
+if EXAMPLES_TEC_POWER_MODBUS
+
+config EXAMPLES_MODBUS_PRIORITY
+	int "modbus app task priority"
+	default 100
+
+config EXAMPLES_MODBUS_STACKSIZE
+	int "modbus app stack size"
+	default 2048
+
+
+config EXAMPLES_MODBUS_PORT
+	int "Port used for MODBUS transmissions"
+	default 0
+	---help---
+		Port used for MODBUS transmissions, default = 0 (i.e., /dev/ttyS0)
+
+config EXAMPLES_MODBUS_BAUD
+	int "MODBUS baudrate"
+	default 115200
+	range 50 3000000
+	---help---
+		MODBUS baudrate, allowed values {50, 75, 110, 134, 150, 200, 300, 600,
+		1200, 1800, 2400, 4800, 9600, 19200, 38400, 57600, 115200, 128000,
+		230400, 256000, 460800, 500000, 576000, 921600, 1000000, 1152000,
+		1500000, 2000000, 2500000, 3000000}
+
+config EXAMPLES_MODBUS_PARITY
+	int "MODBUS parity"
+	default 2
+	range 0 2
+	---help---
+		MODBUS parity, 0 - none, 1 - odd, 2 - even
+
+config EXAMPLES_MODBUS_REG_INPUT_START
+	int "Input registers start address"
+	default 1000
+
+config EXAMPLES_MODBUS_REG_INPUT_NREGS
+	int "Number of input registers"
+	default 4
+
+config EXAMPLES_MODBUS_REG_HOLDING_START
+	int "Holding registers start address"
+	default 2000
+
+config EXAMPLES_MODBUS_REG_HOLDING_NREGS
+	int "Number of holding registers"
+	default 130
+	
+endif # EXAMPLES_MODBUS
+
+#flash
+config EXAMPLES_FLASH
+	bool "flash task"
+	default n
+	depends on EXAMPLES_TEC_POWER
+	---help---
+		Enable the flash task
+
+if EXAMPLES_FLASH
+
+config EXAMPLES_FLASH_PRIORITY
+	int "flash task priority"
+	default 100
+
+config EXAMPLES_FLASH_STACKSIZE
+	int "flash stack size"
+	default 2048
+
+config EXAMPLES_FLASH_DEVPATH
+	string "flash device path"
+	default "/dev/mtdblock0"
+	
+endif #flash
+
+#rtc
+config EXAMPLES_RTC
+	bool "RTC task"
+	default n
+	depends on EXAMPLES_TEC_POWER
+	---help---
+		Enable the RTC task
+
+if EXAMPLES_RTC
+
+config EXAMPLES_RTC_PRIORITY
+	int "RTC task priority"
+	default 100
+
+config EXAMPLES_RTC_STACKSIZE
+	int "RTC stack size"
+	default 2048
+
+config EXAMPLES_RTC_DEVPATH
+	string "RTC device path"
+	default "/dev/rtc0"
+	
+endif #RTC
+
+
+#ADC
+config EXAMPLES_TEC_POWER_ADC
+	bool "adc task"
+	default n
+	depends on ADC && LIB_BOARDCTL && EXAMPLES_TEC_POWER
+	select BOARDCTL_ADCTEST
+	---help---
+		Enable the adc task
+
+if EXAMPLES_TEC_POWER_ADC
+
+config EXAMPLES_ADC_PRIORITY
+	int "adc task priority"
+	default 100
+
+config EXAMPLES_ADC_STACKSIZE
+	int "adc stack size"
+	default 2048
+
+config EXAMPLES_ADC_DEVPATH
+	string "ADC device path"
+	default "/dev/adc0"
+	---help---
+		The default path to the ADC device. Default: /dev/adc0
+
+config EXAMPLES_ADC_NSAMPLES
+	int "Number of Sample Groups"
+	default 0
+	depends on !NSH_BUILTIN_APPS
+	---help---
+		If NSH_BUILTIN_APPS is defined, then the number of samples is provided
+		on the command line and this value is ignored.  Otherwise, this number
+		of samples is collected and the program terminates.  Default:  0 (samples
+		are collected indefinitely).
+
+config EXAMPLES_ADC_GROUPSIZE
+	int "Number of Samples per Group"
+	default 7
+	---help---
+		The number of samples to read at once. Default: 4
+
+config EXAMPLES_ADC_SWTRIG
+	bool "Use software trigger"
+	default n
+	---help---
+		Some ADCs may be configured so there is no automatic or periodic
+		conversion of samples.  Rather, the ADC sampling must be trigger by
+		software via an ioctl command.  Select this option only if
+		applicable for your ADC configuration.  In this case, the test will
+		issue the software trigger ioctl before attempting to read from the
+		ADC.
+
+endif #adc
+
+endif #EXAMPLES_TEC_POWER

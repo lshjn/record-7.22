@@ -250,7 +250,7 @@ int wave_record_main(int argc, FAR char *argv[])
   		usleep(2000*1000);
 		boardctl(BOARDIOC_LED4_OFF, 0);
   		usleep(2000*1000);
-		printf("wdog---------wdog------<%d>\n",cnt);
+	//	printf("wdog---------wdog------<%d>\n",cnt);
   }
   #endif	
 

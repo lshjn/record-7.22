@@ -94,9 +94,9 @@ void tcp_client(void)
       return -1;
     }
 
-  out = (char *)&Reportdata_II[0][0];
+  out = (char *)&Reportdata_SEND[0][0];
   
-  write(fd, out, sizeof(Reportdata_II));
+  write(fd, out, sizeof(Reportdata_SEND));
   printf("connect ok\n");
   
   sleep(3);

@@ -220,9 +220,9 @@
 
                          
 #define GPIO_LED4       (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
-                         GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN7)
+                         GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN15)
 #define GPIO_LED5       (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
-                         GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN8)
+                         GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN14)
 #define GPIO_LED6       (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
                          GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN2)
                          
