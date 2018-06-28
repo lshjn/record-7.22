@@ -1,9 +1,10 @@
-#ifndef _TASK_ADC_H
-#define _TASK_ADC_H
+#ifndef _TASK_SPI_H
+#define _TASK_SPI_H
 
 #ifdef __cplusplus
  extern "C" {
 #endif 
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,16 +12,16 @@
 #include <string.h>
 #include <errno.h>
 
-#include <nuttx/analog/adc.h>
-
 
 /****************************************************************************
  * Private Data
  ****************************************************************************/
+void read_temper(void);
+uint16_t read_max31865(void);
 
-int master_adc(int argc, char *argv[]);
-float read_DC_I(void);
 
+int master_spi(int argc, char *argv[]);
+ 
 
 
 #ifdef __cplusplus

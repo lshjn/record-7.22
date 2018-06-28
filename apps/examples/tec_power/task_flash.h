@@ -5,6 +5,12 @@
  extern "C" {
 #endif 
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <errno.h>
+
 int master_flash(int argc, char *argv[]);
 
 

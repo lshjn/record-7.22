@@ -73,6 +73,7 @@
 #include "task_monitor.h"
 #include "task_flash.h"
 #include "task_adc.h"
+#include "pid.h"
 
 /****************************************************************************
  * lid_master_main
@@ -128,7 +129,7 @@ int tec_power_main(int argc, FAR char *argv[])
 
 	printf("master_monitor %d\n",ret);
 
-	
+
 	ret = task_create("master_adc", CONFIG_EXAMPLES_ADC_PRIORITY,
 		            CONFIG_EXAMPLES_ADC_STACKSIZE, master_adc,
 		            NULL);

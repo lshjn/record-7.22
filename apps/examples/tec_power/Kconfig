@@ -132,31 +132,6 @@ config EXAMPLES_FLASH_DEVPATH
 	
 endif #flash
 
-#rtc
-config EXAMPLES_RTC
-	bool "RTC task"
-	default n
-	depends on EXAMPLES_TEC_POWER
-	---help---
-		Enable the RTC task
-
-if EXAMPLES_RTC
-
-config EXAMPLES_RTC_PRIORITY
-	int "RTC task priority"
-	default 100
-
-config EXAMPLES_RTC_STACKSIZE
-	int "RTC stack size"
-	default 2048
-
-config EXAMPLES_RTC_DEVPATH
-	string "RTC device path"
-	default "/dev/rtc0"
-	
-endif #RTC
-
-
 #ADC
 config EXAMPLES_TEC_POWER_ADC
 	bool "adc task"

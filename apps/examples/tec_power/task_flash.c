@@ -20,6 +20,7 @@
 #include <nuttx/ioexpander/gpio.h>
 
 #include "task_flash.h"
+#include "pid.h"
 
 
 /****************************************************************************

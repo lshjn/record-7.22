@@ -70,6 +70,7 @@
 
 #include "modbus/mb.h"
 #include "modbus/mbport.h"
+#include "pid.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -132,7 +133,6 @@ struct modbus_state_s
 static inline int modbus_initialize(void);
 static void *modbus_pollthread(void *pvarg);
 static inline int modbus_create_pollthread(void);
-static void modbus_showusage(FAR const char *progname, int exitcode);
 
 /****************************************************************************
  * Private Data
