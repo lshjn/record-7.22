@@ -72,7 +72,7 @@
 #include "task_modbus.h"
 #include "task_monitor.h"
 #include "task_flash.h"
-#include "task_adc.h"
+#include "adc.h"
 #include "pid.h"
 
 /****************************************************************************
@@ -129,20 +129,6 @@ int tec_power_main(int argc, FAR char *argv[])
 
 	printf("master_monitor %d\n",ret);
 
-
-	ret = task_create("master_adc", CONFIG_EXAMPLES_ADC_PRIORITY,
-		            CONFIG_EXAMPLES_ADC_STACKSIZE, master_adc,
-		            NULL);
-	if (ret < 0)
-	{
-		int errcode = errno;
-		printf("salve_adc: ERROR: Failed to start adc: %d\n",errcode);
-		return EXIT_FAILURE;
-	}
-
-	printf("master_adc %d\n",ret);
-
-
 	int cnt = 0;
 	while(1)	
 	{
@@ -151,7 +137,7 @@ int tec_power_main(int argc, FAR char *argv[])
 		usleep(2000*1000);
 		boardctl(BOARDIOC_LED0_OFF, 0);
 		usleep(2000*1000);
-		printf("wdog");
+		//printf("wdog\n");
 	}
 	
   return EXIT_SUCCESS;

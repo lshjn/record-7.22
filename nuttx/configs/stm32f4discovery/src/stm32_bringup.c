@@ -264,7 +264,9 @@ int stm32_bringup(void)
 
 //add by liushuhe 2017.12.19
 #if defined(CONFIG_STM32_SPI1) || defined(CONFIG_STM32_SPI2) || defined(CONFIG_STM32_SPI3)
-  stm32f407_cc1100_spiinitialize();
+  //stm32f407_cc1100_spiinitialize();
+  //add by liushuhe 2018.06.28
+  stm32f407_max31865_spiinitialize();
 #endif
 
 
@@ -277,6 +279,7 @@ stm32_timer_driver_setup("/dev/timer3_pwm",3);
 
 #ifdef HAVE_RTC_DRIVER
   /* Instantiate the STM32 lower-half RTC driver */
+  
 
   lower = stm32_rtc_lowerhalf();
   if (!lower)

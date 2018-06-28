@@ -12,31 +12,23 @@
 #include <errno.h>
 
 #include <nuttx/timers/rtc.h>
-
+#include "pid.h"
 
 /****************************************************************************
  * Private function
  ****************************************************************************/
 #define CONFIG_EXAMPLES_TIMER_DEVNAME 		"/dev/timer1_pid_samping"
-#define CONFIG_EXAMPLES_TIMER_INTERVAL 		(1000000)
+#define CONFIG_EXAMPLES_TIMER_INTERVAL 		(pid.T*1000)     //unit us
 #define CONFIG_EXAMPLES_TIMER_SIGNO 17
 
-struct pwm_state_s
-{
-  bool      initialized;
-  uint8_t   duty;
-  uint32_t  freq;
-  uint32_t  count;
-};
-extern struct 	pwm_state_s g_pwmstate;
+
 
 /****************************************************************************
  * Private function
  ****************************************************************************/
 void  signal_timeInt(void);
 void  signal_EXTER_CTR(void);
-void set_pwm(float pwm_value);
-void startup_pid_Sampling_timer(void);
+void  startup_pid_Sampling_timer(void);
 
 
 int master_monitor(int argc, char *argv[]);

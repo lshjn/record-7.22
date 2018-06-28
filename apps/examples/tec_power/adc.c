@@ -19,9 +19,10 @@
 #include <errno.h>
 #include <nuttx/ioexpander/gpio.h>
 
-#include "task_adc.h"
+#include "adc.h"
 #include "task_monitor.h"
 #include "pid.h"
+#include "task_modbus.h"
 
 /****************************************************************************
  * Private Data
@@ -152,6 +153,7 @@ if(!adc_status)
 		{
 			pid.DC_I_CUR_ADC = CalcSampleData(&SensorDate);
 			//设置modbus数据结构
+			g_modbus.reginput[1] = pid.DC_I_CUR_ADC;
 		}
 	}
 	else
@@ -162,20 +164,7 @@ if(!adc_status)
 	return pid.DC_I_CUR_ADC;
 }
 
-/****************************************************************************
- * master_adc
- * liushuhe
- * 2017.09.26
- ****************************************************************************/
-int master_adc(int argc, char *argv[])
-{
-	while(1)
-	{
-		sleep(1);
-	}
 
-  return 0;;
-}
 
 
 

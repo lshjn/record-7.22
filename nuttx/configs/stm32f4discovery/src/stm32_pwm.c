@@ -67,21 +67,10 @@
 
 #define HAVE_PWM 1
 
-#ifndef CONFIG_PWM
-#  undef HAVE_PWM
-#endif
+/*************************************************************************************/
+//add by liushuhe  2018.06.28
 
-#ifndef CONFIG_STM32_TIM4
-#  undef HAVE_PWM
-#endif
-
-#ifndef CONFIG_STM32_TIM4_PWM
-#  undef HAVE_PWM
-#endif
-
-#if !defined(CONFIG_STM32_TIM4_CHANNEL) || CONFIG_STM32_TIM4_CHANNEL != STM32F4DISCOVERY_PWMCHANNEL
-#  undef HAVE_PWM
-#endif
+#ifdef CONFIG_PWM
 
 /************************************************************************************
  * Public Functions
@@ -97,7 +86,6 @@
 
 int stm32_pwm_setup(void)
 {
-#ifdef HAVE_PWM
   static bool initialized = false;
   struct pwm_lowerhalf_s *pwm;
   int ret;
@@ -106,9 +94,17 @@ int stm32_pwm_setup(void)
 
   if (!initialized)
     {
-      /* Call stm32_pwminitialize() to get an instance of the PWM interface */
+      /* Call stm32l4_pwminitialize() to get an instance of the PWM interface */
 
-      pwm = stm32_pwminitialize(STM32F4DISCOVERY_PWMTIMER);
+      /* PWM
+       *
+       * The Nucleo-l476rg has no real on-board PWM devices, but the board can be
+       * configured to output a pulse train using TIM1 or 8, or others (see board.h).
+       * Let's figure out which the user has configured.
+       */
+
+#if defined(CONFIG_STM32_TIM1_PWM)
+      pwm = stm32_pwminitialize(1);
       if (!pwm)
         {
           aerr("ERROR: Failed to get the STM32 PWM lower half\n");
@@ -123,6 +119,97 @@ int stm32_pwm_setup(void)
           aerr("ERROR: pwm_register failed: %d\n", ret);
           return ret;
         }
+#endif
+
+#if defined(CONFIG_STM32_TIM2_PWM)
+      pwm = stm32_pwminitialize(2);
+      if (!pwm)
+        {
+          aerr("ERROR: Failed to get the STM32 PWM lower half\n");
+          return -ENODEV;
+        }
+
+      /* Register the PWM driver at "/dev/pwm1" */
+
+      ret = pwm_register("/dev/pwm1", pwm);
+      if (ret < 0)
+        {
+          aerr("ERROR: pwm_register failed: %d\n", ret);
+          return ret;
+        }
+#endif
+
+#if defined(CONFIG_STM32_TIM3_PWM)
+      pwm = stm32_pwminitialize(3);
+      if (!pwm)
+        {
+          aerr("ERROR: Failed to get the STM32 PWM lower half\n");
+          return -ENODEV;
+        }
+
+      /* Register the PWM driver at "/dev/pwm2" */
+
+      ret = pwm_register("/dev/pwm2", pwm);
+      if (ret < 0)
+        {
+          aerr("ERROR: pwm_register failed: %d\n", ret);
+          return ret;
+        }
+#endif
+
+#if defined(CONFIG_STM32_TIM4_PWM)
+      pwm = stm32_pwminitialize(4);
+      if (!pwm)
+        {
+          aerr("ERROR: Failed to get the STM32 PWM lower half\n");
+          return -ENODEV;
+        }
+
+      /* Register the PWM driver at "/dev/pwm3" */
+
+      ret = pwm_register("/dev/pwm3", pwm);
+      if (ret < 0)
+        {
+          aerr("ERROR: pwm_register failed: %d\n", ret);
+          return ret;
+        }
+#endif
+
+#if defined(CONFIG_STM32_TIM5_PWM)
+      pwm = stm32_pwminitialize(5);
+      if (!pwm)
+        {
+          aerr("ERROR: Failed to get the STM32 PWM lower half\n");
+          return -ENODEV;
+        }
+
+      /* Register the PWM driver at "/dev/pwm4" */
+
+      ret = pwm_register("/dev/pwm4", pwm);
+      if (ret < 0)
+        {
+          aerr("ERROR: pwm_register failed: %d\n", ret);
+          return ret;
+        }
+#endif
+
+#if defined(CONFIG_STM32_TIM8_PWM)
+      pwm = stm32_pwminitialize(8);
+      if (!pwm)
+        {
+          aerr("ERROR: Failed to get the STM32 PWM lower half\n");
+          return -ENODEV;
+        }
+
+      /* Register the PWM driver at "/dev/pwm5" */
+
+      ret = pwm_register("/dev/pwm5", pwm);
+      if (ret < 0)
+        {
+          aerr("ERROR: pwm_register failed: %d\n", ret);
+          return ret;
+        }
+#endif
 
       /* Now we are initialized */
 
@@ -130,7 +217,7 @@ int stm32_pwm_setup(void)
     }
 
   return OK;
-#else
-  return -ENODEV;
-#endif
 }
+
+#endif /* CONFIG_PWM */
+

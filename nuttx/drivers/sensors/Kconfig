@@ -344,7 +344,15 @@ config SENSORS_MAX31855
 	select SPI
 	---help---
 		Enables support for the MAX31855 driver
-
+		
+#add by liushuhe 2018.06.28		
+config SENSORS_MAX31865
+	bool "Maxim MAX31865 Driver:liushuhe:2018.06.28"
+	default n
+	select SPI
+	---help---
+		Enables support for the MAX31865 driver
+		
 config SENSORS_MAX6675
 	bool "Maxim MAX6675 Driver"
 	default n

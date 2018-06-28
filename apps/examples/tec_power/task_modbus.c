@@ -71,6 +71,7 @@
 #include "modbus/mb.h"
 #include "modbus/mbport.h"
 #include "pid.h"
+#include "task_modbus.h"
 
 /****************************************************************************
  * Pre-processor Definitions
@@ -109,22 +110,7 @@
  * Private Types
  ****************************************************************************/
 
-enum modbus_threadstate_e
-{
-  STOPPED = 0,
-  RUNNING,
-  SHUTDOWN
-};
 
-struct modbus_state_s
-{
-  enum modbus_threadstate_e threadstate;
-  uint16_t reginput[CONFIG_EXAMPLES_MODBUS_REG_INPUT_NREGS];
-  uint16_t regholding[CONFIG_EXAMPLES_MODBUS_REG_HOLDING_NREGS];
-  pthread_t threadid;
-  pthread_mutex_t lock;
-  volatile bool quit;
-};
 
 /****************************************************************************
  * Private Function Prototypes
@@ -138,7 +124,7 @@ static inline int modbus_create_pollthread(void);
  * Private Data
  ****************************************************************************/
 
-static struct modbus_state_s g_modbus;
+struct modbus_state_s g_modbus;
 static const uint8_t g_slaveid[] = { 0xaa, 0xbb, 0xcc };
 
 /****************************************************************************

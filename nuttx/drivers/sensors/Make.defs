@@ -146,6 +146,11 @@ ifeq ($(CONFIG_SENSORS_MAX31855),y)
   CSRCS += max31855.c
 endif
 
+#add by liushuhe 2018.06.28
+ifeq ($(CONFIG_SENSORS_MAX31865),y)
+  CSRCS += max31865.c
+endif
+
 ifeq ($(CONFIG_SENSORS_MAX6675),y)
   CSRCS += max6675.c
 endif

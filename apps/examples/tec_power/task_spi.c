@@ -21,6 +21,7 @@
 
 #include "task_spi.h"
 #include "pid.h"
+#include "task_modbus.h"
 
 
 /****************************************************************************
@@ -78,6 +79,7 @@ void read_temper(void)
 	pid.Pv=((d>>4)&0x0fff)*0.25;	//
 
 	//设置modbus数据结构
+	g_modbus.reginput[0] = pid.Pv;
 }
 
 

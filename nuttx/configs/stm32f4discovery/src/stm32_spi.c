@@ -134,6 +134,53 @@ void  stm32f407_cc1100_spiinitialize(void)
 
 }
 
+//add by liushuhe 2018.06.28
+void  stm32f407_max31865_spiinitialize(void)
+{
+	int ret = -1;
+//spi1
+#ifdef CONFIG_STM32_SPI1
+  /* Configure SPI-based devices */
+  g_spi1 = stm32_spibus_initialize(1);
+  if (!g_spi1)
+    {
+      spierr("ERROR: FAILED to initialize SPI port 1\n");
+
+    }
+	
+#ifdef CONFIG_SENSORS_MAX31865
+	    stm32_configgpio(GPIO_MAX31865_CS1);
+		
+		ret = max31865_register("/dev/max31865_1", g_spi1);
+		if (ret < 0)
+		{
+			snerr("ERROR: Error registering MAX31865\n");
+		}
+		
+#endif
+#endif
+//spi2
+#ifdef CONFIG_STM32_SPI2
+  /* Configure SPI-based devices */
+  g_spi2 = stm32_spibus_initialize(2);
+  if (!g_spi2)
+    {
+      spierr("ERROR: FAILED to initialize SPI port 2\n");
+
+    }
+#ifdef CONFIG_SENSORS_MAX31865
+	    stm32_configgpio(GPIO_MAX31865_CS2);
+
+		ret = max31865_register("/dev/max31865_2", g_spi2);
+		if (ret < 0)
+		{
+			snerr("ERROR: Error registering MAX31865\n");
+		}
+
+#endif
+#endif
+
+}
 
 
 /****************************************************************************
@@ -164,10 +211,9 @@ void  stm32f407_cc1100_spiinitialize(void)
 #ifdef CONFIG_STM32_SPI1
 void stm32_spi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
-  //spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
   
 //add by liushuhe 2017.12.22
-/*
+
 #if defined(CONFIG_LCD_UG2864AMBAG01) || defined(CONFIG_LCD_UG2864HSWEG01) || \
     defined(CONFIG_LCD_SSD1351)
   if (devid == SPIDEV_DISPLAY(0))
@@ -179,13 +225,12 @@ void stm32_spi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
     {
       stm32_gpiowrite(GPIO_CS_MEMS, !selected);
     }
-*/
 
-//add by liushuhe 2017.12.22
-#ifdef CONFIG_WL_CC1101
-  if (devid == SPIDEV_WIRELESS(0))
+//add by liushuhe 2018.06.28
+#ifdef CONFIG_SENSORS_MAX31865
+  if (devid == SPIDEV_TEMPERATURE(0))
     {
-      stm32_gpiowrite(GPIO_CC1100_CS, !selected);
+      stm32_gpiowrite(GPIO_MAX31865_CS1, !selected);
     }
 #endif
 
@@ -215,6 +260,16 @@ void stm32_spi2select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
       stm32_gpiowrite(GPIO_MAX6675_CS, !selected);
     }
 #endif
+
+//add by liushuhe 2018.06.28
+#ifdef CONFIG_SENSORS_MAX31865
+  if (devid == SPIDEV_TEMPERATURE(0))
+    {
+      stm32_gpiowrite(GPIO_MAX31865_CS2, !selected);
+    }
+#endif
+
+
 }
 
 uint8_t stm32_spi2status(FAR struct spi_dev_s *dev, uint32_t devid)

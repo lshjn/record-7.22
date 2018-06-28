@@ -152,13 +152,6 @@ config EXAMPLES_TEC_POWER_ADC
 
 if EXAMPLES_TEC_POWER_ADC
 
-config EXAMPLES_ADC_PRIORITY
-	int "adc task priority"
-	default 100
-
-config EXAMPLES_ADC_STACKSIZE
-	int "adc stack size"
-	default 2048
 
 config EXAMPLES_ADC_DEVPATH
 	string "ADC device path"
@@ -178,9 +171,9 @@ config EXAMPLES_ADC_NSAMPLES
 
 config EXAMPLES_ADC_GROUPSIZE
 	int "Number of Samples per Group"
-	default 7
+	default 1
 	---help---
-		The number of samples to read at once. Default: 4
+		The number of samples to read at once. Default: 1
 
 config EXAMPLES_ADC_SWTRIG
 	bool "Use software trigger"
