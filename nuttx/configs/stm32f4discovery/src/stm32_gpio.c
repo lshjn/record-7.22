@@ -156,7 +156,8 @@ static struct stm32gpio_dev_s g_gpout[BOARD_NGPIOOUT];
 
 static const uint32_t g_gpiointinputs[BOARD_NGPIOINT] =
 {
-	GPS_PPS_INT,
+	//add by liushuhe 2018.06.28
+	EXTER_CTR_INT,
 };
 
 static struct stm32gpint_dev_s g_gpint[BOARD_NGPIOINT];

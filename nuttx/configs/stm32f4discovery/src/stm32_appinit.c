@@ -135,168 +135,44 @@ int board_ioctl(unsigned int cmd, uintptr_t arg)
 	switch(cmd)
 	{
 		/*********************************************************/
-		//led4
-		case BOARDIOC_LED4_ON:
-				stm32_configgpio(GPIO_LED4);
-				stm32_gpiowrite(GPIO_LED4,false);
+		//led0
+		case BOARDIOC_LED0_ON:
+				stm32_configgpio(GPIO_LED0);
+				stm32_gpiowrite(GPIO_LED0,false);
 				break;
-		case BOARDIOC_LED4_OFF:
-				stm32_configgpio(GPIO_LED4);
-				stm32_gpiowrite(GPIO_LED4,true);
+		case BOARDIOC_LED0_OFF:
+				stm32_configgpio(GPIO_LED0);
+				stm32_gpiowrite(GPIO_LED0,true);
 				break;
-		//led5
-		case BOARDIOC_LED5_ON:
-				stm32_configgpio(GPIO_LED5);
-				stm32_gpiowrite(GPIO_LED5,false);
+		//led1
+		case BOARDIOC_LED1_ON:
+				stm32_configgpio(GPIO_LED1);
+				stm32_gpiowrite(GPIO_LED1,false);
 				break;
-		case BOARDIOC_LED5_OFF:
-				stm32_configgpio(GPIO_LED5);
-				stm32_gpiowrite(GPIO_LED5,true);
+		case BOARDIOC_LED1_OFF:
+				stm32_configgpio(GPIO_LED1);
+				stm32_gpiowrite(GPIO_LED1,true);
 				break;
-		//led6
-		case BOARDIOC_LED6_ON:
-				stm32_configgpio(GPIO_LED6);
-				stm32_gpiowrite(GPIO_LED6,false);
+		//led2
+		case BOARDIOC_LED2_ON:
+				stm32_configgpio(GPIO_LED2);
+				stm32_gpiowrite(GPIO_LED2,false);
 				break;
-		case BOARDIOC_LED6_OFF:
-				stm32_configgpio(GPIO_LED6);
-				stm32_gpiowrite(GPIO_LED6,true);
+		case BOARDIOC_LED2_OFF:
+				stm32_configgpio(GPIO_LED2);
+				stm32_gpiowrite(GPIO_LED2,true);
 				break;
-
-		//led6
-		case BOARDIOC_TIME2_PPS_INIT:
-				stm32_configgpio(GPIO_LED6);
-				stm32_gpiowrite(GPIO_LED6,false);
+		//led3
+		case BOARDIOC_LED3_ON:
+				stm32_configgpio(GPIO_LED3);
+				stm32_gpiowrite(GPIO_LED3,false);
 				break;
-		case BOARDIOC_TIME2_PPS_UP:
-				stm32_gpiowrite(GPIO_LED6,true);
+		case BOARDIOC_LED3_OFF:
+				stm32_configgpio(GPIO_LED3);
+				stm32_gpiowrite(GPIO_LED3,true);
 				break;
-		case BOARDIOC_TIME2_PPS_DOWN:
-				stm32_gpiowrite(GPIO_LED6,false);
-				break;
-		/*********************************************************/
-		//master
-        //bluetooth   		
-		case BOARDIOC_BLUEDEV_GPIOINIT:
-				stm32_configgpio(RESET_BLUEDEV_BT_PWR_CTL);
-				stm32_configgpio(RESET_BLUEEV_BT_RDY);
-				stm32_configgpio(RESET_BLUEDEV_BT_WAKEUP);
-				stm32_configgpio(RESET_BLUEDEV_BT_RST);
-				stm32_configgpio(GPIO_LED4);
-				stm32_configgpio(GPIO_LED5);
-				stm32_configgpio(GPIO_LED6);
-				break;
-		case BOARDIOC_BLUEDEV_POWER_DISABLE:
-				stm32_gpiowrite(RESET_BLUEDEV_BT_PWR_CTL,false);
-				break;
-		case BOARDIOC_BLUEDEV_POWER_ENABLE:
-				stm32_gpiowrite(RESET_BLUEDEV_BT_PWR_CTL,true);
-				break;
-		case BOARDIOC_BLUEDEV_WAKEUP_ENABLE:
-				stm32_gpiowrite(RESET_BLUEDEV_BT_WAKEUP,false);
-				stm32_gpiowrite(GPIO_LED4,false);
-				stm32_gpiowrite(GPIO_LED5,false);
-				stm32_gpiowrite(GPIO_LED6,false);
-				break;
-		case BOARDIOC_BLUEDEV_WAKEUP_DISABLE:
-				stm32_gpiowrite(RESET_BLUEDEV_BT_WAKEUP,true);
-				stm32_gpiowrite(GPIO_LED4,true);
-				stm32_gpiowrite(GPIO_LED5,true);
-				stm32_gpiowrite(GPIO_LED6,true);
-				break;
-		/*********************************************************/
-		//wakeup gprs
-		//add by liushue 2017.11.17
-		case BOARDIOC_GPRS_PWRON:
-		  	{
-				 stm32_configgpio(GPRS_PWR_ONOFF);
-				 stm32_gpiowrite(GPRS_PWR_ONOFF,true);
-			}
-		    break;
-		case BOARDIOC_GPRS_PWROFF:
-		  	{
-				 stm32_configgpio(GPRS_PWR_ONOFF);
-				 stm32_gpiowrite(GPRS_PWR_ONOFF,false);
-			}
-		    break;
-		case BOARDIOC_GPRS_WAKEUP:
-		  	{
-				 stm32_configgpio(GPRS_MCU_ONOFF);
-				 stm32_configgpio(GPRS_MCU_RST);
- 			     usleep(200*1000);
-				 //init
-				 stm32_gpiowrite(GPRS_MCU_ONOFF,false);				//IGT	high
-				 stm32_gpiowrite(GPRS_MCU_RST,false);				//RST	high
- 			     usleep(200*1000);
-                 //start up
-				 stm32_gpiowrite(GPRS_MCU_ONOFF,true);				//IGT	lower
- 			     usleep(200*1000);
-				 stm32_gpiowrite(GPRS_MCU_ONOFF,false);				//IGT	high
-			}
-		    break;
-		case BOARDIOC_GPRS_RST:
-		  	{
-				 stm32_configgpio(GPRS_MCU_RST);
-				 //init
-				 stm32_gpiowrite(GPRS_MCU_RST,false);
- 			     usleep(200*1000);
-				 //rst
-				 stm32_gpiowrite(GPRS_MCU_RST,true);
- 			     usleep(200*1000);
-				 stm32_gpiowrite(GPRS_MCU_RST,false);
-
-			}
-		    break;
 
 		/*********************************************************/
-		//wakeup gps
-		//add by liushue 2017.11.17
-		case BOARDIOC_GPS_PWRON:
-		  	{
-				 stm32_configgpio(GPS_PWR_ONOFF);
-				 stm32_gpiowrite(GPS_PWR_ONOFF,true);
-			}
-		    break;
-		case BOARDIOC_GPS_PWROFF:
-		  	{
-				 stm32_configgpio(GPS_PWR_ONOFF);
-				 stm32_gpiowrite(GPS_PWR_ONOFF,false);
-			}
-		    break;
-		//433
-		//add by liushue 2017.11.17
-		case BOARDIOC_433_PWRON:
-		  	{
-			    //add by liushuhe 2017.12.15
-				stm32_configgpio(SET_433_PWR_ONOFF);
-				stm32_gpiowrite(SET_433_PWR_ONOFF,true);
-			}
-		    break;
-		case BOARDIOC_433_PWROFF:
-		  	{
-			    //add by liushuhe 2017.12.15
-				stm32_configgpio(SET_433_PWR_ONOFF);
-				stm32_gpiowrite(SET_433_PWR_ONOFF,false);
-			}
-		    break;
-		//4g
-		//add by liushue 2017.11.17
-		case BOARDIOC_4G_PWRON:
-		  	{
-			    //add by liushuhe 2017.12.15
-				stm32_configgpio(SET_4G_PWR_ONOFF);
-				stm32_gpiowrite(SET_4G_PWR_ONOFF,true);
-			}
-		    break;
-		case BOARDIOC_4G_PWROFF:
-		  	{
-			    //add by liushuhe 2017.12.15
-				stm32_configgpio(SET_4G_PWR_ONOFF);
-				stm32_gpiowrite(SET_4G_PWR_ONOFF,false);
-			}
-		    break;
-
-		/************************************************/
 		default:
 				return -ENOTTY;
 				break;

@@ -471,9 +471,9 @@ static struct stm32_dev_s g_adcpriv1 =
   .pclck       = ADC1_TIMER_PCLK_FREQUENCY,
   .freq        = CONFIG_STM32_ADC1_SAMPLE_FREQUENCY,
 #endif
-//add by liushuhe 2017.11.15
-//#ifdef ADC1_HAVE_DMA
-#ifdef ADC2_HAVE_DMA
+//add by liushuhe 2018.06.28
+#ifdef ADC1_HAVE_DMA
+//#ifdef ADC2_HAVE_DMA
   .dmachan     = ADC1_DMA_CHAN,
   .hasdma      = true,
 #endif

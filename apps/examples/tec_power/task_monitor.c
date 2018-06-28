@@ -33,15 +33,25 @@ void  signal_timeInt(void)
 	pidctl_tecT();
 }
 
-
-//接收到io控温信号
-void  signal_EXTER_CTR(void)
+/****************************************************************************
+ * EXTER_CTR_Action 接收到io控温信号
+ * liushuhe
+ * 2018.06.28
+ ****************************************************************************/
+void EXTER_CTR_Action(int signo,siginfo_t *siginfo, void *arg)
 {
-	//初始化pid参数
-	PID_Init();
-	//启动定时器
-	startup_pid_Sampling_timer();
+	static int cnt; 
+	if (signo == SIGUSR1)
+	{
+		printf("%2d SIGUSR1 received\n",cnt++);
+		//初始化pid参数
+		PID_Init();
+		//启动定时器
+		startup_pid_Sampling_timer();
+
+	}
 }
+
 
 void set_pwm(float pwm_value)
 {
@@ -60,6 +70,51 @@ void startup_pid_Sampling_timer(void)
  ****************************************************************************/
 int master_monitor(int argc, char *argv[])
 {
+	enum gpio_pintype_e pintype;
+	struct sigaction act;
+	struct sigaction oldact;
+	int ret;
+	int status;
+	int fd_EXTER_CTR;
+	
+	fd_EXTER_CTR = open(CONFIG_EXAMPLES_EXTER_CTR_DEVPATH, O_RDONLY);
+	if (fd_EXTER_CTR < 0)
+	{
+		printf("fd_EXTER_CTR: open %s failed: %d\n", CONFIG_EXAMPLES_EXTER_CTR_DEVPATH, errno);
+	}
+	ret = ioctl(fd_EXTER_CTR, GPIOC_PINTYPE, (unsigned long)((uintptr_t)&pintype));
+	if (ret < 0)
+	{
+		int errcode = errno;
+		fprintf(stderr, "ERROR: Failed to read pintype from %s: %d\n", CONFIG_EXAMPLES_EXTER_CTR_DEVPATH, errcode);
+		close(fd_EXTER_CTR);
+	}
+	
+	//signal
+	memset(&act, 0, sizeof(struct sigaction));
+	act.sa_sigaction = EXTER_CTR_Action;
+	act.sa_flags     = SA_SIGINFO;
+
+	(void)sigemptyset(&act.sa_mask);
+
+	status = sigaction(SIGUSR1, &act, &oldact);
+	if (status != 0)
+	{
+		fprintf(stderr, "Failed to install SIGUSR1 handler, errno=%d\n",errno);
+	}
+	// Set up to receive signal 
+	if(pintype == GPIO_INTERRUPT_PIN)
+	{	
+		ret = ioctl(fd_EXTER_CTR, GPIOC_REGISTER, (unsigned long)SIGUSR1);
+		if (ret < 0)
+		{
+			int errcode = errno;
+			fprintf(stderr, "ERROR: Failed to setup for signal from %s: %d\n", CONFIG_EXAMPLES_EXTER_CTR_DEVPATH, errcode);
+			close(fd_EXTER_CTR);
+		}
+	}
+
+
 	PID_Init();
 
 	while(1)

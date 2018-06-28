@@ -147,9 +147,9 @@ int tec_power_main(int argc, FAR char *argv[])
 	while(1)	
 	{
 		cnt++;
-		boardctl(BOARDIOC_LED4_ON, 0);
+		boardctl(BOARDIOC_LED0_ON, 0);
 		usleep(2000*1000);
-		boardctl(BOARDIOC_LED4_OFF, 0);
+		boardctl(BOARDIOC_LED0_OFF, 0);
 		usleep(2000*1000);
 		printf("wdog");
 	}

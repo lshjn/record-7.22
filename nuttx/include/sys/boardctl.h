@@ -147,48 +147,20 @@
  */
 
 #define 	BOARDIOC_USER              			_BOARDIOC(0x000b)
-
-//bluetooth  
-//add by liushuhe 2017.11.06
-#define     BOARDIOC_BLUEDEV_GPIOINIT				BOARDIOC_USER + 13
-#define     BOARDIOC_BLUEDEV_POWER_ENABLE			BOARDIOC_USER + 14
-#define     BOARDIOC_BLUEDEV_POWER_DISABLE		BOARDIOC_USER + 15
-
-#define     BOARDIOC_BLUEDEV_WAKEUP_ENABLE		BOARDIOC_USER + 16
-#define     BOARDIOC_BLUEDEV_WAKEUP_DISABLE		BOARDIOC_USER + 17
-//gprs  
-//add by liushuhe 2017.11.06
-#define 	BOARDIOC_GPRS_PWRON					BOARDIOC_USER + 18
-#define 	BOARDIOC_GPRS_PWROFF					BOARDIOC_USER + 19
-#define 	BOARDIOC_GPRS_WAKEUP					BOARDIOC_USER + 20
-#define 	BOARDIOC_GPRS_RST						BOARDIOC_USER + 21
-
-//gps  
-//add by liushuhe 2017.11.06
-#define 	BOARDIOC_GPS_PWRON						BOARDIOC_USER + 22
-#define 	BOARDIOC_GPS_PWROFF					BOARDIOC_USER + 23
 //led  
 //add by liushuhe 2017.11.06
-#define 	BOARDIOC_LED4_ON						BOARDIOC_USER + 24
-#define 	BOARDIOC_LED4_OFF						BOARDIOC_USER + 25
+#define 	BOARDIOC_LED0_ON						BOARDIOC_USER + 1
+#define 	BOARDIOC_LED0_OFF						BOARDIOC_USER + 2
 
-#define 	BOARDIOC_LED5_ON						BOARDIOC_USER + 26
-#define 	BOARDIOC_LED5_OFF						BOARDIOC_USER + 27
+#define 	BOARDIOC_LED1_ON						BOARDIOC_USER + 3
+#define 	BOARDIOC_LED1_OFF						BOARDIOC_USER + 4
 
-#define 	BOARDIOC_LED6_ON						BOARDIOC_USER + 28
-#define 	BOARDIOC_LED6_OFF						BOARDIOC_USER + 29
+#define 	BOARDIOC_LED2_ON						BOARDIOC_USER + 5
+#define 	BOARDIOC_LED2_OFF						BOARDIOC_USER + 6
 
-//433
-#define 	BOARDIOC_433_PWRON						BOARDIOC_USER + 30
-#define 	BOARDIOC_433_PWROFF					BOARDIOC_USER + 31
-//4g
-#define 	BOARDIOC_4G_PWRON						BOARDIOC_USER + 32
-#define 	BOARDIOC_4G_PWROFF						BOARDIOC_USER + 33
+#define 	BOARDIOC_LED3_ON						BOARDIOC_USER + 7
+#define 	BOARDIOC_LED3_OFF						BOARDIOC_USER + 8
 
-//timer2
-#define 	BOARDIOC_TIME2_PPS_INIT               BOARDIOC_USER + 34
-#define 	BOARDIOC_TIME2_PPS_UP            		BOARDIOC_USER + 35
-#define 	BOARDIOC_TIME2_PPS_DOWN            	BOARDIOC_USER + 36
 /****************************************************************************
  * Public Type Definitions
  ****************************************************************************/

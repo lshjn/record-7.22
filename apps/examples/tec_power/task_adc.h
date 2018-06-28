@@ -17,8 +17,15 @@
 /****************************************************************************
  * Private Data
  ****************************************************************************/
+struct sensor_msg {
+	struct adc_msg_s	sample_tempdata[1];
+};
 
 int master_adc(int argc, char *argv[]);
+float CalcSampleData(struct sensor_msg *Sensor_data);
+int	ReadAdcData(int fd,struct sensor_msg *Sensor_data);
+int	StartAdcSampl(int fd);
+
 float read_DC_I(void);
 
 

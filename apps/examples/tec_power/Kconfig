@@ -45,7 +45,9 @@ config EXAMPLES_MONITOR_PRIORITY
 config EXAMPLES_MONITOR_STACKSIZE
 	int "monitor stack size"
 	default 2048
-	
+config EXAMPLES_EXTER_CTR_DEVPATH
+	string "exter ctr io device path"
+	default "/dev/gpint0"	
 endif #monitor
 
 #modbus

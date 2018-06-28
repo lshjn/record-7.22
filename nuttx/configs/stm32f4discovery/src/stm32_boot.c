@@ -63,7 +63,8 @@
 
 void stm32_boardinitialize(void)
 {
-    //add by liushuhe 2017.12.15
+/*
+    //add by liushuhe 2018.06.28
 	stm32_configgpio(GPIO_WATCHDOG);
 	stm32_gpiowrite(GPIO_WATCHDOG,true);
     //add by liushuhe 2017.12.15
@@ -81,7 +82,7 @@ void stm32_boardinitialize(void)
     //add by liushuhe 2017.12.15
 	stm32_configgpio(RESET_BLUEDEV_BT_PWR_CTL);
 	stm32_gpiowrite(RESET_BLUEDEV_BT_PWR_CTL,false);
-
+*/
 
 	
 #if defined(CONFIG_STM32_SPI1) || defined(CONFIG_STM32_SPI2) || defined(CONFIG_STM32_SPI3)

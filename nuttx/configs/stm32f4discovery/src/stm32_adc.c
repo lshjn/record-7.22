@@ -77,9 +77,9 @@
 
 /* The number of ADC channels in the conversion list */
 
-//add by liushuhe 2017.09.09
-//#define ADC1_NCHANNELS 1
-#define ADC1_NCHANNELS 7
+//add by liushuhe 2018.06.28
+#define ADC1_NCHANNELS 1
+//#define ADC1_NCHANNELS 7
 
 /************************************************************************************
  * Private Data
@@ -94,7 +94,7 @@
 
 //add by liushuhe 2017.11.15
 //static const uint8_t  g_chanlist[ADC1_NCHANNELS] = {1, 2, 3, 4, 5, 6,7};
-static const uint8_t  g_chanlist[ADC1_NCHANNELS] = {10, 12, 13, 0, 3, 8,9};
+static const uint8_t  g_chanlist[ADC1_NCHANNELS] = {8};
 
 /* Configurations of pins used byte each ADC channels
  *
@@ -103,9 +103,7 @@ static const uint8_t  g_chanlist[ADC1_NCHANNELS] = {10, 12, 13, 0, 3, 8,9};
  *  GPIO_ADC1_IN11, GPIO_ADC1_IN12, GPIO_ADC1_IN13, GPIO_ADC1_IN15};
  */
 
-static const uint32_t g_pinlist[ADC1_NCHANNELS] = {GPIO_ADC1_IN10, GPIO_ADC1_IN12, GPIO_ADC1_IN13,
-													GPIO_ADC1_IN0, GPIO_ADC1_IN3, GPIO_ADC1_IN8,
-													GPIO_ADC1_IN9};
+static const uint32_t g_pinlist[ADC1_NCHANNELS] = {GPIO_ADC1_IN8};
 #endif
 
 /************************************************************************************
