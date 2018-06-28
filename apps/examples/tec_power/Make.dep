@@ -233,9 +233,13 @@ task_monitor.o: task_monitor.c \
  /work/record-7.22/nuttx/include/nuttx/leds/userled.h \
  /work/record-7.22/nuttx/include/nuttx/board.h \
  /work/record-7.22/nuttx/include/sys/boardctl.h \
- /work/record-7.22/nuttx/include/nuttx/ioexpander/gpio.h task_modbus.h \
- task_monitor.h /work/record-7.22/nuttx/include/nuttx/timers/rtc.h \
- task_adc.h task_spi.h pid.h
+ /work/record-7.22/nuttx/include/nuttx/ioexpander/gpio.h \
+ /work/record-7.22/nuttx/include/nuttx/timers/timer.h \
+ /work/record-7.22/nuttx/include/termios.h \
+ /work/record-7.22/nuttx/include/nuttx/drivers/pwm.h \
+ /work/record-7.22/nuttx/include/fixedmath.h task_modbus.h task_monitor.h \
+ /work/record-7.22/nuttx/include/nuttx/timers/rtc.h task_adc.h task_spi.h \
+ pid.h
 task_adc.o: task_adc.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \

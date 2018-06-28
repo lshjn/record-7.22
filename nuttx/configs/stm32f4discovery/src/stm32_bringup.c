@@ -271,10 +271,9 @@ int stm32_bringup(void)
 stm32f407_gpiodev_initialize();
 
 
-//add by liushuhe 2018.01.18
-stm32_timer_driver_setup("/dev/timer1_cc1101",1);
-stm32_timer_driver_setup("/dev/timer2_gps",2);
-
+//add by liushuhe 2018.06.28
+stm32_timer_driver_setup("/dev/timer1_pid_samping",1);
+stm32_timer_driver_setup("/dev/timer3_pwm",3);
 
 #ifdef HAVE_RTC_DRIVER
   /* Instantiate the STM32 lower-half RTC driver */

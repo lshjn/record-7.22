@@ -128,14 +128,20 @@ float CalcSampleData(struct sensor_msg *Sensor_data)
 float read_DC_I(void)
 {
 	static	int  fd_adc;
+	static	int  adc_status = false;
+	
 	int ret;
-
+if(!adc_status)
+{
 	fd_adc = open(CONFIG_EXAMPLES_ADC_DEVPATH, O_RDONLY);
 	if (fd_adc < 0)
 	{
 		printf("slave_adc: open %s failed: %d\n", CONFIG_EXAMPLES_ADC_DEVPATH, errno);
 		return -1;
 	}
+	adc_status = true;
+}
+
 	
 	ret = StartAdcSampl(fd_adc);
 	//successful

@@ -64,18 +64,22 @@ void PID_Calc(void)  //pid计算
 }
 
 //pid输出
-void PID_out(void)  
+void PID_out(float pwm_value)  
 {
-	set_pwm(pid.OUT);
+	set_pwm(pwm_value);
 }
 
-//pid执行供电
+//pid执行供电，并作限制处理
 void pid_exec(void)
 {
-	//当前的电流超过设定最大值，停止供电
-	if(read_DC_I() <= pid.DC_I_MAX)
+	//当前的电流超过设定最大值，pwm/2
+	if(pid.DC_I_CUR_ADC <= pid.DC_I_MAX)
 	{
-		PID_out();	
+		PID_out(pid.OUT);	
+	}
+	else
+	{
+		PID_out(pid.OUT/2);	
 	}
 }
 

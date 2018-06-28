@@ -50,7 +50,8 @@ void PID_Calc(void); //pidº∆À„
 void PID_Init(void);
 void pidctl_tecT(void);
 void pid_exec(void);
-void PID_out(void) ;
+void PID_out(float pwm_value);
+
 
 
 #ifdef __cplusplus

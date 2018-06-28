@@ -17,6 +17,18 @@
 /****************************************************************************
  * Private function
  ****************************************************************************/
+#define CONFIG_EXAMPLES_TIMER_DEVNAME 		"/dev/timer1_pid_samping"
+#define CONFIG_EXAMPLES_TIMER_INTERVAL 		(1000000)
+#define CONFIG_EXAMPLES_TIMER_SIGNO 17
+
+struct pwm_state_s
+{
+  bool      initialized;
+  uint8_t   duty;
+  uint32_t  freq;
+  uint32_t  count;
+};
+extern struct 	pwm_state_s g_pwmstate;
 
 /****************************************************************************
  * Private function

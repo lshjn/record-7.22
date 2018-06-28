@@ -349,6 +349,12 @@
 #define GPIO_TIM8_CH1IN  GPIO_TIM8_CH1IN_1
 #define GPIO_TIM8_CH2IN  GPIO_TIM8_CH2IN_1
 
+//add by liushuhe  2018.06.28
+/* TIM3 */
+#define GPIO_TIM3_CH4OUT GPIO_TIM3_CH4OUT_1
+
+
+
 /* Ethernet *************************************************************************/
 
 #if defined(CONFIG_STM32F4DISBB) && defined(CONFIG_STM32_ETHMAC)

@@ -48,6 +48,13 @@ config EXAMPLES_MONITOR_STACKSIZE
 config EXAMPLES_EXTER_CTR_DEVPATH
 	string "exter ctr io device path"
 	default "/dev/gpint0"	
+
+config EXAMPLES_PWM_DEVPATH
+	string "PWM device path"
+	default "/dev/pwm1"
+	---help---
+		The path to the PWM device.  Default: /dev/pwm1
+
 endif #monitor
 
 #modbus
