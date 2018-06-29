@@ -54,6 +54,8 @@
 #include "stm32f4discovery.h"
 //add by liushuhe 2017.12.20
 #include <nuttx/wireless/cc1101.h>
+//add by liushuhe 2018.06.29
+#include <nuttx/sensors/max31865.h>
 
 #if defined(CONFIG_STM32_SPI1) || defined(CONFIG_STM32_SPI2) || defined(CONFIG_STM32_SPI3)
 
@@ -263,7 +265,7 @@ void stm32_spi2select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 
 //add by liushuhe 2018.06.28
 #ifdef CONFIG_SENSORS_MAX31865
-  if (devid == SPIDEV_TEMPERATURE(0))
+  if (devid == SPIDEV_TEMPERATURE(1))
     {
       stm32_gpiowrite(GPIO_MAX31865_CS2, !selected);
     }

@@ -1,7 +1,7 @@
 /****************************************************************************
  * drivers/sensors/max31865.c
  * add by liushuhe 2018.06.28
-/****************************************************************************
+****************************************************************************
  * Included Files
  ****************************************************************************/
 
@@ -17,25 +17,18 @@
 #include <nuttx/spi/spi.h>
 #include <nuttx/sensors/max31865.h>
 #include <nuttx/random.h>
+#include <string.h>
 
 #if defined(CONFIG_SPI) && defined(CONFIG_SENSORS_MAX31865)
 
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
-#define MAX31865_READ      	(~(1<<7))
 #define MAX31865_WRITE      (1<<7)
 
 /****************************************************************************
  * Private
  ****************************************************************************/
-
-#define MAX31865_FAULT         (1 << 0)
-#define MAX31865_SHORT_VCC     (1 << 2)
-#define MAX31865_SHORT_GND     (1 << 1)
-#define MAX31865_OPEN_CIRCUIT  (1 << 0)
-#define MAX31865_TEMP_COUPLE   0xFFFFC000
-#define MAX31865_TEMP_JUNCTION 0xFFF0
 
 struct max31865_dev_s
 {
@@ -146,9 +139,7 @@ static ssize_t max31865_read(FAR struct file *filep, FAR char *buffer, size_t bu
   FAR struct inode          *inode = filep->f_inode;
   FAR struct max31865_dev_s *priv  = inode->i_private;
   FAR uint16_t              *temp  = (FAR uint16_t *) buffer;
-  int                       ret    = 2;
-  int32_t                   regmsb;
-  int32_t                   regval;
+  int                       ret    = 0;
   uint8_t 					addr;
   int 						stabyte;
 
@@ -169,66 +160,32 @@ static ssize_t max31865_read(FAR struct file *filep, FAR char *buffer, size_t bu
   /* Enable MAX31865's chip select */
 
   max31865_lock(priv->spi);
-  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), true);
+  if(strcmp(inode->i_name,"/dev/max31865_1") == 0)
+  {
+	  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), true);
+  }
+  else if(strcmp(inode->i_name,"/dev/max31865_2") == 0)
+  {
+	  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(1), true);
+  }
 
-  /* Read temperature */
-  //SPI_RECVBLOCK(priv->spi, &regmsb, 4);
-  /*****************************************************/
   //add by liushuhe 2018.06.29
   addr = 0x00;
   stabyte = SPI_SEND(priv->spi, addr);
   SPI_RECVBLOCK(priv->spi, buffer, buflen);
-  /*********************************************************/
+  
   /* Disable MAX31865's chip select */
-  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), false);
+  if(strcmp(inode->i_name,"/dev/max31865_1") == 0)
+  {
+	  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), false);
+  }
+  else if(strcmp(inode->i_name,"/dev/max31865_2") == 0)
+  {
+	  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(1), false);
+  }
+  
   max31865_unlock(priv->spi);
-#if 0
-  regval  = (regmsb & 0xFF000000) >> 24;
-  regval |= (regmsb & 0xFF0000) >> 8;
-  regval |= (regmsb & 0xFF00) << 8;
-  regval |= (regmsb & 0xFF) << 24;
 
-  sninfo("Read from MAX31865 = 0x%08X\n", regval);
-
-  /* Feed sensor data to entropy pool */
-
-  add_sensor_randomness(regval);
-
-  /* If negative, fix signal bits */
-
-  if (regval & 0x80000000)
-    {
-      *temp = 0xc000 | (regval >> 18);
-    }
-  else
-    {
-      *temp = (regval >> 18);
-    }
-
-  /* Detect any fault */
-
-  if (regval & MAX31865_FAULT)
-    {
-      snerr("ERROR: A fault was detected by MAX31865:\n");
-
-      if (regval & MAX31865_SHORT_VCC)
-        {
-          snerr("  The thermocouple input is shorted to VCC!\n");
-        }
-
-      if (regval & MAX31865_SHORT_GND)
-        {
-          snerr("  The thermocouple input is shorted to GND!\n");
-        }
-
-      if (regval & MAX31865_OPEN_CIRCUIT)
-        {
-          snerr("  The thermocouple input is not connected!\n");
-        }
-
-      ret = -EINVAL;
-    }
-#endif
   /* Return two bytes, the temperature is fixed point Q12.2, then divide by 4
    * in your application in other to get real temperature in Celsius degrees.
    */
@@ -243,7 +200,59 @@ static ssize_t max31865_read(FAR struct file *filep, FAR char *buffer, size_t bu
 static ssize_t max31865_write(FAR struct file *filep, FAR const char *buffer,
                               size_t buflen)
 {
-  return -ENOSYS;
+	FAR struct inode		  *inode = filep->f_inode;
+	FAR struct max31865_dev_s *priv  = inode->i_private;
+	uint8_t 				  addr;
+	int 					  stabyte;
+	
+	/* Check for issues */
+	
+	if (!buffer)
+	  {
+		snerr("ERROR: Buffer is null\n");
+		return -EINVAL;
+	  }
+	
+	if (buflen != 2)
+	  {
+		snerr("ERROR: You can't read something other than 16 bits (2 bytes)\n");
+		return -EINVAL;
+	  }
+	
+	/* Enable MAX31865's chip select */
+	
+	max31865_lock(priv->spi);
+	if(strcmp(inode->i_name,"/dev/max31865_1") == 0)
+	{
+		SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), true);
+	}
+	else if(strcmp(inode->i_name,"/dev/max31865_2") == 0)
+	{
+		SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(1), true);
+	}
+	
+	//add by liushuhe 2018.06.29
+	addr = buffer[0] | MAX31865_WRITE;
+	stabyte = SPI_SEND(priv->spi, addr);
+	SPI_SNDBLOCK(priv->spi, &buffer[1], buflen-1);
+	
+	/* Disable MAX31865's chip select */
+	if(strcmp(inode->i_name,"/dev/max31865_1") == 0)
+	{
+		SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), false);
+	}
+	else if(strcmp(inode->i_name,"/dev/max31865_2") == 0)
+	{
+		SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(1), false);
+	}
+	
+	max31865_unlock(priv->spi);
+	
+	/* Return two bytes, the temperature is fixed point Q12.2, then divide by 4
+	 * in your application in other to get real temperature in Celsius degrees.
+	 */
+	
+	return buflen;
 }
 
 /****************************************************************************
