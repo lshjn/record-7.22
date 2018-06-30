@@ -9,7 +9,8 @@ config STM32F103MINIMUM_FLASH
 	bool "MTD driver for external 4Mbyte W25Q32FV FLASH on SPI1"
 	default n
 	select MTD
-	select MTD_W25
+	#add by liushuhe 2018.06.30
+	#select MTD_W25
 	select MTD_SMART
 	select FS_SMARTFS
 	select STM32_SPI1

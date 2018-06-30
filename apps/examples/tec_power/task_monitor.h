@@ -17,10 +17,16 @@
 /****************************************************************************
  * Private function
  ****************************************************************************/
-#define CONFIG_EXAMPLES_TIMER_DEVNAME 		"/dev/timer1_pid_samping"
-#define CONFIG_EXAMPLES_TIMER_INTERVAL 		(pid.T*1000)     //unit us
-#define CONFIG_EXAMPLES_TIMER_SIGNO 17
+#define  CONFIG_EXAMPLES_TIMER_DEVNAME 		"/dev/timer1_pid_samping"
+#define  CONFIG_EXAMPLES_TIMER_INTERVAL 		(pid.T*1000)     //unit us
+#define  CONFIG_EXAMPLES_TIMER_SIGNO 17
+#define  MAX31865_DEV1   1
+#define  MAX31865_DEV2   2
 
+
+extern int fd_EXTER_CTR;
+extern int fd_max31865_1;
+extern int fd_max31865_2;
 
 
 /****************************************************************************

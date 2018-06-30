@@ -138,12 +138,10 @@ static ssize_t max31865_read(FAR struct file *filep, FAR char *buffer, size_t bu
 {
   FAR struct inode          *inode = filep->f_inode;
   FAR struct max31865_dev_s *priv  = inode->i_private;
-  FAR uint16_t              *temp  = (FAR uint16_t *) buffer;
-  int                       ret    = 0;
   uint8_t 					addr;
-  int 						stabyte;
 
   /* Check for issues */
+  
 
   if (!buffer)
     {
@@ -171,7 +169,7 @@ static ssize_t max31865_read(FAR struct file *filep, FAR char *buffer, size_t bu
 
   //add by liushuhe 2018.06.29
   addr = 0x00;
-  stabyte = SPI_SEND(priv->spi, addr);
+  SPI_SEND(priv->spi, addr);
   SPI_RECVBLOCK(priv->spi, buffer, buflen);
   
   /* Disable MAX31865's chip select */
@@ -190,7 +188,7 @@ static ssize_t max31865_read(FAR struct file *filep, FAR char *buffer, size_t bu
    * in your application in other to get real temperature in Celsius degrees.
    */
 
-  return ret;
+  return buflen;
 }
 
 /****************************************************************************
@@ -203,7 +201,6 @@ static ssize_t max31865_write(FAR struct file *filep, FAR const char *buffer,
 	FAR struct inode		  *inode = filep->f_inode;
 	FAR struct max31865_dev_s *priv  = inode->i_private;
 	uint8_t 				  addr;
-	int 					  stabyte;
 	
 	/* Check for issues */
 	
@@ -233,7 +230,7 @@ static ssize_t max31865_write(FAR struct file *filep, FAR const char *buffer,
 	
 	//add by liushuhe 2018.06.29
 	addr = buffer[0] | MAX31865_WRITE;
-	stabyte = SPI_SEND(priv->spi, addr);
+	SPI_SEND(priv->spi, addr);
 	SPI_SNDBLOCK(priv->spi, &buffer[1], buflen-1);
 	
 	/* Disable MAX31865's chip select */

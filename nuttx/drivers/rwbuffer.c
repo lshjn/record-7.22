@@ -359,6 +359,7 @@ static int rwb_rhreload(struct rwbuffer_s *rwb, off_t startblock)
 
   if (startblock >= rwb->nblocks)
     {
+    
       return -ESPIPE;
     }
 

@@ -414,7 +414,7 @@ static inline int w25_readid(struct w25_dev_s *priv)
 
       else if (capacity == W25_JEDEC_CAPACITY_64MBIT)
         {
-           priv->nsectors = NSECTORS_64MBIT;
+           priv->nsectors = NSECTORS_64MBIT;		   
         }
 
       /* 128M-bit / 16M-byte (16,777,216)

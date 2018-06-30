@@ -48,7 +48,7 @@ extern PID pid; //存放PID算法所需要的数据
 
 void PID_Calc(void); //pid计算
 void PID_Init(void);
-void pidctl_tecT(void);
+void pidctl_tecT(int fd,int dev_num);
 void pid_exec(void);
 void PID_out(float pwm_value);
 

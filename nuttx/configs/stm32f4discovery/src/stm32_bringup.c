@@ -238,6 +238,7 @@ int stm32_bringup(void)
 			stm32_i2cbus_uninitialize(i2c1);
 		}
 	}
+#if 0
 	//add at24c08 driver ,add by liushuhe 2017.11.10
 	if(OK == stm32f407vg_at24c08_automount(i2c1))
 	{
@@ -247,6 +248,7 @@ int stm32_bringup(void)
 	{
 		printf("at24c08 init fail\n");
 	}
+#endif
 #endif
 #endif /* CONFIG_I2C */
 /****************************************************************************************/
@@ -267,6 +269,13 @@ int stm32_bringup(void)
   //stm32f407_cc1100_spiinitialize();
   //add by liushuhe 2018.06.28
   stm32f407_max31865_spiinitialize();
+
+  //add by liushuhe_test 2018.06.30
+  //stm32_mx25L_initialize();
+  
+  //add by liushuhe_test 2018.06.28
+  stm32_w25_initialize();
+
 #endif
 
 

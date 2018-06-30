@@ -266,13 +266,13 @@ int nxffs_initialize(FAR struct mtd_dev_s *mtd)
 #endif /* CONFIG_NXFFS_SCAN_VOLUME */
 
   /* Get the file system limits */
-
+#if 1
   ret = nxffs_limits(volume);
   if (ret == OK)
     {
       return OK;
     }
-
+#endif
   /* We may need to format the volume.  Try that before giving up. */
 
   fwarn("WARNING: Failed to calculate file system limits: %d\n", -ret);

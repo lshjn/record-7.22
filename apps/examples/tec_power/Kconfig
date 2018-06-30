@@ -54,6 +54,18 @@ config EXAMPLES_PWM_DEVPATH
 	default "/dev/pwm1"
 	---help---
 		The path to the PWM device.  Default: /dev/pwm1
+		
+config EXAMPLES_MAX31865_1_DEVPATH
+	string "MAX31865_1 device path"
+	default "/dev/max31865_1"
+	---help---
+		The path to the MAX31865_1 device.  Default: /dev/max31865_1	
+	
+config EXAMPLES_MAX31865_2_DEVPATH
+	string "MAX31865_2 device path"
+	default "/dev/max31865_2"
+	---help---
+		The path to the MAX31865_2 device.  Default: /dev/max31865_2	
 
 endif #monitor
 

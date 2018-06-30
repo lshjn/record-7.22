@@ -22,6 +22,8 @@
 #include "task_spi.h"
 #include "pid.h"
 #include "task_modbus.h"
+#include "max31865.h"
+#include "task_monitor.h"
 
 
 /****************************************************************************
@@ -43,43 +45,54 @@ int master_spi(int argc, char *argv[])
 
   return 0;
 }
-/****************************************************************************
- * master_adc
- * liushuhe
- * 2017.09.26
- ****************************************************************************/
-void Max31865_Init()
-{
-	return;
-}
 
-/****************************************************************************
- * read_max31865
- * liushuhe
- * 2017.09.26
- ****************************************************************************/
-uint16_t read_max31865(void)  
-{
-	uint16_t d;
-
-	d = 1;
-
-	return d;
-}
 
 /****************************************************************************
  * read_temper
  * liushuhe
- * 2017.09.26
+ * 2018.06.29
  ****************************************************************************/
-void read_temper(void)
+void read_temper(int fd,int dev_num)
 {
-	uint16_t d;
-	d=read_max31865();				//读取max31865当前的温度值
-	pid.Pv=((d>>4)&0x0fff)*0.25;	//
+	float   AD_MAX81365 = 0;
+	float   TEMPER_MAX81365 = 0;
+	bool	DRDY_PIN_VALUE = DRDY_INVALID;
+	
+	Init_max31865(fd);
+	memset(max31856_databuf,0,sizeof(max31856_databuf));
 
-	//设置modbus数据结构
-	g_modbus.reginput[0] = pid.Pv;
+	start_conversion(fd);
+
+	//wait max31865 drdy
+	while(DRDY_PIN_VALUE == DRDY_INVALID)
+	{
+		if(dev_num == MAX31865_DEV1)
+		{
+			boardctl(BOARDIOC_GET_SPI1_DRDY, (uintptr_t)(&DRDY_PIN_VALUE));
+		}
+		else if(dev_num == MAX31865_DEV2)
+		{
+			boardctl(BOARDIOC_GET_SPI2_DRDY, (uintptr_t)(&DRDY_PIN_VALUE));
+		}
+		usleep(1000);
+	}
+	
+	read_max31865(fd,max31856_databuf,sizeof(max31856_databuf));				//读取max31865当前的温度值
+
+	if((max31856_databuf[ADDR_RTD_LSB]&0x01)==0x01)
+	{
+		Fault_Detect(fd);
+	}
+	else
+	{
+		AD_MAX81365 = ((max31856_databuf[ADDR_RTD_MSB]<<8)|max31856_databuf[ADDR_RTD_LSB])>>1;
+		TEMPER_MAX81365 = ((AD_MAX81365/32)-256); 
+		pid.Pv=TEMPER_MAX81365; 
+		//设置modbus数据结构
+		g_modbus.reginput[0] = pid.Pv;
+	}
 }
+
+
 
 

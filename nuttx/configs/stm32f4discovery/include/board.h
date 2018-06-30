@@ -287,22 +287,26 @@
 #define GPIO_TIM2_CH2OUT GPIO_TIM2_CH2OUT_1
 #define GPIO_TIM3_CH3OUT GPIO_TIM3_CH3OUT_1
 
-/* SPI - There is a MEMS device on SPI1 using these pins: */
-
-//add by liushuhe 2017.12.19
-
+/* SPI1 mac31865_1*/
+//add by liushuhe 2018.06.29
 #define GPIO_SPI1_MISO   GPIO_SPI1_MISO_1
-//#define GPIO_SPI1_MOSI   GPIO_SPI1_MOSI_1
-#define GPIO_SPI1_MOSI   GPIO_SPI1_MOSI_2
+#define GPIO_SPI1_MOSI   GPIO_SPI1_MOSI_1
 #define GPIO_SPI1_SCK    GPIO_SPI1_SCK_1
 #define DMACHAN_SPI1_RX  DMAMAP_SPI1_RX_2
 #define DMACHAN_SPI1_TX  DMAMAP_SPI1_TX_1
 
-/* SPI2 - Test MAX31855 on SPI2 PB10 = SCK, PB14 = MISO */
-
-#define GPIO_SPI2_MISO   GPIO_SPI2_MISO_1
-#define GPIO_SPI2_MOSI   GPIO_SPI2_MOSI_1
+/* SPI2 mac31865_2*/
+//add by liushuhe 2018.06.29
+#define GPIO_SPI2_MISO   GPIO_SPI2_MISO_2
+#define GPIO_SPI2_MOSI   GPIO_SPI2_MOSI_2
 #define GPIO_SPI2_SCK    GPIO_SPI2_SCK_1
+
+/* SPI3 spi flash*/
+//add by liushuhe 2018.06.29
+#define GPIO_SPI3_MISO   GPIO_SPI3_MISO_2
+#define GPIO_SPI3_MOSI   GPIO_SPI3_MOSI_2
+#define GPIO_SPI3_SCK    GPIO_SPI3_SCK_2
+
 
 /* I2S3 - CS43L22 configuration uses I2S3 */
 

@@ -1,4 +1,6 @@
 #include "pid.h"
+#include "pwm.h"
+#include "task_spi.h"
 
 PID pid; //存放PID算法所需要的数据
 
@@ -84,10 +86,10 @@ void pid_exec(void)
 }
 
 //pid控制温度
-void pidctl_tecT(void)
+void pidctl_tecT(int fd,int dev_num)
 {
 	//读取当前温度
-	read_temper();
+	read_temper(fd,dev_num);
 	//pid计算
 	PID_Calc();
 	//pid执行供电

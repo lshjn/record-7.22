@@ -118,8 +118,10 @@ static int fat_checkbootrecord(struct fat_mountpt_s *fs)
    * FatSz32 values should always be zero.  The FAT sector size should
    * match the reported hardware sector size.
    */
-
-  if (MBR_GETSIGNATURE(fs->fs_buffer) != BOOT_SIGNATURE16 ||
+ //add by liushuhe_test 2018.06.30
+  //if (MBR_GETSIGNATURE(fs->fs_buffer) != BOOT_SIGNATURE16 ||
+  //    MBR_GETBYTESPERSEC(fs->fs_buffer) != fs->fs_hwsectorsize)
+  if (MBR_GETSIGNATURE(fs->fs_buffer) != BOOT_SIGNATURE32 ||
       MBR_GETBYTESPERSEC(fs->fs_buffer) != fs->fs_hwsectorsize)
     {
       ferr("ERROR: Signature: %04x FS sectorsize: %d HW sectorsize: %d\n",

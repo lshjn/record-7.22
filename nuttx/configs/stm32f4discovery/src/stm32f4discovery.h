@@ -232,7 +232,14 @@
 #define GPIO_LED2       (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
                          GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN8)
 #define GPIO_LED3       (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|\
-                         GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN9)                         
+                         GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN9)  
+//add by liushuhe 
+//2018.06.29
+//max31865_DRDY                        
+#define GPIO_MAX31865_1_DRDY  (GPIO_INPUT|GPIO_FLOAT|GPIO_PORTA|GPIO_PIN4)
+#define GPIO_MAX31865_2_DRDY  (GPIO_INPUT|GPIO_FLOAT|GPIO_PORTC|GPIO_PIN0)
+
+
 
 //add by liushuhe 2017.12.13
 #define GPIO_WATCHDOG  				(GPIO_OUTPUT|GPIO_PULLUP|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN4)
@@ -274,6 +281,9 @@
 //add by liushuhe 2018.06.28
 #define GPIO_MAX31865_CS1  	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTC|GPIO_PIN4)
 #define GPIO_MAX31865_CS2 	(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTC|GPIO_PIN1)
+#define GPIO_MA25L_CS 		(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN0)
+//add by liushuhe_test 2018.06.30
+#define GPIO_W25_CS 		(GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTE|GPIO_PIN3)
 
 //add by liushuhe 2017.11.29
 #ifdef CONFIG_WL_CC1101
@@ -798,6 +808,9 @@ int stm32_adc_setup(void);
 void stm32f407_cc1100_spiinitialize(void);
 //add by liushuhe 2018.06.28
 void stm32f407_max31865_spiinitialize(void);
+int stm32_mx25L_initialize(void);
+//add by liushuhe_test 2018.06.28
+int stm32_w25_initialize(void);
 
 #endif
 

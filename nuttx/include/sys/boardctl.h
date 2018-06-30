@@ -161,6 +161,9 @@
 #define 	BOARDIOC_LED3_ON						BOARDIOC_USER + 7
 #define 	BOARDIOC_LED3_OFF						BOARDIOC_USER + 8
 
+#define 	BOARDIOC_GET_SPI1_DRDY					BOARDIOC_USER + 9
+#define 	BOARDIOC_GET_SPI2_DRDY					BOARDIOC_USER + 10
+
 /****************************************************************************
  * Public Type Definitions
  ****************************************************************************/

@@ -36,16 +36,28 @@
 /************************************************************************************
  * Included Files
  ************************************************************************************/
-
-#include <nuttx/config.h>
-
+	 
+#include <sys/types.h>
+#include <sys/mount.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <errno.h>
 #include <debug.h>
+#include <stdio.h>
+#include <string.h>
+#include <fcntl.h>
+#include <syslog.h>
+#include <errno.h>
+#include <nuttx/arch.h>
+#include <nuttx/board.h>
+#include <nuttx/sdio.h>
+#include <nuttx/mmcsd.h>
+#include <nuttx/config.h>
 
 #include <nuttx/spi/spi.h>
 #include <arch/board/board.h>
+//add by liushuhe 2018.06.30
+#include <nuttx/mtd/mtd.h>
+#include <nuttx/fs/nxffs.h>
 
 #include "up_arch.h"
 #include "chip.h"
@@ -136,6 +148,201 @@ void  stm32f407_cc1100_spiinitialize(void)
 
 }
 
+//add by liushuhe 2018.06.30
+int stm32_mx25L_initialize(void)
+{
+	int minor = 0;
+//add by liushuhe 2018.06.29
+#ifdef CONFIG_STM32_SPI3
+
+  FAR struct spi_dev_s *spi;
+  FAR struct mtd_dev_s *mtd;
+#ifdef CONFIG_FS_NXFFS
+  char devname[12];
+#else
+  char blockdev[18];
+  char chardev[12];
+#endif
+
+  int ret;
+
+  /* Get the SPI port */
+  //add by liushuhe 2018.06.29
+  spi = stm32_spibus_initialize(3);
+  if (!spi)
+    {
+      ferr("ERROR: Failed to initialize SPI port 2\n");
+      return -ENODEV;
+    }
+
+  /* Now bind the SPI interface to the W25 SPI FLASH driver */
+
+  mtd = stm32_spibus_initialize(spi);
+  if (!mtd)
+    {
+      ferr("ERROR: Failed to bind SPI port 3 to the mx25L FLASH driver\n");
+      return -ENODEV;
+    }
+
+#ifndef CONFIG_FS_NXFFS
+  /* And finally, use the FTL layer to wrap the MTD driver as a block driver */
+
+  ret = ftl_initialize(minor, mtd);
+  if (ret < 0)
+    {
+      ferr("ERROR: Initialize the FTL layer\n");
+      return ret;
+    }
+ 
+  // Use the minor number to create device paths//
+  snprintf(blockdev, 18, "/dev/mtdblock%d", minor);
+  snprintf(chardev, 12, "/dev/mtd%d", minor);
+  
+  //add by liushuhe 2018.06.30
+  #ifndef CONFIG_FS_FAT
+	  //在块设备上创建一个字符设备
+	  ret = bchdev_register(blockdev, chardev, false);
+	  if (ret < 0)
+		{
+		  ferr("ERROR: bchdev_register %s failed: %d\n", chardev, ret);
+		  return ret;
+		}
+  #else
+	  /*挂载fat32 文件系统  /mnt/spiflash_fat32  */
+	  ret = mount(blockdev, "/mnt/MX25L_fat32", "vfat", 0, NULL);
+	  if (ret < 0)
+		{
+		  ferr("ERROR: Failed to mount the FAT volume: %d\n", errno);
+		  return ret;
+		}	  
+  #endif
+
+  
+#else
+  /* Initialize to provide NXFFS on the MTD interface */
+
+  ret = nxffs_initialize(mtd);
+  if (ret < 0)
+    {
+      ferr("ERROR: NXFFS initialization failed: %d\n", -ret);
+      return ret;
+    }
+
+  /* Mount the file system at /mnt/mx25L */
+
+  snprintf(devname, 12, "/mnt/MX25L%c", 'a' + minor);
+  ret = mount(NULL, devname, "nxffs", 0, NULL);
+  if (ret < 0)
+    {
+      ferr("ERROR: Failed to mount the NXFFS volume: %d\n", errno);
+      return ret;
+    }
+#endif
+#endif
+  return OK;
+}
+
+
+
+//add by liushuhe_test 2018.06.30
+int stm32_w25_initialize(void)
+{
+	int minor = 1;
+//add by liushuhe 2018.06.29
+#ifdef CONFIG_STM32_SPI2
+
+  FAR struct spi_dev_s *spi;
+  FAR struct mtd_dev_s *mtd;
+  char devname[12];
+#ifndef CONFIG_FS_NXFFS
+  char blockdev[18];
+  char chardev[12];
+#endif
+
+
+  int ret;
+
+  /* Get the SPI port */
+  //add by liushuhe 2018.06.29
+  spi = stm32_spibus_initialize(2);
+  if (!spi)
+    {
+      ferr("ERROR: Failed to initialize SPI port 2\n");
+      return -ENODEV;
+    }
+
+  /* Now bind the SPI interface to the W25 SPI FLASH driver */
+  
+  mtd = w25_initialize(spi);
+  if (!mtd)
+    {
+      ferr("ERROR: Failed to bind SPI port 3 to the mx25L FLASH driver\n");
+      return -ENODEV;
+    }
+
+#ifndef CONFIG_FS_NXFFS
+  /* And finally, use the FTL layer to wrap the MTD driver as a block driver */
+
+  ret = ftl_initialize(minor, mtd);
+  if (ret < 0)
+    {
+      ferr("ERROR: Initialize the FTL layer\n");
+      return ret;
+    }
+
+  // Use the minor number to create device paths//
+  snprintf(blockdev, 18, "/dev/mtdblock%d", minor);
+  snprintf(chardev, 12, "/dev/mtd%d", minor);
+  
+  //add by liushuhe 2018.06.30
+  #ifndef CONFIG_FS_FAT
+  
+	  //在块设备上创建一个字符设备
+	  ret = bchdev_register(blockdev, chardev, false);
+	  if (ret < 0)
+		{
+		  ferr("ERROR: bchdev_register %s failed: %d\n", chardev, ret);
+		  return ret;
+		}	  
+  #else
+  
+	  /*挂载fat32 文件系统  /mnt/spiflash_fat32  */
+	  //fat32 没有成功，问题比较多，改用nxffs文件系统
+	  ret = mount(blockdev, "/tmp/MX25L_fat32", "vfat", 0, NULL);
+	  if (ret < 0)
+		{
+		  ferr("ERROR: Failed to mount the FAT volume: %d\n", errno);
+		  return ret;
+		}	  
+  #endif
+
+  
+#else
+  /* Initialize to provide NXFFS on the MTD interface */
+  //改用nxffs文件系统
+	ret = nxffs_initialize(mtd);
+
+  if (ret < 0)
+    {
+      ferr("ERROR: NXFFS initialization failed: %d\n", -ret);
+      return ret;
+    }
+
+  /* Mount the file system at /mnt/mx25L */
+
+  snprintf(devname, 12, "/mnt/MX25L%c", 'a' + minor);
+  ret = mount(NULL, devname, "nxffs", 0, NULL);
+  if (ret < 0)
+    {
+      ferr("ERROR: Failed to mount the NXFFS volume: %d\n", errno);
+      return ret;
+    }
+#endif
+#endif
+  return OK;
+}
+
+
 //add by liushuhe 2018.06.28
 void  stm32f407_max31865_spiinitialize(void)
 {
@@ -161,6 +368,8 @@ void  stm32f407_max31865_spiinitialize(void)
 		
 #endif
 #endif
+//add by liushuhe_test 2018.06.30
+#if 0
 //spi2
 #ifdef CONFIG_STM32_SPI2
   /* Configure SPI-based devices */
@@ -181,7 +390,7 @@ void  stm32f407_max31865_spiinitialize(void)
 
 #endif
 #endif
-
+#endif
 }
 
 
@@ -263,6 +472,8 @@ void stm32_spi2select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
     }
 #endif
 
+//add by liushuhe_test 2018.06.30
+#if 0
 //add by liushuhe 2018.06.28
 #ifdef CONFIG_SENSORS_MAX31865
   if (devid == SPIDEV_TEMPERATURE(1))
@@ -270,6 +481,11 @@ void stm32_spi2select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
       stm32_gpiowrite(GPIO_MAX31865_CS2, !selected);
     }
 #endif
+#endif
+
+	//add by liushuhe_test 2018.06.30
+	stm32_gpiowrite(GPIO_W25_CS, !selected);
+
 
 
 }
@@ -284,6 +500,9 @@ uint8_t stm32_spi2status(FAR struct spi_dev_s *dev, uint32_t devid)
 void stm32_spi3select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
   spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
+  //add by liushuhe 2018.06.29
+  stm32_gpiowrite(GPIO_MA25L_CS, !selected);
+  	
 }
 
 uint8_t stm32_spi3status(FAR struct spi_dev_s *dev, uint32_t devid)

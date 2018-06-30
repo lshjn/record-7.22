@@ -131,6 +131,7 @@ int board_app_initialize(uintptr_t arg)
 #ifdef CONFIG_BOARDCTL_IOCTL
 int board_ioctl(unsigned int cmd, uintptr_t arg)
 {
+	_uint32_t * ptr_pinValue = (_uint32_t *)arg;
 	//add by liushuhe  2017.09.04
 	switch(cmd)
 	{
@@ -171,6 +172,16 @@ int board_ioctl(unsigned int cmd, uintptr_t arg)
 				stm32_configgpio(GPIO_LED3);
 				stm32_gpiowrite(GPIO_LED3,true);
 				break;
+		//get max31865 DRDY		
+		case BOARDIOC_GET_SPI1_DRDY:
+				stm32_configgpio(GPIO_MAX31865_1_DRDY);
+				*ptr_pinValue = stm32_gpioread(GPIO_MAX31865_1_DRDY);
+				break;
+		case BOARDIOC_GET_SPI2_DRDY:
+				stm32_configgpio(GPIO_MAX31865_1_DRDY);
+				*ptr_pinValue = stm32_gpioread(GPIO_MAX31865_1_DRDY);
+				break;
+				
 
 		/*********************************************************/
 		default:
@@ -190,6 +201,8 @@ int stm32f407vg_at24c08_automount(struct i2c_master_s *i2c)
   static bool initialized = false;
   char blockdev[18];
   char chardev[12];
+  char devname[16];
+  
   int ret;
 
   /* Have we already initialized? */

@@ -32,13 +32,16 @@
 #include "pwm.h"
 
 
+int fd_EXTER_CTR;
+int fd_max31865_1;
+int fd_max31865_2;
 
 
 
 //采样时间到
 void  timerInt_action(void)
 {
-	pidctl_tecT();
+	pidctl_tecT(fd_max31865_1,MAX31865_DEV1);
 }
 
 /****************************************************************************
@@ -133,7 +136,6 @@ int master_monitor(int argc, char *argv[])
 	struct sigaction oldact;
 	int ret;
 	int status;
-	int fd_EXTER_CTR;
 	
 	fd_EXTER_CTR = open(CONFIG_EXAMPLES_EXTER_CTR_DEVPATH, O_RDONLY);
 	if (fd_EXTER_CTR < 0)
@@ -172,6 +174,20 @@ int master_monitor(int argc, char *argv[])
 		}
 	}
 
+	//max31865_1
+	fd_max31865_1 = open(CONFIG_EXAMPLES_MAX31865_1_DEVPATH, O_RDONLY);
+	if (fd_max31865_1 < 0)
+	{
+		printf("fd_max31865_1: open %s failed: %d\n", CONFIG_EXAMPLES_MAX31865_1_DEVPATH, errno);
+	}
+	//max31865_2
+	fd_max31865_2 = open(CONFIG_EXAMPLES_MAX31865_2_DEVPATH, O_RDONLY);
+	if (fd_max31865_2 < 0)
+	{
+		printf("fd_max31865_2: open %s failed: %d\n", CONFIG_EXAMPLES_MAX31865_2_DEVPATH, errno);
+	}
+
+	
 	PID_Init();
 
 	while(1)
@@ -179,7 +195,7 @@ int master_monitor(int argc, char *argv[])
 		read_DC_I();		
 		sleep(1); 
 		//没有启动信号是否要执行读取温度带确定
-		read_temper();		//读取当前温度
+		read_temper(fd_max31865_1,MAX31865_DEV1);		//读取当前温度
 		PID_Calc(); 		//pid计算 
 	}
 

@@ -16,8 +16,8 @@
 /****************************************************************************
  * Private Data
  ****************************************************************************/
-void read_temper(void);
-uint16_t read_max31865(void);
+
+void     read_temper(int fd,int dev_num);
 
 
 int master_spi(int argc, char *argv[]);
