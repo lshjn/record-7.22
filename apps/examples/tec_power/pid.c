@@ -7,14 +7,14 @@ PID pid; //存放PID算法所需要的数据
 
 void PID_Init(void)
 {
-	pid.DC_I_MAX = 9;		//用户设定最大电流
-	pid.Sv	= 120;			//用户设定温度
-	pid.T	= 500;			//PID计算周期，采样周期	
-	pid.Kp	= 30;			//比例常数
-	pid.Ti	= 5000000;		//积分时间常数
-	pid.Td	= 1000;			//微分时间常数
-	pid.pwmcycle=1000;		//pwm周期1000
-	pid.OUT0	=1;			//偏差项
+	pid.DC_I_MAX	= 9.5;			//用户设定最大电流
+	pid.Sv			= 120;			//用户设定温度
+	pid.T			= 500;			//PID计算周期，采样周期	
+	pid.Kp			= 30;			//比例常数
+	pid.Ti			= 5000000;		//积分时间常数
+	pid.Td			= 1000;			//微分时间常数
+	pid.pwmcycle	= 1000;			//pwm周期1000
+	pid.OUT0		= 1;			//偏差项
 }
 
 

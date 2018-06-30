@@ -146,11 +146,39 @@ config EXAMPLES_FLASH_PRIORITY
 config EXAMPLES_FLASH_STACKSIZE
 	int "flash stack size"
 	default 2048
-
-config EXAMPLES_FLASH_DEVPATH
-	string "flash device path"
-	default "/dev/mtdblock0"
 	
+config DEVPATH_PID_DC_I_MAX
+	string "arg path:pid.DC_I_MAX"
+	default "/mnt/MX25La/pid_DC_I_MAX.txt"
+	
+config DEVPATH_PID_SV
+	string "arg path:pid.Sv"
+	default "/mnt/MX25La/pid_Sv.txt"
+	
+config DEVPATH_PID_T
+	string "arg path:pid.T"
+	default "/mnt/MX25La/pid_T.txt"
+
+config DEVPATH_PID_KP
+	string "arg path:pid.Kp"
+	default "/mnt/MX25La/pid_Kp.txt"
+	
+config DEVPATH_PID_TI
+	string "arg path:pid.Ti"
+	default "/mnt/MX25La/pid_Ti.txt"
+
+config DEVPATH_PID_TD
+	string "arg path:pid.Td"
+	default "/mnt/MX25La/pid_Td.txt"
+	
+config DEVPATH_PID_PWMCYC
+	string "arg path:pid.pwmcycle"
+	default "/mnt/MX25La/pid_pwmcycle.txt"
+
+config DEVPATH_PID_OUT0
+	string "arg path:pid.OUT0"
+	default "/mnt/MX25La/pid_out0.txt"
+
 endif #flash
 
 #ADC

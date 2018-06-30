@@ -247,7 +247,7 @@ int stm32_mx25L_initialize(void)
 //add by liushuhe_test 2018.06.30
 int stm32_w25_initialize(void)
 {
-	int minor = 1;
+	int minor = 0;
 //add by liushuhe 2018.06.29
 #ifdef CONFIG_STM32_SPI2
 

@@ -58,8 +58,6 @@ void EXTER_CTR_Action(int signo,siginfo_t *siginfo, void *arg)
 		if (signo == SIGUSR1)
 		{
 			printf("start tec ctrl...\n");
-			//初始化pid参数
-			PID_Init();
 			//启动定时器
 			startup_pid_Sampling_timer();
 			timer_status = true;
@@ -136,7 +134,7 @@ int master_monitor(int argc, char *argv[])
 	struct sigaction oldact;
 	int ret;
 	int status;
-	
+
 	fd_EXTER_CTR = open(CONFIG_EXAMPLES_EXTER_CTR_DEVPATH, O_RDONLY);
 	if (fd_EXTER_CTR < 0)
 	{
@@ -186,9 +184,6 @@ int master_monitor(int argc, char *argv[])
 	{
 		printf("fd_max31865_2: open %s failed: %d\n", CONFIG_EXAMPLES_MAX31865_2_DEVPATH, errno);
 	}
-
-	
-	PID_Init();
 
 	while(1)
 	{

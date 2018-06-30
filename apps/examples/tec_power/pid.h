@@ -19,26 +19,26 @@ typedef struct pid_t{
 	float DC_I_CUR_ADC;	//检查到当前的adc电流值
 
 	
-	float Sv;		//用户设定值
-	float Pv;		//传感器检测值	
+	float Sv;			//用户设定值
+	float Pv;			//传感器检测值	
 
-	float Kp;       //比例项系数
-	float Ti;		//积分时间常数
-	float Td; 		//微分时间常数
+	float Kp;       	//比例项系数
+	uint32_t Ti;		//积分时间常数
+	uint32_t Td; 		//微分时间常数
 	
-	float T;  		//PID计算周期--采样周期
+	uint32_t T;  		//PID计算周期--采样周期  ms
 
-	float Ek;  		//本次偏差
-	float Ek_1;		//上次偏差
-	float SEk; 		//历史偏差之和
+	float Ek;  			//本次偏差
+	float Ek_1;			//上次偏差
+	float SEk; 			//历史偏差之和
 
-	float Pout;		//比例项输出
-	float Iout;		//积分项输出	
-	float Dout;		//微分项输出
+	float Pout;			//比例项输出
+	float Iout;			//积分项输出	
+	float Dout;			//微分项输出
 
-	float OUT0;     //很小的偏差
+	float OUT0;     	//很小的偏差
 
-	float OUT;      //本次的输出值
+	float OUT;      	//本次的输出值
 
 	uint16_t pwmcycle;	//pwm周期
 	
