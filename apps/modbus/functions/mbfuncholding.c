@@ -189,9 +189,11 @@ eMBException eMBFuncReadHoldingRegister(uint8_t * pucFrame, uint16_t * usLen)
 
   eMBException eStatus = MB_EX_NONE;
   eMBErrorCode eRegStatus;
-
+  
+  
   if (*usLen == (MB_PDU_FUNC_READ_SIZE + MB_PDU_SIZE_MIN))
     {
+    
       usRegAddress  = (uint16_t)(pucFrame[MB_PDU_FUNC_READ_ADDR_OFF] << 8);
       usRegAddress |= (uint16_t)(pucFrame[MB_PDU_FUNC_READ_ADDR_OFF + 1]);
       usRegAddress++;
@@ -205,6 +207,7 @@ eMBException eMBFuncReadHoldingRegister(uint8_t * pucFrame, uint16_t * usLen)
 
       if ((usRegCount >= 1) && (usRegCount <= MB_PDU_FUNC_READ_REGCNT_MAX))
         {
+        
           /* Set the current PDU data pointer to the beginning. */
 
           pucFrameCur = &pucFrame[MB_PDU_FUNC_OFF];
@@ -228,15 +231,18 @@ eMBException eMBFuncReadHoldingRegister(uint8_t * pucFrame, uint16_t * usLen)
 
           if (eRegStatus != MB_ENOERR)
             {
+            
               eStatus = prveMBError2Exception(eRegStatus);
             }
           else
             {
+            
               *usLen += usRegCount * 2;
             }
         }
       else
         {
+        
           eStatus = MB_EX_ILLEGAL_DATA_VALUE;
         }
     }

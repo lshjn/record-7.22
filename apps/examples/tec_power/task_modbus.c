@@ -179,6 +179,10 @@ static inline int modbus_initialize(void)
 
   mberr = eMBInit(MB_RTU, 0x0a, CONFIG_EXAMPLES_MODBUS_PORT,
                   CONFIG_EXAMPLES_MODBUS_BAUD, CONFIG_EXAMPLES_MODBUS_PARITY);
+
+  
+  printf("eMBInit\n");
+  	
   if (mberr != MB_ENOERR)
     {
       fprintf(stderr, "modbus_main: "
@@ -195,6 +199,8 @@ static inline int modbus_initialize(void)
    */
 
   mberr = eMBSetSlaveID(0x34, true, g_slaveid, 3);
+  
+  printf("eMBSetSlaveID\n");
   if (mberr != MB_ENOERR)
     {
       fprintf(stderr, "modbus_main: "
@@ -205,6 +211,8 @@ static inline int modbus_initialize(void)
   /* Enable FreeModBus */
 
   mberr = eMBEnable();
+  
+  printf("eMBEnable\n");
   if (mberr != MB_ENOERR)
     {
       fprintf(stderr, "modbus_main: "
@@ -250,6 +258,7 @@ static void *modbus_pollthread(void *pvarg)
   /* Initialize the modbus */
 
   ret = modbus_initialize();
+  printf("modbus_initialize\n");
   if (ret != OK)
     {
       fprintf(stderr, "modbus_main: "
@@ -266,15 +275,20 @@ static void *modbus_pollthread(void *pvarg)
       /* Poll */
 
       mberr = eMBPoll(&ucFunctionCode_Return);
+	  
       if (mberr != MB_ENOERR)
       {
            break;
       }
 	  //add by liushuhe 2018.07.1
 	  //modbus 16功能码，写多个寄存器
-	  if(ucFunctionCode_Return == MB_FUNC_WRITE_MULTIPLE_REGISTERS)
+	  if((ucFunctionCode_Return == MB_FUNC_WRITE_MULTIPLE_REGISTERS)
+	  	||(ucFunctionCode_Return == MB_FUNC_WRITE_REGISTER))
 	  {
+	  		ucFunctionCode_Return = 0xff;
 			EnFlashUpdata(&g_FlashConVar, &g_FlashMutex);
+			
+			 printf("EnFlashUpdata\n");
 	  }
 
       /* Generate some random input */
@@ -394,12 +408,14 @@ eMBErrorCode eMBRegHoldingCB(uint8_t *buffer, uint16_t address, uint16_t nregs,
 {
   eMBErrorCode    mberr = MB_ENOERR;
   int             index;
-
+  
   if ((address >= CONFIG_EXAMPLES_MODBUS_REG_HOLDING_START) &&
       (address + nregs <=
        CONFIG_EXAMPLES_MODBUS_REG_HOLDING_START +
        CONFIG_EXAMPLES_MODBUS_REG_HOLDING_NREGS))
     {
+    
+	
       index = (int)(address - CONFIG_EXAMPLES_MODBUS_REG_HOLDING_START);
       switch (mode)
         {

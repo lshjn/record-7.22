@@ -384,10 +384,10 @@ eMBErrorCode eMBPoll(uint8_t *ucFunctionCode_Return)
           if (eStatus == MB_ENOERR)
             {
               /* Check if the frame is for us. If not ignore the frame. */
-
               if ((ucRcvAddress == ucMBAddress) || (ucRcvAddress == MB_ADDRESS_BROADCAST))
                 {
                   (void)xMBPortEventPost(EV_EXECUTE);
+				  
                 }
             }
             break;
@@ -401,6 +401,7 @@ eMBErrorCode eMBPoll(uint8_t *ucFunctionCode_Return)
 
               if (xFuncHandlers[i].ucFunctionCode == 0)
                 {
+                
                   break;
                 }
               else if (xFuncHandlers[i].ucFunctionCode == ucFunctionCode)
@@ -408,6 +409,7 @@ eMBErrorCode eMBPoll(uint8_t *ucFunctionCode_Return)
                   eException = xFuncHandlers[i].pxHandler(ucMBFrame, &usLength);
 				  //add by liushuhe 2018.07.1
 				  *ucFunctionCode_Return = xFuncHandlers[i].ucFunctionCode;
+				  
                   break;
                 }
             }
@@ -425,6 +427,7 @@ eMBErrorCode eMBPoll(uint8_t *ucFunctionCode_Return)
                   usLength = 0;
                   ucMBFrame[usLength++] = (uint8_t)(ucFunctionCode | MB_FUNC_ERROR);
                   ucMBFrame[usLength++] = eException;
+				  
                 }
 
 #ifdef CONFIG_MB_ASCII_ENABLED
@@ -434,6 +437,7 @@ eMBErrorCode eMBPoll(uint8_t *ucFunctionCode_Return)
                 }
 #endif
               (void)peMBFrameSendCur(ucMBAddress, ucMBFrame, usLength);
+
             }
             break;
 

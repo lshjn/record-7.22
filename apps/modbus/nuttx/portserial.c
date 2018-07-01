@@ -140,6 +140,8 @@ static bool prvbMBPortSerialRead(uint8_t *pucBuffer, uint16_t usNBytes,
     }
 
   while (bResult == true);
+
+  
   return bResult;
 }
 
@@ -339,6 +341,7 @@ bool xMBPortSerialPoll(void)
     {
       if (prvbMBPortSerialRead(&ucBuffer[0], BUF_SIZE, &usBytesRead))
         {
+         
           if (usBytesRead == 0)
             {
               /* timeout with no bytes. */

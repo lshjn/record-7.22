@@ -80,8 +80,10 @@ bool xMBPortEventGet(eMBEventType * eEvent)
        * amount of time. Both timeouts are configured from the timer
        * init functions.
        */
-
+		 // printf("xMBPortSerialPoll  1\n");
       (void)xMBPortSerialPoll();
+	  
+	  //printf("xMBPortSerialPoll  2\n");
 
       /* Check if any of the timers have expired. */
 

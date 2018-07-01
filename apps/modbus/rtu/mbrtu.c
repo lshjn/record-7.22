@@ -176,7 +176,6 @@ eMBErrorCode eMBRTUReceive(uint8_t *pucRcvAddress, uint8_t **pucFrame,
   ASSERT(usRcvBufferPos < MB_SER_PDU_SIZE_MAX);
 
   /* Length and CRC check */
-
   if ((usRcvBufferPos >= MB_SER_PDU_SIZE_MIN) &&
       (usMBCRC16((uint8_t *) ucRTUBuf, usRcvBufferPos) == 0))
     {
@@ -195,6 +194,8 @@ eMBErrorCode eMBRTUReceive(uint8_t *pucRcvAddress, uint8_t **pucFrame,
       /* Return the start of the Modbus PDU to the caller. */
 
       *pucFrame = (uint8_t *) & ucRTUBuf[MB_SER_PDU_PDU_OFF];
+
+	  
     }
   else
     {

@@ -256,6 +256,8 @@ static void *modbus_pollthread(void *pvarg)
 {
   eMBErrorCode mberr;
   int ret;
+  //add by liushuhe 2018.07.1
+  uint8_t ucFunctionCode_Return = 0;
 
   /* Initialize the modbus */
 
@@ -275,7 +277,7 @@ static void *modbus_pollthread(void *pvarg)
     {
       /* Poll */
 
-      mberr = eMBPoll();
+      mberr = eMBPoll(&ucFunctionCode_Return);
       if (mberr != MB_ENOERR)
         {
            break;
