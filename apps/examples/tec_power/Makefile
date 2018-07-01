@@ -51,7 +51,7 @@ STACKSIZE = $(CONFIG_EXAMPLES_TEC_POWER_STACKSIZE)
 
 ASRCS =
 CSRCS =
-MAINSRC = tec_power.c task_modbus.c  task_flash.c   task_monitor.c  task_spi.c adc.c  pid.c  pwm.c  max31865.c   
+MAINSRC = tec_power.c task_modbus.c  task_flash.c   task_monitor.c  adc.c  pid.c  pwm.c  max31865.c   
 		   
 CONFIG_EXAMPLES_TEC_POWER_PROGNAME ?= tec_power$(EXEEXT)
 PROGNAME = $(CONFIG_EXAMPLES_TEC_POWER_PROGNAME)

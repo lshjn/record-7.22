@@ -111,7 +111,8 @@ task_modbus.o: task_modbus.c \
  /work/record-7.22/apps/include/modbus/mb.h \
  /work/record-7.22/apps/include/modbus/mbport.h \
  /work/record-7.22/apps/include/modbus/mbproto.h \
- /work/record-7.22/apps/include/modbus/mbport.h pid.h task_modbus.h
+ /work/record-7.22/apps/include/modbus/mbport.h pid.h task_modbus.h \
+ task_flash.h
 task_flash.o: task_flash.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \
@@ -172,7 +173,7 @@ task_flash.o: task_flash.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/drivers/pwm.h \
  /work/record-7.22/nuttx/include/fixedmath.h \
  /work/record-7.22/nuttx/include/nuttx/ioexpander/gpio.h task_flash.h \
- pid.h
+ pid.h task_modbus.h
 task_monitor.o: task_monitor.c \
  /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \
@@ -236,74 +237,9 @@ task_monitor.o: task_monitor.c \
  /work/record-7.22/nuttx/include/nuttx/ioexpander/gpio.h \
  /work/record-7.22/nuttx/include/nuttx/timers/timer.h \
  /work/record-7.22/nuttx/include/termios.h task_modbus.h task_monitor.h \
- /work/record-7.22/nuttx/include/nuttx/timers/rtc.h pid.h adc.h \
- task_spi.h pwm.h /work/record-7.22/nuttx/include/nuttx/drivers/pwm.h \
- /work/record-7.22/nuttx/include/fixedmath.h
-task_spi.o: task_spi.c /work/record-7.22/nuttx/include/sys/ioctl.h \
- /work/record-7.22/nuttx/include/nuttx/config.h \
- /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \
- /work/record-7.22/nuttx/include/nuttx/serial/tioctl.h \
- /work/record-7.22/nuttx/include/stdint.h \
- /work/record-7.22/nuttx/include/nuttx/compiler.h \
- /work/record-7.22/nuttx/include/arch/types.h \
- /work/record-7.22/nuttx/include/limits.h \
- /work/record-7.22/nuttx/include/arch/limits.h \
- /work/record-7.22/nuttx/include/strings.h \
- /work/record-7.22/nuttx/include/string.h \
- /work/record-7.22/nuttx/include/stddef.h \
- /work/record-7.22/nuttx/include/sys/types.h \
- /work/record-7.22/nuttx/include/stdlib.h \
- /work/record-7.22/nuttx/include/stdio.h \
- /usr/lib/gcc/arm-none-eabi/4.9.3/include/stdarg.h \
- /work/record-7.22/nuttx/include/sched.h \
- /work/record-7.22/nuttx/include/stdbool.h \
- /work/record-7.22/nuttx/include/nuttx/sched.h \
- /work/record-7.22/nuttx/include/queue.h \
- /work/record-7.22/nuttx/include/signal.h \
- /work/record-7.22/nuttx/include/time.h \
- /work/record-7.22/nuttx/include/semaphore.h \
- /work/record-7.22/nuttx/include/pthread.h \
- /work/record-7.22/nuttx/include/sys/prctl.h \
- /work/record-7.22/nuttx/include/unistd.h \
- /work/record-7.22/nuttx/include/nuttx/semaphore.h \
- /work/record-7.22/nuttx/include/nuttx/clock.h \
- /work/record-7.22/nuttx/include/nuttx/fs/fs.h \
- /work/record-7.22/nuttx/include/nuttx/mqueue.h \
- /work/record-7.22/nuttx/include/mqueue.h \
- /work/record-7.22/nuttx/include/queue.h \
- /work/record-7.22/nuttx/include/nuttx/irq.h \
- /work/record-7.22/nuttx/include/assert.h \
- /work/record-7.22/nuttx/include/arch/irq.h \
- /work/record-7.22/nuttx/include/arch/chip/irq.h \
- /work/record-7.22/nuttx/include/arch/stm32/chip.h \
- /work/record-7.22/nuttx/include/arch/stm32/stm32f40xxx_irq.h \
- /work/record-7.22/nuttx/include/arch/armv7-m/irq.h \
- /work/record-7.22/nuttx/include/arch/armv7-m/irq_cmnvector.h \
- /work/record-7.22/nuttx/include/nuttx/wdog.h \
- /work/record-7.22/nuttx/include/nuttx/mm/shm.h \
- /work/record-7.22/nuttx/include/debug.h \
- /work/record-7.22/nuttx/include/syslog.h \
- /work/record-7.22/nuttx/include/nuttx/mm/gran.h \
- /work/record-7.22/nuttx/include/nuttx/net/net.h \
- /work/record-7.22/nuttx/include/arch/arch.h \
- /work/record-7.22/nuttx/include/nuttx/pgalloc.h \
- /work/record-7.22/nuttx/include/nuttx/addrenv.h \
- /work/record-7.22/nuttx/include/fcntl.h \
- /work/record-7.22/nuttx/include/errno.h \
- /work/record-7.22/nuttx/include/nuttx/board.h \
- /work/record-7.22/nuttx/include/sys/boardctl.h \
- /work/record-7.22/nuttx/include/nuttx/ioexpander/gpio.h \
- /work/record-7.22/nuttx/include/nuttx/analog/adc.h \
- /work/record-7.22/nuttx/include/poll.h \
- /work/record-7.22/nuttx/include/nuttx/spi/spi.h \
- /work/record-7.22/nuttx/include/nuttx/analog/ioctl.h \
- /work/record-7.22/nuttx/include/nuttx/leds/userled.h task_spi.h pid.h \
- task_modbus.h max31865.h /work/record-7.22/nuttx/include/sys/time.h \
- /work/record-7.22/nuttx/include/nuttx/timers/timer.h \
- /work/record-7.22/nuttx/include/termios.h \
+ /work/record-7.22/nuttx/include/nuttx/timers/rtc.h pid.h max31865.h \
  /work/record-7.22/nuttx/include/nuttx/drivers/pwm.h \
- /work/record-7.22/nuttx/include/fixedmath.h task_monitor.h \
- /work/record-7.22/nuttx/include/nuttx/timers/rtc.h
+ /work/record-7.22/nuttx/include/fixedmath.h adc.h pwm.h
 adc.o: adc.c /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \
@@ -428,7 +364,7 @@ pid.o: pid.c pid.h /work/record-7.22/nuttx/include/stdio.h \
  /work/record-7.22/nuttx/include/nuttx/timers/timer.h \
  /work/record-7.22/nuttx/include/termios.h \
  /work/record-7.22/nuttx/include/nuttx/drivers/pwm.h \
- /work/record-7.22/nuttx/include/fixedmath.h task_spi.h
+ /work/record-7.22/nuttx/include/fixedmath.h
 pwm.o: pwm.c pwm.h /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \
@@ -556,4 +492,5 @@ max31865.o: max31865.c pwm.h /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/timers/timer.h \
  /work/record-7.22/nuttx/include/termios.h \
  /work/record-7.22/nuttx/include/nuttx/drivers/pwm.h \
- /work/record-7.22/nuttx/include/fixedmath.h max31865.h
+ /work/record-7.22/nuttx/include/fixedmath.h max31865.h task_monitor.h \
+ /work/record-7.22/nuttx/include/nuttx/timers/rtc.h pid.h task_modbus.h

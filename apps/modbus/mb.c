@@ -348,8 +348,8 @@ eMBErrorCode eMBDisable(void)
 
   return eStatus;
 }
-
-eMBErrorCode eMBPoll(void)
+//add by liushuhe 2018.07.1
+eMBErrorCode eMBPoll(uint8_t *ucFunctionCode_Return)
 {
   static uint8_t     *ucMBFrame;
   static uint8_t      ucRcvAddress;
@@ -406,6 +406,8 @@ eMBErrorCode eMBPoll(void)
               else if (xFuncHandlers[i].ucFunctionCode == ucFunctionCode)
                 {
                   eException = xFuncHandlers[i].pxHandler(ucMBFrame, &usLength);
+				  //add by liushuhe 2018.07.1
+				  *ucFunctionCode_Return = xFuncHandlers[i].ucFunctionCode;
                   break;
                 }
             }

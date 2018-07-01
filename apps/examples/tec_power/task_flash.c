@@ -20,7 +20,14 @@
 #include <nuttx/ioexpander/gpio.h>
 
 #include "task_flash.h"
+#include "task_modbus.h"
+
 #include "pid.h"
+
+pthread_mutex_t g_FlashMutex		= PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  g_FlashConVar		= PTHREAD_COND_INITIALIZER;
+
+bool	enFlashUpdata = false;
 
 /****************************************************************************
  * readdata
@@ -148,75 +155,101 @@ int writedata(const char *path,char  *buf,uint32_t len)
  * liushuhe
  * 2018.06.30
  ****************************************************************************/
-int updata_pidarg_fromflash(PID *pid)
+char updata_pidarg_fromflash(PID *pid)
 {
 	#define  DELAY  10*1000
 	char  buf[128];
+	char  updata_status = 0;
 	
 	usleep(DELAY);
 	//pid.DC_I_MAX
 	memset(buf,0,sizeof(buf));
 	if(readdata(CONFIG_DEVPATH_PID_DC_I_MAX,buf,sizeof(buf)))
 	{
-		printf("pid.DC_I_MAX=%.2f\n",atof(buf));
+		printf("------------------------\n");
+		printf("|pid.DC_I_MAX=%.2f|\n",atof(buf));
+		printf("------------------------\n");
 		pid->DC_I_MAX = atof(buf);
+		updata_status |= (1<<7);
 	}
 	usleep(DELAY);
 	//pid.Sv
 	memset(buf,0,sizeof(buf));
 	if(readdata(CONFIG_DEVPATH_PID_SV,buf,sizeof(buf)))
 	{
-		printf("pid.Sv=%.2f\n",atof(buf));
+		printf("------------------------\n");
+		printf("|pid.Sv=%.2f|\n",atof(buf));
+		printf("------------------------\n");
 		pid->Sv = atof(buf);
+		updata_status |= (1<<6);
 	}
 	usleep(DELAY);
 	//pid.T
 	memset(buf,0,sizeof(buf));
 	if(readdata(CONFIG_DEVPATH_PID_T,buf,sizeof(buf)))
 	{
-		printf("pid.T=%d\n",atoi(buf));
-		pid->T = atoi(buf);
+		printf("------------------------\n");
+		printf("|pid.T=%.2f|\n",atof(buf));
+		printf("------------------------\n");
+		pid->T = atof(buf);
+		updata_status |= (1<<5);
 	}
 	usleep(DELAY);
 	//pid.Kp
 	memset(buf,0,sizeof(buf));
 	if(readdata(CONFIG_DEVPATH_PID_KP,buf,sizeof(buf)))
 	{
-		printf("pid.Kp=%.2f\n",atof(buf));
+		printf("------------------------\n");
+		printf("|pid.Kp=%.2f|\n",atof(buf));
+		printf("------------------------\n");
 		pid->Kp = atof(buf);
+		updata_status |= (1<<4);
 	}
 	usleep(DELAY);
 	//pid.Ti
 	memset(buf,0,sizeof(buf));
 	if(readdata(CONFIG_DEVPATH_PID_TI,buf,sizeof(buf)))
 	{
-		printf("pid.Ti=%d\n",atoi(buf));
-		pid->Ti = atoi(buf);
+		printf("------------------------\n");
+		printf("|pid.Ti=%.2f|\n",atof(buf));
+		printf("------------------------\n");
+		pid->Ti = atof(buf);
+		updata_status |= (1<<3);
 	}
 	usleep(DELAY);
 	//pid.Td
 	memset(buf,0,sizeof(buf));
 	if(readdata(CONFIG_DEVPATH_PID_TD,buf,sizeof(buf)))
 	{
-		printf("pid.Td=%d\n",atoi(buf));
-		pid->Td = atoi(buf);
+		printf("------------------------\n");
+		printf("|pid.Td=%.2f|\n",atof(buf));
+		printf("------------------------\n");
+		pid->Td = atof(buf);
+		updata_status |= (1<<2);
 	}
 	usleep(DELAY);
 	//pid.pwmcycle
 	memset(buf,0,sizeof(buf));
 	if(readdata(CONFIG_DEVPATH_PID_PWMCYC,buf,sizeof(buf)))
 	{
-		printf("pid.pwmcycle=%d\n",atoi(buf));
-		pid->pwmcycle = atoi(buf);
+		printf("------------------------\n");
+		printf("|pid.pwmcycle=%.2f|\n",atof(buf));
+		printf("------------------------\n");
+		pid->pwmcycle = atof(buf);
+		updata_status |= (1<<1);
 	}
 	usleep(DELAY);
 	//pid.OUT0
 	memset(buf,0,sizeof(buf));
 	if(readdata(CONFIG_DEVPATH_PID_OUT0,buf,sizeof(buf)))
 	{
-		printf("pid.OUT0=%.2f\n",atof(buf));
+		printf("------------------------\n");
+		printf("|pid.OUT0=%.2f|\n",atof(buf));
+		printf("------------------------\n");
 		pid->OUT0 = atof(buf);
+		updata_status |= (1<<0);
 	}
+	return updata_status;
 }
 /****************************************************************************
  * updata_pidarg_modbusToflash
@@ -240,7 +273,7 @@ int updata_pidarg_modbusToflash(PID *pid,int cmd_index)
 			break;
 		case CMD_PID_T:
 			//pid.T
-			sprintf(buf,"%d",pid->T);
+			sprintf(buf,"%.2f",pid->T);
 			writedata(CONFIG_DEVPATH_PID_T,buf,strlen(buf));
 			break;
 		case CMD_PID_KP:
@@ -250,17 +283,17 @@ int updata_pidarg_modbusToflash(PID *pid,int cmd_index)
 			break;
 		case CMD_PID_TI:
 			//pid.Ti
-			sprintf(buf,"%d",pid->Ti);
+			sprintf(buf,"%.2f",pid->Ti);
 			writedata(CONFIG_DEVPATH_PID_TI,buf,strlen(buf));
 			break;
 		case CMD_PID_TD:
 			//pid.Td
-			sprintf(buf,"%d",pid->Td);
+			sprintf(buf,"%.2f",pid->Td);
 			writedata(CONFIG_DEVPATH_PID_TD,buf,strlen(buf));
 			break;
 		case CMD_PID_PWMCYC:
 			//pid.pwmcycle
-			sprintf(buf,"%d",pid->pwmcycle);
+			sprintf(buf,"%.2f",pid->pwmcycle);
 			writedata(CONFIG_DEVPATH_PID_PWMCYC,buf,strlen(buf));
 			break;
 		case CMD_PID_OUT0:
@@ -269,6 +302,86 @@ int updata_pidarg_modbusToflash(PID *pid,int cmd_index)
 			writedata(CONFIG_DEVPATH_PID_OUT0,buf,strlen(buf));
 			break;
 	}
+	return 0;
+}
+/****************************************************************************
+ * EnFlashUpdata
+ * liushuhe
+ * 2018.07.1
+ ****************************************************************************/
+void  EnFlashUpdata(pthread_cond_t *cond,pthread_mutex_t *mutex)
+{
+	if(!pthread_mutex_trylock(mutex))
+	{
+		enFlashUpdata = true;
+		pthread_cond_signal(cond);
+		pthread_mutex_unlock(mutex);
+	}
+}
+
+/****************************************************************************
+ * CheckFlashdata
+ * liushuhe
+ * 2018.07.1
+ ****************************************************************************/
+void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
+{
+	if(!(updata_status & (1<<7)))
+	{
+		pid->DC_I_MAX = 9.5;
+		pid_modbus->DC_I_MAX  = pid->DC_I_MAX;
+		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_DC_I_MAX);
+	}
+
+	if(!(updata_status & (1<<6)))
+	{
+		pid->Sv = 120;
+		pid_modbus->Sv  = pid->Sv;
+		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_SV);
+	}
+
+	if(!(updata_status & (1<<5)))
+	{
+		pid->T = 500;
+		pid_modbus->T  = pid->T;
+		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_T);
+	}
+
+	if(!(updata_status & (1<<4)))
+	{
+		pid->Kp = 30;
+		pid_modbus->Kp  = pid->Kp;
+		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_KP);
+	}
+
+	if(!(updata_status & (1<<3)))
+	{
+		pid->Ti = 5000000;
+		pid_modbus->Ti  = pid->Ti;
+		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_TI);
+	}
+	
+	if(!(updata_status & (1<<2)))
+	{
+		pid->Td = 1000;
+		pid_modbus->Td  = pid->Td;
+		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_TD);
+	}
+
+	if(!(updata_status & (1<<1)))
+	{
+		pid->pwmcycle = 1000;
+		pid_modbus->pwmcycle  = pid->pwmcycle;
+		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_PWMCYC);
+	}
+
+	if(!(updata_status & (1<<0)))
+	{
+		pid->OUT0 = 1;
+		pid_modbus->OUT0  = pid->OUT0;
+		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_OUT0);
+	}
+
 }
 
 /****************************************************************************
@@ -279,23 +392,76 @@ int updata_pidarg_modbusToflash(PID *pid,int cmd_index)
 
 int master_flash(int argc, char *argv[])
 {
-	//pid给个初始值，随后从flash里读取设置值，进行更新
-	PID_Init();
-	
-	updata_pidarg_modbusToflash(&pid,CMD_PID_DC_I_MAX);
-	updata_pidarg_modbusToflash(&pid,CMD_PID_SV);
-	updata_pidarg_modbusToflash(&pid,CMD_PID_T);
-	updata_pidarg_modbusToflash(&pid,CMD_PID_KP);
-	updata_pidarg_modbusToflash(&pid,CMD_PID_TI);
-	updata_pidarg_modbusToflash(&pid,CMD_PID_TD);
-	updata_pidarg_modbusToflash(&pid,CMD_PID_PWMCYC);
-	updata_pidarg_modbusToflash(&pid,CMD_PID_OUT0);
-	
-	updata_pidarg_fromflash(&pid);
+	char updata_status = 0;
 
+	updata_status = updata_pidarg_fromflash(&pid);
+	
+	CheckFlashdata(&pid,&pid_modbus,updata_status);
+
+	g_modbus.regholding[0] = ((uint32_t)pid_modbus.DC_I_MAX >> 16)&0xff ;
+	g_modbus.regholding[1] = (uint32_t)pid_modbus.DC_I_MAX & 0xff;
+	
+	g_modbus.regholding[2] = ((uint32_t)pid_modbus.Sv >> 16)&0xff ;
+	g_modbus.regholding[3] = (uint32_t)pid_modbus.Sv & 0xff;
+	
+	g_modbus.regholding[4] = ((uint32_t)pid_modbus.T >> 16)&0xff ;
+	g_modbus.regholding[5] = (uint32_t)pid_modbus.T & 0xff;
+	
+	g_modbus.regholding[6] = ((uint32_t)pid_modbus.Kp >> 16)&0xff ;
+	g_modbus.regholding[7] = (uint32_t)pid_modbus.Kp & 0xff;
+	
+	g_modbus.regholding[8] = ((uint32_t)pid_modbus.Ti >> 16)&0xff ;
+	g_modbus.regholding[9] = (uint32_t)pid_modbus.Ti & 0xff;
+	
+	g_modbus.regholding[10] = ((uint32_t)pid_modbus.Td >> 16)&0xff ;
+	g_modbus.regholding[11] = (uint32_t)pid_modbus.Td & 0xff;
+	
+	g_modbus.regholding[12] = ((uint32_t)pid_modbus.pwmcycle >> 16)&0xff ;
+	g_modbus.regholding[13] = (uint32_t)pid_modbus.pwmcycle & 0xff;
+	
+	g_modbus.regholding[14] = ((uint32_t)pid_modbus.OUT0 >> 16)&0xff ;
+	g_modbus.regholding[15] = (uint32_t)pid_modbus.OUT0 & 0xff;
+	
+	
 	while(1)
 	{
-		sleep(1);
+		if(!pthread_mutex_trylock(&g_FlashMutex))
+		{
+			while(enFlashUpdata!= true)
+			{
+				pthread_cond_wait(&g_FlashConVar, &g_FlashMutex);
+			}
+			enFlashUpdata = false;
+			
+			//更新pid数据结构
+
+			pid_modbus.DC_I_MAX		= (g_modbus.regholding[0]<<16)|g_modbus.regholding[1];
+			pid_modbus.Sv			= (g_modbus.regholding[2]<<16)|g_modbus.regholding[3];
+			pid_modbus.T			= (g_modbus.regholding[4]<<16)|g_modbus.regholding[5];
+			pid_modbus.Kp			= (g_modbus.regholding[6]<<16)|g_modbus.regholding[7];
+			pid_modbus.Ti			= (g_modbus.regholding[8]<<16)|g_modbus.regholding[9];
+			pid_modbus.Td			= (g_modbus.regholding[10]<<16)|g_modbus.regholding[11];
+			pid_modbus.pwmcycle		= (g_modbus.regholding[12]<<16)|g_modbus.regholding[13];
+			pid_modbus.OUT0			= (g_modbus.regholding[14]<<16)|g_modbus.regholding[15];
+
+			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_DC_I_MAX);
+			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_SV);
+			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_T);
+			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_KP);
+			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_TI);
+			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_TD);
+			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_PWMCYC);
+			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_OUT0);
+			
+			updata_pidarg_fromflash(&pid);	
+			
+			pthread_mutex_unlock(&g_FlashMutex);
+		}
+		else
+		{
+			sleep(1);
+		}
+
 	}
 
   return 0;

@@ -1,8 +1,8 @@
 #include "pid.h"
 #include "pwm.h"
-#include "task_spi.h"
 
-PID pid; //存放PID算法所需要的数据
+PID pid; 		//存放PID算法所需要的数据
+PID pid_modbus; //存放modbus设置的数据
 
 
 void PID_Init(void)
@@ -86,7 +86,7 @@ void pid_exec(void)
 }
 
 //pid控制温度
-void pidctl_tecT(int fd,int dev_num)
+void pidctl_tecT(int fd,int dev_num,int *start)
 {
 	//读取当前温度
 	read_temper(fd,dev_num);
@@ -94,5 +94,8 @@ void pidctl_tecT(int fd,int dev_num)
 	PID_Calc();
 	//pid执行供电
 	pid_exec();
+	
+	*start = false;
+	
 }
 

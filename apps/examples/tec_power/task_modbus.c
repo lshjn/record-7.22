@@ -73,6 +73,8 @@
 #include "pid.h"
 #include "task_modbus.h"
 
+#include "task_flash.h"
+
 /****************************************************************************
  * Pre-processor Definitions
  ****************************************************************************/
@@ -242,6 +244,8 @@ static void *modbus_pollthread(void *pvarg)
 {
   eMBErrorCode mberr;
   int ret;
+  //add by liushuhe 2018.07.1
+  uint8_t ucFunctionCode_Return = 0;
 
   /* Initialize the modbus */
 
@@ -261,15 +265,21 @@ static void *modbus_pollthread(void *pvarg)
     {
       /* Poll */
 
-      mberr = eMBPoll();
+      mberr = eMBPoll(&ucFunctionCode_Return);
       if (mberr != MB_ENOERR)
-        {
+      {
            break;
-        }
+      }
+	  //add by liushuhe 2018.07.1
+	  //modbus 16功能码，写多个寄存器
+	  if(ucFunctionCode_Return == MB_FUNC_WRITE_MULTIPLE_REGISTERS)
+	  {
+			EnFlashUpdata(&g_FlashConVar, &g_FlashMutex);
+	  }
 
       /* Generate some random input */
-
-      g_modbus.reginput[0] = (uint16_t)rand();
+	  //add by liushuhe 2018.07.1
+      //g_modbus.reginput[0] = (uint16_t)rand();
     }
   while (g_modbus.threadstate != SHUTDOWN);
 

@@ -23,10 +23,10 @@ typedef struct pid_t{
 	float Pv;			//传感器检测值	
 
 	float Kp;       	//比例项系数
-	uint32_t Ti;		//积分时间常数
-	uint32_t Td; 		//微分时间常数
+	float Ti;			//积分时间常数
+	float Td; 			//微分时间常数
 	
-	uint32_t T;  		//PID计算周期--采样周期  ms
+	float T;  			//PID计算周期--采样周期  ms
 
 	float Ek;  			//本次偏差
 	float Ek_1;			//上次偏差
@@ -40,15 +40,16 @@ typedef struct pid_t{
 
 	float OUT;      	//本次的输出值
 
-	uint16_t pwmcycle;	//pwm周期
+	float pwmcycle;	//pwm周期
 	
 }PID;
 
-extern PID pid; //存放PID算法所需要的数据
+extern PID pid; 		//存放PID算法所需要的数据
+extern PID pid_modbus;  //存放modbus设置的数据
 
 void PID_Calc(void); //pid计算
 void PID_Init(void);
-void pidctl_tecT(int fd,int dev_num);
+void pidctl_tecT(int fd,int dev_num,int *start);
 void pid_exec(void);
 void PID_out(float pwm_value);
 

@@ -26,8 +26,8 @@
 
 #include "task_modbus.h"
 #include "task_monitor.h"
+#include "max31865.h"
 #include "adc.h"
-#include "task_spi.h"
 #include "pid.h"
 #include "pwm.h"
 
@@ -41,7 +41,16 @@ int fd_max31865_2;
 //采样时间到
 void  timerInt_action(void)
 {
-	pidctl_tecT(fd_max31865_1,MAX31865_DEV1);
+	static int start = false;
+	if(!start)
+	{
+		start = true;
+		pidctl_tecT(fd_max31865_1,MAX31865_DEV1,&start);
+	}
+	else  //防止采样频率太快，pidctl_tecT未执行完就又进入中断，导致栈溢出
+	{
+		return;
+	}
 }
 
 /****************************************************************************
@@ -187,11 +196,10 @@ int master_monitor(int argc, char *argv[])
 
 	while(1)
 	{
+		//没有启动信号是否要执行读取,电流、温度,待确定
 		read_DC_I();		
-		sleep(1); 
-		//没有启动信号是否要执行读取温度带确定
-		read_temper(fd_max31865_1,MAX31865_DEV1);		//读取当前温度
-		PID_Calc(); 		//pid计算 
+		read_temper(fd_max31865_1,MAX31865_DEV1);
+		usleep(500*1000);
 	}
 
  return EXIT_FAILURE;

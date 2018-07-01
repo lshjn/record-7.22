@@ -238,7 +238,8 @@ eMBErrorCode eMBDisable(void);
  *   eMBErrorCode::MB_ENOERR.
  */
 
-eMBErrorCode eMBPoll(void);
+//add by liushuhe 2018.07.1
+eMBErrorCode eMBPoll(uint8_t *ucFunctionCode_Return);
 
 /* Configure the slave id of the device.
  *

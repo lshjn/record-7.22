@@ -69,6 +69,8 @@ uint16_t write_max31865(int fd,char *buf,uint16_t length);
 uint16_t read_max31865(int fd,char *buf,uint16_t length)  ;
 void start_conversion(int fd) ;
 void Fault_Detect(int fd);
+void read_temper(int fd,int dev_num);
+
 
 #ifdef __cplusplus
 }

@@ -21,11 +21,17 @@
 #define  CMD_PID_PWMCYC			6
 #define  CMD_PID_OUT0			7
 
+extern pthread_mutex_t g_FlashMutex	;
+extern pthread_cond_t  g_FlashConVar;
+
+extern bool	enFlashUpdata;
+
 int master_flash(int argc, char *argv[]);
 int readdata(const char *path,char  *buf,uint32_t len);
 int writedata(const char *path,char  *buf,uint32_t len);
-int updata_pidarg_fromflash(PID *pid);
+char updata_pidarg_fromflash(PID *pid);
 int updata_pidarg_modbusToflash(PID *pid,int cmd_index);
+void  EnFlashUpdata(pthread_cond_t *cond,pthread_mutex_t *mutex);
 
 
 #ifdef __cplusplus

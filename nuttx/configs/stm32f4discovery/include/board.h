@@ -261,13 +261,19 @@
  */
 
 /* UART1: (Used in pseudoterm configuration) */
-//add by liushuhe 2017.11.03
+//add by liushuhe 2018.7.1
 #define GPIO_USART1_TX GPIO_USART1_TX_1
 #define GPIO_USART1_RX GPIO_USART1_RX_1
 
-//add by liushuhe 2017.11.03
-#  define GPIO_USART2_RX GPIO_USART2_RX_2
-#  define GPIO_USART2_TX GPIO_USART2_TX_2
+//add by liushuhe 2018.07.1
+//485 test
+#define GPIO_USART2_RX GPIO_USART2_RX_2
+#define GPIO_USART2_TX GPIO_USART2_TX_2
+
+//add by liushuhe 2018.07.1
+//485 
+#define GPIO_USART6_RX GPIO_USART6_RX_1
+#define GPIO_USART6_TX GPIO_USART6_TX_1
 
 
 /* PWM
