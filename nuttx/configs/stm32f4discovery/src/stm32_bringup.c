@@ -271,10 +271,10 @@ int stm32_bringup(void)
   stm32f407_max31865_spiinitialize();
 
   //add by liushuhe_test 2018.06.30
-  //stm32_mx25L_initialize();
+  stm32_mx25L_initialize();
   
   //add by liushuhe_test 2018.06.28
-  stm32_w25_initialize();
+  //stm32_w25_initialize();
 
 #endif
 

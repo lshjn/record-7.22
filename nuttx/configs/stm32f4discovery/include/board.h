@@ -240,7 +240,8 @@
 
 /* Alternate function pin selections ************************************************/
 /* CAN */
-
+//add by liushuhe 2018.07.13
+#if 0
 #ifndef CONFIG_STM32_FSMC
 #  define GPIO_CAN1_RX GPIO_CAN1_RX_3
 #  define GPIO_CAN1_TX GPIO_CAN1_TX_3
@@ -250,7 +251,7 @@
 #  define GPIO_CAN2_RX GPIO_CAN2_RX_1
 #  define GPIO_CAN2_TX GPIO_CAN2_TX_1
 #endif
-
+#endif
 /* UART2:
  *
  * The STM32F4 Discovery has no on-board serial devices, but the console is
@@ -267,8 +268,8 @@
 
 //add by liushuhe 2018.07.1
 //485 test
-#define GPIO_USART2_RX GPIO_USART2_RX_2
-#define GPIO_USART2_TX GPIO_USART2_TX_2
+//#define GPIO_USART2_RX GPIO_USART2_RX_2
+//#define GPIO_USART2_TX GPIO_USART2_TX_2
 
 //add by liushuhe 2018.07.1
 //485 
