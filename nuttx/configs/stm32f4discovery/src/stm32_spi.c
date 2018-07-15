@@ -148,6 +148,7 @@ void  stm32f407_cc1100_spiinitialize(void)
 
 }
 
+
 //add by liushuhe 2018.06.30
 int stm32_mx25L_initialize(void)
 {
@@ -157,12 +158,12 @@ int stm32_mx25L_initialize(void)
 
   FAR struct spi_dev_s *spi;
   FAR struct mtd_dev_s *mtd;
-#ifdef CONFIG_FS_NXFFS
   char devname[12];
-#else
+#ifndef CONFIG_FS_NXFFS
   char blockdev[18];
   char chardev[12];
 #endif
+
 
   int ret;
 
@@ -170,58 +171,47 @@ int stm32_mx25L_initialize(void)
   //add by liushuhe 2018.06.29
   spi = stm32_spibus_initialize(3);
   if (!spi)
-    {
-      ferr("ERROR: Failed to initialize SPI port 2\n");
-      return -ENODEV;
-    }
+	{
+	  ferr("ERROR: Failed to initialize SPI port 3\n");
+	  return -ENODEV;
+	}
 
   /* Now bind the SPI interface to the W25 SPI FLASH driver */
-
-  mtd = stm32_spibus_initialize(spi);
+  stm32_configgpio(GPIO_MA25L_CS);
+  
+  mtd = mx25l_initialize_spi(spi);
   if (!mtd)
-    {
-      ferr("ERROR: Failed to bind SPI port 3 to the mx25L FLASH driver\n");
-      return -ENODEV;
-    }
+	{
+	  ferr("ERROR: Failed to bind SPI port 3 to the mx25L FLASH driver\n");
+	  return -ENODEV;
+	}
 
-#ifndef CONFIG_FS_NXFFS
   /* And finally, use the FTL layer to wrap the MTD driver as a block driver */
-
+#if 1
   ret = ftl_initialize(minor, mtd);
   if (ret < 0)
-    {
-      ferr("ERROR: Initialize the FTL layer\n");
-      return ret;
-    }
- 
+	{
+	  ferr("ERROR: Initialize the FTL layer\n");
+	  return ret;
+	}
+
   // Use the minor number to create device paths//
   snprintf(blockdev, 18, "/dev/mtdblock%d", minor);
   snprintf(chardev, 12, "/dev/mtd%d", minor);
   
   //add by liushuhe 2018.06.30
-  #ifndef CONFIG_FS_FAT
-	  //在块设备上创建一个字符设备
-	  ret = bchdev_register(blockdev, chardev, false);
-	  if (ret < 0)
-		{
-		  ferr("ERROR: bchdev_register %s failed: %d\n", chardev, ret);
-		  return ret;
-		}
-  #else
-	  /*挂载fat32 文件系统  /mnt/spiflash_fat32  */
-	  ret = mount(blockdev, "/mnt/MX25L_fat32", "vfat", 0, NULL);
-	  if (ret < 0)
-		{
-		  ferr("ERROR: Failed to mount the FAT volume: %d\n", errno);
-		  return ret;
-		}	  
-  #endif
+  //在块设备上创建一个字符设备
+  ret = bchdev_register(blockdev, chardev, false);
+  if (ret < 0)
+	{
+	  ferr("ERROR: bchdev_register %s failed: %d\n", chardev, ret);
+	  return ret;
+	}	  
+#endif
+#endif
+#if 0
+	ret = nxffs_initialize(mtd);
 
-  
-#else
-  /* Initialize to provide NXFFS on the MTD interface */
-
-  ret = nxffs_initialize(mtd);
   if (ret < 0)
     {
       ferr("ERROR: NXFFS initialization failed: %d\n", -ret);
@@ -237,11 +227,9 @@ int stm32_mx25L_initialize(void)
       ferr("ERROR: Failed to mount the NXFFS volume: %d\n", errno);
       return ret;
     }
-#endif
-#endif
+#endif	
   return OK;
 }
-
 
 
 //add by liushuhe_test 2018.06.30
@@ -249,7 +237,7 @@ int stm32_w25_initialize(void)
 {
 	int minor = 0;
 //add by liushuhe 2018.06.29
-#ifdef CONFIG_STM32_SPI2
+#ifdef CONFIG_STM32_SPI3
 
   FAR struct spi_dev_s *spi;
   FAR struct mtd_dev_s *mtd;
@@ -264,7 +252,7 @@ int stm32_w25_initialize(void)
 
   /* Get the SPI port */
   //add by liushuhe 2018.06.29
-  spi = stm32_spibus_initialize(2);
+  spi = stm32_spibus_initialize(3);
   if (!spi)
     {
       ferr("ERROR: Failed to initialize SPI port 2\n");
@@ -272,7 +260,9 @@ int stm32_w25_initialize(void)
     }
 
   /* Now bind the SPI interface to the W25 SPI FLASH driver */
-  
+  //stm32_configgpio(GPIO_W25_CS);
+    stm32_configgpio(GPIO_MA25L_CS);
+
   mtd = w25_initialize(spi);
   if (!mtd)
     {
@@ -369,7 +359,7 @@ void  stm32f407_max31865_spiinitialize(void)
 #endif
 #endif
 //add by liushuhe_test 2018.06.30
-#if 0
+#if 1
 //spi2
 #ifdef CONFIG_STM32_SPI2
   /* Configure SPI-based devices */

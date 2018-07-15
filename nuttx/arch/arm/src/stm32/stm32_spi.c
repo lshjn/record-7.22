@@ -1822,7 +1822,6 @@ FAR struct spi_dev_s *stm32_spibus_initialize(int bus)
 
   irqstate_t flags = enter_critical_section();
 
-#ifdef CONFIG_STM32_SPI1
   if (bus == 1)
     {
       /* Select SPI1 */
@@ -1844,10 +1843,7 @@ FAR struct spi_dev_s *stm32_spibus_initialize(int bus)
           spi_bus_initialize(priv);
         }
     }
-  else
-#endif
-#ifdef CONFIG_STM32_SPI2
-  if (bus == 2)
+  else if (bus == 2)
     {
       /* Select SPI2 */
 
@@ -1868,10 +1864,7 @@ FAR struct spi_dev_s *stm32_spibus_initialize(int bus)
           spi_bus_initialize(priv);
         }
     }
-  else
-#endif
-#ifdef CONFIG_STM32_SPI3
-  if (bus == 3)
+  else if (bus == 3)
     {
       /* Select SPI3 */
 
@@ -1893,79 +1886,6 @@ FAR struct spi_dev_s *stm32_spibus_initialize(int bus)
         }
     }
   else
-#endif
-#ifdef CONFIG_STM32_SPI4
-  if (bus == 4)
-    {
-      /* Select SPI4 */
-
-      priv = &g_spi4dev;
-
-      /* Only configure if the bus is not already configured */
-
-      if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
-        {
-          /* Configure SPI4 pins: SCK, MISO, and MOSI */
-
-          stm32_configgpio(GPIO_SPI4_SCK);
-          stm32_configgpio(GPIO_SPI4_MISO);
-          stm32_configgpio(GPIO_SPI4_MOSI);
-
-          /* Set up default configuration: Master, 8-bit, etc. */
-
-          spi_bus_initialize(priv);
-        }
-    }
-  else
-#endif
-#ifdef CONFIG_STM32_SPI5
-  if (bus == 5)
-    {
-      /* Select SPI5 */
-
-      priv = &g_spi5dev;
-
-      /* Only configure if the bus is not already configured */
-
-      if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
-        {
-          /* Configure SPI5 pins: SCK, MISO, and MOSI */
-
-          stm32_configgpio(GPIO_SPI5_SCK);
-          stm32_configgpio(GPIO_SPI5_MISO);
-          stm32_configgpio(GPIO_SPI5_MOSI);
-
-          /* Set up default configuration: Master, 8-bit, etc. */
-
-          spi_bus_initialize(priv);
-        }
-    }
-  else
-#endif
-#ifdef CONFIG_STM32_SPI6
-  if (bus == 6)
-    {
-      /* Select SPI6 */
-
-      priv = &g_spi6dev;
-
-      /* Only configure if the bus is not already configured */
-
-      if ((spi_getreg(priv, STM32_SPI_CR1_OFFSET) & SPI_CR1_SPE) == 0)
-        {
-          /* Configure SPI6 pins: SCK, MISO, and MOSI */
-
-          stm32_configgpio(GPIO_SPI6_SCK);
-          stm32_configgpio(GPIO_SPI6_MISO);
-          stm32_configgpio(GPIO_SPI6_MOSI);
-
-          /* Set up default configuration: Master, 8-bit, etc. */
-
-          spi_bus_initialize(priv);
-        }
-    }
-  else
-#endif
     {
       spierr("ERROR: Unsupported SPI bus: %d\n", bus);
       return NULL;
