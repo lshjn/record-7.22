@@ -36,21 +36,21 @@ int fd_EXTER_CTR;
 int fd_max31865_1;
 int fd_max31865_2;
 
-
+int  en_tecpower = 0;
 
 //采样时间到
 void  timerInt_action(void)
 {
 	static int start = false;
-	if(!start)
-	{
-		start = true;
+	//if(!start)
+	//{
+	//	start = true;
 		pidctl_tecT(fd_max31865_1,MAX31865_DEV1,&start);
-	}
-	else  //防止采样频率太快，pidctl_tecT未执行完就又进入中断，导致栈溢出
-	{
-		return;
-	}
+	//}
+	//else  //防止采样频率太快，pidctl_tecT未执行完就又进入中断，导致栈溢出
+	//{
+	//	return;
+	//}
 }
 
 /****************************************************************************
@@ -62,22 +62,23 @@ void EXTER_CTR_Action(int signo,siginfo_t *siginfo, void *arg)
 {
 	static int timer_status = false; 
 
-	if(!timer_status)
-	{
+	//if(!timer_status)
+	//{
 		if (signo == SIGUSR1)
 		{
 			printf("start tec ctrl...\n");
 			//启动定时器
-			startup_pid_Sampling_timer();
+			en_tecpower = 1;
+			//startup_pid_Sampling_timer();
 			timer_status = true;
 		}
 
-	}
-	else
-	{
-		printf("already start tec ctrl !\n");
-		return;
-	}
+	//}
+	//else
+	//{
+	//	printf("already start tec ctrl !\n");
+	//	return;
+	//}
 
 }
 
@@ -182,24 +183,39 @@ int master_monitor(int argc, char *argv[])
 	}
 
 	//max31865_1
-	fd_max31865_1 = open(CONFIG_EXAMPLES_MAX31865_1_DEVPATH, O_RDONLY);
+	fd_max31865_1 = open(CONFIG_EXAMPLES_MAX31865_1_DEVPATH, O_RDWR);
 	if (fd_max31865_1 < 0)
 	{
 		printf("fd_max31865_1: open %s failed: %d\n", CONFIG_EXAMPLES_MAX31865_1_DEVPATH, errno);
 	}
+	else
+	{
+		printf("fd_max31865_1: = %d\n", fd_max31865_1);
+	}
 	//max31865_2
-	fd_max31865_2 = open(CONFIG_EXAMPLES_MAX31865_2_DEVPATH, O_RDONLY);
+	fd_max31865_2 = open(CONFIG_EXAMPLES_MAX31865_2_DEVPATH, O_RDWR);
 	if (fd_max31865_2 < 0)
 	{
 		printf("fd_max31865_2: open %s failed: %d\n", CONFIG_EXAMPLES_MAX31865_2_DEVPATH, errno);
 	}
+	else
+	{
+		printf("fd_max31865_2: = %d\n", fd_max31865_2);
+	}
 
+	Init_max31865(fd_max31865_1);
+
+	
 	while(1)
 	{
 		//没有启动信号是否要执行读取,电流、温度,待确定
-		read_DC_I();		
-		read_temper(fd_max31865_1,MAX31865_DEV1);
-		usleep(500*1000);
+		read_DC_I();
+		//if(en_tecpower == 1)
+		{
+			printf("timerInt_action\n");
+			timerInt_action();
+		}
+		sleep(1);
 	}
 
  return EXIT_FAILURE;

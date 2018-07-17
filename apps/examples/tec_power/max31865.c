@@ -119,14 +119,13 @@ void read_temper(int fd,int dev_num)
 	float   AD_MAX81365 = 0;
 	float   TEMPER_MAX81365 = 0;
 	bool	DRDY_PIN_VALUE = DRDY_INVALID;
-	
-	Init_max31865(fd);
+	int i=0;
 	memset(max31856_databuf,0,sizeof(max31856_databuf));
 
 	start_conversion(fd);
 
 	//wait max31865 drdy
-	while(DRDY_PIN_VALUE == DRDY_INVALID)
+	//do
 	{
 		if(dev_num == MAX31865_DEV1)
 		{
@@ -136,14 +135,22 @@ void read_temper(int fd,int dev_num)
 		{
 			boardctl(BOARDIOC_GET_SPI2_DRDY, (uintptr_t)(&DRDY_PIN_VALUE));
 		}
-		usleep(1000);
+		printf("wait pin\n");
+		usleep(1000*50);
 	}
+	//while(DRDY_PIN_VALUE == DRDY_INVALID);
 	
 	read_max31865(fd,max31856_databuf,sizeof(max31856_databuf));				//读取max31865当前的温度值
+	for(i=0;i<14;i++)
+	{
+		printf("%x \n",max31856_databuf[i]);
+	}
 
 	if((max31856_databuf[ADDR_RTD_LSB]&0x01)==0x01)
 	{
 		Fault_Detect(fd);
+		
+		printf("Fault_Detect \n");
 	}
 	else
 	{
@@ -152,6 +159,8 @@ void read_temper(int fd,int dev_num)
 		pid.Pv=TEMPER_MAX81365; 
 		//设置modbus数据结构
 		g_modbus.reginput[0] = pid.Pv;
+		printf("pid.Pv=%.2f \n",pid.Pv);
+		printf("pid.Sv=%.2f \n",pid.Sv);
 	}
 }
 

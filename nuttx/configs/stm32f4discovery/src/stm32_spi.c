@@ -414,7 +414,7 @@ void stm32_spi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
   
 //add by liushuhe 2017.12.22
-
+#if 0
 #if defined(CONFIG_LCD_UG2864AMBAG01) || defined(CONFIG_LCD_UG2864HSWEG01) || \
     defined(CONFIG_LCD_SSD1351)
   if (devid == SPIDEV_DISPLAY(0))
@@ -426,12 +426,13 @@ void stm32_spi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
     {
       stm32_gpiowrite(GPIO_CS_MEMS, !selected);
     }
-
+#endif
 //add by liushuhe 2018.06.28
 #ifdef CONFIG_SENSORS_MAX31865
   if (devid == SPIDEV_TEMPERATURE(0))
     {
       stm32_gpiowrite(GPIO_MAX31865_CS1, !selected);
+	  printf("stm32_spi1select=%d\n",!selected);
     }
 #endif
 
@@ -449,6 +450,7 @@ void stm32_spi2select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
 {
   spiinfo("devid: %d CS: %s\n", (int)devid, selected ? "assert" : "de-assert");
 
+#if 0
 #if defined(CONFIG_SENSORS_MAX31855)
   if (devid == SPIDEV_TEMPERATURE(0))
     {
@@ -461,20 +463,21 @@ void stm32_spi2select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
       stm32_gpiowrite(GPIO_MAX6675_CS, !selected);
     }
 #endif
-
+#endif
 //add by liushuhe_test 2018.06.30
-#if 0
+#if 1
 //add by liushuhe 2018.06.28
 #ifdef CONFIG_SENSORS_MAX31865
   if (devid == SPIDEV_TEMPERATURE(1))
     {
       stm32_gpiowrite(GPIO_MAX31865_CS2, !selected);
+	  printf("stm32_spi2select=%d\n",!selected);
     }
 #endif
 #endif
 
 	//add by liushuhe_test 2018.06.30
-	stm32_gpiowrite(GPIO_W25_CS, !selected);
+	//stm32_gpiowrite(GPIO_W25_CS, !selected);
 
 
 

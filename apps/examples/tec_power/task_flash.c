@@ -328,7 +328,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 {
 	if(!(updata_status & (1<<7)))
 	{
-		pid->DC_I_MAX = 9.5;
+		pid->DC_I_MAX = 66;
 		pid_modbus->DC_I_MAX  = pid->DC_I_MAX;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_DC_I_MAX);
 	}
@@ -340,7 +340,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 
 	if(!(updata_status & (1<<6)))
 	{
-		pid->Sv = 120;
+		pid->Sv = 26.8;
 		pid_modbus->Sv  = pid->Sv;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_SV);
 	}
@@ -363,7 +363,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 	
 	if(!(updata_status & (1<<4)))
 	{
-		pid->Kp = 30;
+		pid->Kp = 50;
 		pid_modbus->Kp  = pid->Kp;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_KP);
 	}
@@ -375,7 +375,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 
 	if(!(updata_status & (1<<3)))
 	{
-		pid->Ti = 5000000;
+		pid->Ti = 1000000;
 		pid_modbus->Ti  = pid->Ti;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_TI);
 	}
@@ -386,7 +386,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 	
 	if(!(updata_status & (1<<2)))
 	{
-		pid->Td = 1000;
+		pid->Td = 250;
 		pid_modbus->Td  = pid->Td;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_TD);
 	}

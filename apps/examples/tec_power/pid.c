@@ -75,14 +75,27 @@ void PID_out(float pwm_value)
 void pid_exec(void)
 {
 	//当前的电流超过设定最大值，pwm/2
+	//本次的输出值,需要取pwm周期-PID输出值,因为pwm加电时温度下降
+	float PID_Out_PWM = 0;     
+	PID_Out_PWM = pid.pwmcycle - pid.OUT;
+
+	
+	printf("pid.DC_I_CUR_ADC=%.2f\n",pid.DC_I_CUR_ADC);
+	printf("pid.DC_I_MAX=%.2f\n",pid.DC_I_MAX);
+
 	if(pid.DC_I_CUR_ADC <= pid.DC_I_MAX)
 	{
-		PID_out(pid.OUT);	
+		PID_out(PID_Out_PWM);
+		printf("pid.OUT=%.2f\n",pid.OUT);
+		printf("A:PID_Out_PWM=%.2f\n",PID_Out_PWM);
 	}
 	else
 	{
-		PID_out(pid.OUT/2);	
+		PID_out(PID_Out_PWM/2);	
+		printf("pid.OUT=%.2f\n",pid.OUT);
+		printf("A/2:PID_Out_PWM=%.2f\n",PID_Out_PWM/2);
 	}
+
 }
 
 //pid控制温度

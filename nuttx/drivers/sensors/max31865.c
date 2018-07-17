@@ -85,7 +85,7 @@ static const struct file_operations g_max31865fops =
 static void max31865_lock(FAR struct spi_dev_s *spi)
 {
   (void)SPI_LOCK(spi, true);
-  SPI_SETMODE(spi, SPIDEV_MODE0);
+  SPI_SETMODE(spi, SPIDEV_MODE1);
   SPI_SETBITS(spi, 8);
   (void)SPI_HWFEATURES(spi, 0);
   SPI_SETFREQUENCY(spi, 400000);
@@ -114,6 +114,7 @@ static void max31865_unlock(FAR struct spi_dev_s *spi)
 
 static int max31865_open(FAR struct file *filep)
 {
+	printf("max31865_open\n");
   return OK;
 }
 
@@ -145,24 +146,24 @@ static ssize_t max31865_read(FAR struct file *filep, FAR char *buffer, size_t bu
 
   if (!buffer)
     {
-      snerr("ERROR: Buffer is null\n");
+      printf("ERROR: Buffer is null\n");
       return -EINVAL;
     }
-
+#if 0
   if (buflen != 2)
     {
-      snerr("ERROR: You can't read something other than 16 bits (2 bytes)\n");
+      printf("ERROR: You can't read something other than 16 bits (2 bytes)\n");
       return -EINVAL;
     }
-
+#endif
   /* Enable MAX31865's chip select */
 
   max31865_lock(priv->spi);
-  if(strcmp(inode->i_name,"/dev/max31865_1") == 0)
+  if(strcmp(inode->i_name,"max31865_1") == 0)
   {
 	  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), true);
   }
-  else if(strcmp(inode->i_name,"/dev/max31865_2") == 0)
+  else if(strcmp(inode->i_name,"max31865_2") == 0)
   {
 	  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(1), true);
   }
@@ -173,11 +174,11 @@ static ssize_t max31865_read(FAR struct file *filep, FAR char *buffer, size_t bu
   SPI_RECVBLOCK(priv->spi, buffer, buflen);
   
   /* Disable MAX31865's chip select */
-  if(strcmp(inode->i_name,"/dev/max31865_1") == 0)
+  if(strcmp(inode->i_name,"max31865_1") == 0)
   {
 	  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), false);
   }
-  else if(strcmp(inode->i_name,"/dev/max31865_2") == 0)
+  else if(strcmp(inode->i_name,"max31865_2") == 0)
   {
 	  SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(1), false);
   }
@@ -201,44 +202,53 @@ static ssize_t max31865_write(FAR struct file *filep, FAR const char *buffer,
 	FAR struct inode		  *inode = filep->f_inode;
 	FAR struct max31865_dev_s *priv  = inode->i_private;
 	uint8_t 				  addr;
-	
+    char temp_buf[255] = {0};
 	/* Check for issues */
 	
 	if (!buffer)
 	  {
-		snerr("ERROR: Buffer is null\n");
+		printf("ERROR: Buffer is null\n");
 		return -EINVAL;
 	  }
-	
+#if 0	
 	if (buflen != 2)
 	  {
-		snerr("ERROR: You can't read something other than 16 bits (2 bytes)\n");
+		printf("ERROR: You can't read something other than 16 bits (2 bytes)\n");
 		return -EINVAL;
 	  }
-	
+#endif	
 	/* Enable MAX31865's chip select */
-	
+
+
 	max31865_lock(priv->spi);
-	if(strcmp(inode->i_name,"/dev/max31865_1") == 0)
+	if(strcmp(inode->i_name,"max31865_1") == 0)
 	{
 		SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), true);
 	}
-	else if(strcmp(inode->i_name,"/dev/max31865_2") == 0)
+	else if(strcmp(inode->i_name,"max31865_2") == 0)
 	{
 		SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(1), true);
 	}
 	
 	//add by liushuhe 2018.06.29
-	addr = buffer[0] | MAX31865_WRITE;
-	SPI_SEND(priv->spi, addr);
-	SPI_SNDBLOCK(priv->spi, &buffer[1], buflen-1);
+	//addr = buffer[0] | MAX31865_WRITE;
+	//SPI_SEND(priv->spi, addr);
+	//SPI_SNDBLOCK(priv->spi, &buffer[1], buflen-1);
+	
+	memcpy(temp_buf,buffer,buflen);
+	
+	temp_buf[0] = temp_buf[0] | MAX31865_WRITE;
+	
+
+	
+	SPI_SNDBLOCK(priv->spi, &temp_buf[0], buflen);
 	
 	/* Disable MAX31865's chip select */
-	if(strcmp(inode->i_name,"/dev/max31865_1") == 0)
+	if(strcmp(inode->i_name,"max31865_1") == 0)
 	{
 		SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(0), false);
 	}
-	else if(strcmp(inode->i_name,"/dev/max31865_2") == 0)
+	else if(strcmp(inode->i_name,"max31865_2") == 0)
 	{
 		SPI_SELECT(priv->spi, SPIDEV_TEMPERATURE(1), false);
 	}
