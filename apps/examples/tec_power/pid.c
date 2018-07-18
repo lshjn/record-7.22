@@ -27,8 +27,7 @@ void PID_Calc(void)  //pid计算
 	float out;
 	
 
-	//pid.Ek=pid.Sv-pid.Pv;   	//得到当前的偏差值
-	pid.Ek=pid.Pv-pid.Sv;   	//得到当前的偏差值
+	pid.Ek=pid.Sv-pid.Pv;   	//得到当前的偏差值
 	pid.Pout=pid.Kp*pid.Ek;     //比例输出
 
 	pid.SEk+=pid.Ek;        	//历史偏差总和
@@ -87,8 +86,8 @@ void pid_exec(void)
 		//pid.OUT =2;	
 	}
 	
-	//PID_Out_PWM = pid.pwmcycle - pid.OUT;
-	PID_Out_PWM = pid.OUT;
+	PID_Out_PWM = pid.pwmcycle - pid.OUT;
+	//PID_Out_PWM = pid.OUT;
 
 	
 	printf("pid.DC_I_CUR_ADC=%.2f\n",pid.DC_I_CUR_ADC);

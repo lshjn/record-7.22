@@ -119,7 +119,7 @@ void read_temper(int fd,int dev_num)
 	float   AD_MAX81365 = 0;
 	float   TEMPER_MAX81365 = 0;
 	bool	DRDY_PIN_VALUE = DRDY_INVALID;
-	int i=0;
+
 	memset(max31856_databuf,0,sizeof(max31856_databuf));
 
 	start_conversion(fd);
@@ -135,16 +135,12 @@ void read_temper(int fd,int dev_num)
 		{
 			boardctl(BOARDIOC_GET_SPI2_DRDY, (uintptr_t)(&DRDY_PIN_VALUE));
 		}
-		printf("wait pin\n");
 		usleep(1000*20);
 	}
 	//while(DRDY_PIN_VALUE == DRDY_INVALID);
 	
 	read_max31865(fd,max31856_databuf,sizeof(max31856_databuf));				//读取max31865当前的温度值
-	for(i=0;i<14;i++)
-	{
-		printf("%x \n",max31856_databuf[i]);
-	}
+
 
 	if((max31856_databuf[ADDR_RTD_LSB]&0x01)==0x01)
 	{
