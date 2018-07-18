@@ -176,12 +176,12 @@ int board_ioctl(unsigned int cmd, uintptr_t arg)
 		case BOARDIOC_GET_SPI1_DRDY:
 				stm32_configgpio(GPIO_MAX31865_1_DRDY);
 				*ptr_pinValue = stm32_gpioread(GPIO_MAX31865_1_DRDY);
-				printf("ptr_pinValue1=%d,%d\n",*ptr_pinValue,stm32_gpioread(GPIO_MAX31865_1_DRDY));
+				//printf("ptr_pinValue1=%d,%d\n",*ptr_pinValue,stm32_gpioread(GPIO_MAX31865_1_DRDY));
 				break;
 		case BOARDIOC_GET_SPI2_DRDY:
 				stm32_configgpio(GPIO_MAX31865_1_DRDY);
 				*ptr_pinValue = stm32_gpioread(GPIO_MAX31865_2_DRDY);
-				printf("ptr_pinValue2=%d,%d\n",*ptr_pinValue,stm32_gpioread(GPIO_MAX31865_2_DRDY));
+				//printf("ptr_pinValue2=%d,%d\n",*ptr_pinValue,stm32_gpioread(GPIO_MAX31865_2_DRDY));
 				break;
 				
 

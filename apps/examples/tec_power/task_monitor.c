@@ -215,7 +215,7 @@ int master_monitor(int argc, char *argv[])
 			printf("timerInt_action\n");
 			timerInt_action();
 		}
-		sleep(1);
+		usleep(CONFIG_EXAMPLES_TIMER_INTERVAL);
 	}
 
  return EXIT_FAILURE;

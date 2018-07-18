@@ -136,7 +136,7 @@ void read_temper(int fd,int dev_num)
 			boardctl(BOARDIOC_GET_SPI2_DRDY, (uintptr_t)(&DRDY_PIN_VALUE));
 		}
 		printf("wait pin\n");
-		usleep(1000*50);
+		usleep(1000*20);
 	}
 	//while(DRDY_PIN_VALUE == DRDY_INVALID);
 	

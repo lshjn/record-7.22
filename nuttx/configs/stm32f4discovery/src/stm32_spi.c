@@ -432,7 +432,7 @@ void stm32_spi1select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
   if (devid == SPIDEV_TEMPERATURE(0))
     {
       stm32_gpiowrite(GPIO_MAX31865_CS1, !selected);
-	  printf("stm32_spi1select=%d\n",!selected);
+	  //printf("stm32_spi1select=%d\n",!selected);
     }
 #endif
 
@@ -471,7 +471,7 @@ void stm32_spi2select(FAR struct spi_dev_s *dev, uint32_t devid, bool selected)
   if (devid == SPIDEV_TEMPERATURE(1))
     {
       stm32_gpiowrite(GPIO_MAX31865_CS2, !selected);
-	  printf("stm32_spi2select=%d\n",!selected);
+	 // printf("stm32_spi2select=%d\n",!selected);
     }
 #endif
 #endif

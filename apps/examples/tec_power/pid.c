@@ -27,7 +27,8 @@ void PID_Calc(void)  //pid计算
 	float out;
 	
 
-	pid.Ek=pid.Sv-pid.Pv;   	//得到当前的偏差值
+	//pid.Ek=pid.Sv-pid.Pv;   	//得到当前的偏差值
+	pid.Ek=pid.Pv-pid.Sv;   	//得到当前的偏差值
 	pid.Pout=pid.Kp*pid.Ek;     //比例输出
 
 	pid.SEk+=pid.Ek;        	//历史偏差总和
@@ -76,8 +77,18 @@ void pid_exec(void)
 {
 	//当前的电流超过设定最大值，pwm/2
 	//本次的输出值,需要取pwm周期-PID输出值,因为pwm加电时温度下降
-	float PID_Out_PWM = 0;     
-	PID_Out_PWM = pid.pwmcycle - pid.OUT;
+	float PID_Out_PWM = 0;  
+
+    //因为电路没有使用H桥所以导致没法加热,pwm环需要做成单边闭环,低于控制温度直接掐掉
+
+	if(pid.Pv <= pid.Sv)
+	{
+		//pid.OUT = pid.pwmcycle;	
+		//pid.OUT =2;	
+	}
+	
+	//PID_Out_PWM = pid.pwmcycle - pid.OUT;
+	PID_Out_PWM = pid.OUT;
 
 	
 	printf("pid.DC_I_CUR_ADC=%.2f\n",pid.DC_I_CUR_ADC);
