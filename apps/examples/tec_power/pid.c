@@ -92,11 +92,13 @@ void pid_exec(PID *pid)
 	
 	if(pid->I_CUR <= pid->I_MAX)
 	{
+	#if 0
 		//pid全功率输出电流太大，这里将输出值限制一下
 		if(PID_Out_PWM > (pid->pwmcycle-200))
 		{
 			PID_Out_PWM = (pid->pwmcycle-200);
 		}
+	#endif
 		PID_out(PID_Out_PWM);
 		printf("pid->OUT=%.2f\n",pid->OUT);
 		printf("PID_Out_PWM=%.2f\n",PID_Out_PWM);
