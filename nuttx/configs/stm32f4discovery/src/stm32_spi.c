@@ -167,6 +167,8 @@ int stm32_mx25L_initialize(void)
 
   int ret;
 
+  //stm32_configgpio(GPIO_MA25L_CS);
+
   /* Get the SPI port */
   //add by liushuhe 2018.06.29
   spi = stm32_spibus_initialize(3);
@@ -177,7 +179,6 @@ int stm32_mx25L_initialize(void)
 	}
 
   /* Now bind the SPI interface to the W25 SPI FLASH driver */
-  stm32_configgpio(GPIO_MA25L_CS);
   
   mtd = mx25l_initialize_spi(spi);
   if (!mtd)
@@ -187,7 +188,7 @@ int stm32_mx25L_initialize(void)
 	}
 
   /* And finally, use the FTL layer to wrap the MTD driver as a block driver */
-#if 1
+#if 0
   ret = ftl_initialize(minor, mtd);
   if (ret < 0)
 	{
@@ -209,7 +210,7 @@ int stm32_mx25L_initialize(void)
 	}	  
 #endif
 #endif
-#if 0
+#if 1
 	ret = nxffs_initialize(mtd);
 
   if (ret < 0)
@@ -237,7 +238,7 @@ int stm32_w25_initialize(void)
 {
 	int minor = 0;
 //add by liushuhe 2018.06.29
-#ifdef CONFIG_STM32_SPI3
+#ifdef CONFIG_STM32_SPI2
 
   FAR struct spi_dev_s *spi;
   FAR struct mtd_dev_s *mtd;
@@ -252,7 +253,7 @@ int stm32_w25_initialize(void)
 
   /* Get the SPI port */
   //add by liushuhe 2018.06.29
-  spi = stm32_spibus_initialize(3);
+  spi = stm32_spibus_initialize(2);
   if (!spi)
     {
       ferr("ERROR: Failed to initialize SPI port 2\n");
@@ -260,8 +261,7 @@ int stm32_w25_initialize(void)
     }
 
   /* Now bind the SPI interface to the W25 SPI FLASH driver */
-  //stm32_configgpio(GPIO_W25_CS);
-    stm32_configgpio(GPIO_MA25L_CS);
+  stm32_configgpio(GPIO_W25_CS);
 
   mtd = w25_initialize(spi);
   if (!mtd)

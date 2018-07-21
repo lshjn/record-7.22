@@ -94,13 +94,6 @@
 #define MX25L_MX25L6433F_NSECTORS      2048
 #define MX25L_MX25L6433F_PAGE_SHIFT    8     /* Page size 1 << 8 = 256 */
 
-/* MX25L1606E capacity is 16Mbit  (8192Kbit x 8) =   8Mb (1024kb x 8) */
-
-#define MX25L_MX25L1606E_SECTOR_SHIFT  12    /* Sector size 1 << 12 = 4Kb */
-#define MX25L_MX25L1606E_NSECTORS      2048
-#define MX25L_MX25L1606E_PAGE_SHIFT    8     /* Page size 1 << 8 = 256 */
-
-
 #ifdef CONFIG_MX25L_SECTOR512                /* Simulate a 512 byte sector */
 #  define MX25L_SECTOR512_SHIFT        9     /* Sector size 1 << 9 = 512 bytes */
 #endif
@@ -338,8 +331,8 @@ static inline int mx25l_readid(FAR struct mx25l_dev_s *priv)
 
   mxlinfo("manufacturer: %02x memory: %02x capacity: %02x\n",
           manufacturer, memory, capacity);
-
-  
+  printf("11--manufacturer: %02x memory: %02x capacity: %02x\n",
+          manufacturer, memory, capacity);
 
   /* Check for a valid manufacturer and memory type */
 
@@ -366,18 +359,6 @@ static inline int mx25l_readid(FAR struct mx25l_dev_s *priv)
            return OK;
         }
     }
-//add by liushuhe 2018.07.13
-	else 
-	{
-		/* Save the FLASH geometry */
-		
-		priv->sectorshift = MX25L_MX25L1606E_SECTOR_SHIFT;
-		priv->nsectors	  = MX25L_MX25L1606E_NSECTORS;
-		priv->pageshift   = MX25L_MX25L1606E_PAGE_SHIFT;
-		return OK;
-	}
-
-
 
   return -ENODEV;
 }
@@ -1038,7 +1019,6 @@ FAR struct mtd_dev_s *mx25l_initialize_spi(FAR struct spi_dev_s *dev)
       if (ret != OK)
         {
           /* Unrecognized! Discard all of that work we just did and return NULL */
-		  ferr("ERROR: -----------------\n");
 
           mxlerr("ERROR: Unrecognized\n");
           kmm_free(priv);

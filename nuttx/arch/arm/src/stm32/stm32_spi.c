@@ -1883,6 +1883,8 @@ FAR struct spi_dev_s *stm32_spibus_initialize(int bus)
           /* Set up default configuration: Master, 8-bit, etc. */
 
           spi_bus_initialize(priv);
+
+		  
         }
     }
   else

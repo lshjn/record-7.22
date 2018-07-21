@@ -143,6 +143,7 @@ int stm32_adc_setup(void)
               stm32_configgpio(g_pinlist[i]);
             }
         }
+	  
 
       /* Call stm32_adcinitialize() to get an instance of the ADC interface */
 
