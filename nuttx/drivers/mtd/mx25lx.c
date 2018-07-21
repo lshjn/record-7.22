@@ -167,6 +167,8 @@
 
 #define MX25L_JEDEC_MANUFACTURER         0xc2  /* Macronix manufacturer ID */
 #define MX25L_JEDEC_MEMORY_TYPE          0x20  /* MX25Lx  memory type */
+//add by liushuhe 2018.07.21
+#define MX25L_JEDEC_MX25L1606E_CAPACITY  0x15  /* MX25L3233F memory capacity */
 #define MX25L_JEDEC_MX25L3233F_CAPACITY  0x16  /* MX25L3233F memory capacity */
 #define MX25L_JEDEC_MX25L6433F_CAPACITY  0x17  /* MX25L6433F memory capacity */
 
@@ -331,6 +333,8 @@ static inline int mx25l_readid(FAR struct mx25l_dev_s *priv)
 
   mxlinfo("manufacturer: %02x memory: %02x capacity: %02x\n",
           manufacturer, memory, capacity);
+  
+  //add by liushuhe 2018.07.21
   printf("11--manufacturer: %02x memory: %02x capacity: %02x\n",
           manufacturer, memory, capacity);
 
@@ -339,7 +343,16 @@ static inline int mx25l_readid(FAR struct mx25l_dev_s *priv)
   if (manufacturer == MX25L_JEDEC_MANUFACTURER && memory == MX25L_JEDEC_MEMORY_TYPE)
     {
       /* Okay.. is it a FLASH capacity that we understand? */
+      //add by liushuhe 2018.07.21
+      if (capacity == MX25L_JEDEC_MX25L3233F_CAPACITY)
+        {
+           /* Save the FLASH geometry */
 
+           priv->sectorshift = MX25L_MX25L3233F_SECTOR_SHIFT;
+           priv->nsectors    = MX25L_MX25L3233F_NSECTORS;
+           priv->pageshift   = MX25L_MX25L3233F_PAGE_SHIFT;
+           return OK;
+        }
       if (capacity == MX25L_JEDEC_MX25L3233F_CAPACITY)
         {
            /* Save the FLASH geometry */
