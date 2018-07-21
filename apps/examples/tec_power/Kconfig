@@ -147,9 +147,9 @@ config EXAMPLES_FLASH_STACKSIZE
 	int "flash stack size"
 	default 2048
 	
-config DEVPATH_PID_DC_I_MAX
-	string "arg path:pid.DC_I_MAX"
-	default "/mnt/MX25La/pid_DC_I_MAX.txt"
+config DEVPATH_PID_I_MAX
+	string "arg path:I_MAX"
+	default "/mnt/MX25La/pid_I_MAX.txt"
 	
 config DEVPATH_PID_SV
 	string "arg path:pid.Sv"

@@ -13,10 +13,20 @@
 #include <stdarg.h>
 #include <string.h>
 #include <errno.h>
+			
+
+#define		DEF_I_MAX		9.5			//用户设定最大电流
+#define		DEF_SV			27			//用户设定温度
+#define		DEF_T			1000		//PID计算周期，采样周期 
+#define		DEF_KP			30			//比例常数
+#define		DEF_TI			5000000		//积分时间常数
+#define		DEF_TD			500			//微分时间常数
+#define		DEF_PWMCYCLE	1000		//pwm周期1000
+#define		DEF_OUT0		1			//偏差项
 
 typedef struct pid_t{
-	float DC_I_MAX;		//用户设定值,pid最大电流
-	float DC_I_CUR_ADC;	//检查到当前的adc电流值
+	float I_MAX;		//用户设定值,pid最大电流
+	float I_CUR;		//检查到当前的adc电流值
 
 	
 	float Sv;			//用户设定值

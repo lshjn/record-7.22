@@ -7,7 +7,7 @@ PID pid_modbus; //存放modbus设置的数据
 
 void PID_Init(void)
 {
-	pid.DC_I_MAX	= 9.5;			//用户设定最大电流
+	pid.I_MAX		= 9.5;			//用户设定最大电流
 	pid.Sv			= 120;			//用户设定温度
 	pid.T			= 500;			//PID计算周期，采样周期	
 	pid.Kp			= 30;			//比例常数
@@ -74,36 +74,35 @@ void PID_out(float pwm_value)
 //pid执行供电，并作限制处理
 void pid_exec(void)
 {
-	//当前的电流超过设定最大值，pwm/2
+	//当前的电流超过设定最大值，pwm/(T/2)
 	//本次的输出值,需要取pwm周期-PID输出值,因为pwm加电时温度下降
 	float PID_Out_PWM = 0;  
 
-    //因为电路没有使用H桥所以导致没法加热,pwm环需要做成单边闭环,低于控制温度直接掐掉
+	PID_Out_PWM = pid.pwmcycle - pid.OUT;
 
-	if(pid.Pv <= pid.Sv)
+	//因为电路没有使用H桥所以导致没法加热,pwm环需要做成单边闭环,低于控制温度直接掐掉
+	if(pid.Pv < pid.Sv)
 	{
-		//pid.OUT = pid.pwmcycle;	
-		//pid.OUT =2;	
+		PID_Out_PWM = 0;	
 	}
 	
-	PID_Out_PWM = pid.pwmcycle - pid.OUT;
-	//PID_Out_PWM = pid.OUT;
-
-	
-	printf("pid.DC_I_CUR_ADC=%.2f\n",pid.DC_I_CUR_ADC);
-	printf("pid.DC_I_MAX=%.2f\n",pid.DC_I_MAX);
-
-	if(pid.DC_I_CUR_ADC <= pid.DC_I_MAX)
+	if(pid.I_CUR <= pid.I_MAX)
 	{
+		//pid全功率输出电流太大，这里将输出值限制一下
+		if(PID_Out_PWM > (pid.pwmcycle-200))
+		{
+			PID_Out_PWM = (pid.pwmcycle-200);
+		}
 		PID_out(PID_Out_PWM);
 		printf("pid.OUT=%.2f\n",pid.OUT);
-		printf("A:PID_Out_PWM=%.2f\n",PID_Out_PWM);
+		printf("PID_Out_PWM=%.2f\n",PID_Out_PWM);
 	}
 	else
 	{
-		PID_out(PID_Out_PWM/2);	
+		//电流超过了最大值，输出一个很小的pwm
+		PID_out(PID_Out_PWM/(pid.pwmcycle/2));	
 		printf("pid.OUT=%.2f\n",pid.OUT);
-		printf("A/2:PID_Out_PWM=%.2f\n",PID_Out_PWM/2);
+		printf("PID_Out_PWM=%.2f\n",PID_Out_PWM/(pid.pwmcycle/2));
 	}
 
 }

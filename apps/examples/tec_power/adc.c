@@ -72,7 +72,6 @@ int	ReadAdcData(int fd,struct sensor_msg *Sensor_data)
 	
 	//读取采样数据 
 	readsize = CONFIG_EXAMPLES_ADC_GROUPSIZE * sizeof(struct adc_msg_s);
-
 	nbytes = read(fd, sample, readsize);
 	//处理是否异常
 	if (nbytes < 0)
@@ -90,7 +89,7 @@ int	ReadAdcData(int fd,struct sensor_msg *Sensor_data)
 	}
 	//读取到的采样数据
 	else
-	{
+	{		
 		int nsamples = nbytes / sizeof(struct adc_msg_s);
 		if (nsamples * sizeof(struct adc_msg_s) != nbytes)
 		{
@@ -100,6 +99,7 @@ int	ReadAdcData(int fd,struct sensor_msg *Sensor_data)
 		{
 			for (adc_num = 0; adc_num < nsamples; adc_num++)
 			{
+			
 				Sensor_data->sample_tempdata[adc_num].am_data	=	sample[adc_num].am_data;
 			}
 		}
@@ -118,50 +118,78 @@ int	ReadAdcData(int fd,struct sensor_msg *Sensor_data)
 *******************************************************************************************************************************/
 float CalcSampleData(struct sensor_msg *Sensor_data)
 {
+	float    vout = 0;
+	float    AO4485_A = 0;
+	int32_t  adc_new = 0;  
+	
+#if 1
+    //calc 需要用1.5v校准，我是用3.3--4096，比例计算得到1.5---1861
+    //需要实际的校准
+    #define  calc   1861
+	
+    //TP2:1.5v      calc                   
+	//vout      	adc_new      
+ 
+	adc_new = Sensor_data->sample_tempdata[0].am_data;
+	printf("------------------------\n");
+	printf("adc_new = %d\n",adc_new);
+	
+    vout = ((float)(1.5*adc_new))/calc;
+	//printf("vout = %.2f\n",vout);
+#endif	
 	//同相偏置放大
 	//传递函数Vout=25Vin+0.8
-	int32_t Vout = Sensor_data->sample_tempdata[0].am_data;
-	float Vin  = (Vout - 0.8)/25;
-	return Vin;
+	
+	float Vin  = (vout - 0.8)/25;
+	printf("Vin = %.2f\n",Vin);
+
+	//AO4485_A 当前电流
+    //50mR = 0.05R
+    
+	AO4485_A = Vin/0.05;
+	printf("------------------------\n");	
+	printf("I_CUR = %.2f\n",AO4485_A);
+	printf("I_MAX = %.2f\n",pid.I_MAX);
+	printf("------------------------\n");	
+	return AO4485_A;
 }
 
 
 float read_DC_I(void)
 {
-	static	int  fd_adc;
-	static	int  adc_status = false;
-	
+	int  fd_adc = -1;
 	int ret;
-if(!adc_status)
-{
+	
 	fd_adc = open(CONFIG_EXAMPLES_ADC_DEVPATH, O_RDONLY);
 	if (fd_adc < 0)
 	{
 		printf("slave_adc: open %s failed: %d\n", CONFIG_EXAMPLES_ADC_DEVPATH, errno);
 		return -1;
 	}
-	adc_status = true;
-}
 
 	
 	ret = StartAdcSampl(fd_adc);
+	
 	//successful
 	if(ret == 0)
 	{
 		ret = ReadAdcData(fd_adc,&SensorDate);
+		
 		if(ret)
 		{
-			pid.DC_I_CUR_ADC = CalcSampleData(&SensorDate);
+			pid.I_CUR = CalcSampleData(&SensorDate);
 			//设置modbus数据结构
-			g_modbus.reginput[1] = pid.DC_I_CUR_ADC;
+			g_modbus.reginput[1] = pid.I_CUR;
 		}
 	}
 	else
 	{
+		printf("StartAdcSampl error!!!!\n");
 		return -1;
 	}
 	
-	return pid.DC_I_CUR_ADC;
+	close(fd_adc);
+	return pid.I_CUR;
 }
 
 

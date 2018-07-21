@@ -12,7 +12,7 @@
 #include <errno.h>
 #include "pid.h"
 
-#define  CMD_PID_DC_I_MAX		0
+#define  CMD_PID_I_MAX			0
 #define  CMD_PID_SV				1
 #define  CMD_PID_T				2
 #define  CMD_PID_KP				3

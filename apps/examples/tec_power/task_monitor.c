@@ -42,15 +42,8 @@ int  en_tecpower = 0;
 void  timerInt_action(void)
 {
 	static int start = false;
-	//if(!start)
-	//{
-	//	start = true;
-		pidctl_tecT(fd_max31865_1,MAX31865_DEV1,&start);
-	//}
-	//else  //防止采样频率太快，pidctl_tecT未执行完就又进入中断，导致栈溢出
-	//{
-	//	return;
-	//}
+	
+	pidctl_tecT(fd_max31865_1,MAX31865_DEV1,&start);
 }
 
 /****************************************************************************
@@ -60,28 +53,17 @@ void  timerInt_action(void)
  ****************************************************************************/
 void EXTER_CTR_Action(int signo,siginfo_t *siginfo, void *arg)
 {
-	static int timer_status = false; 
-
-	//if(!timer_status)
-	//{
-		if (signo == SIGUSR1)
-		{
-			printf("start tec ctrl...\n");
-			//启动定时器
-			en_tecpower = 1;
-			//startup_pid_Sampling_timer();
-			timer_status = true;
-		}
-
-	//}
-	//else
-	//{
-	//	printf("already start tec ctrl !\n");
-	//	return;
-	//}
-
+	static int timer_status = false;
+	if (signo == SIGUSR1)
+	{
+		printf("start tec ctrl...\n");
+		//启动定时器
+		en_tecpower = 1;
+		timer_status = true;
+	}
 }
 
+#if 0
 void startup_pid_Sampling_timer(void)
 {
 	int 	fd_timer;
@@ -131,7 +113,7 @@ void startup_pid_Sampling_timer(void)
 
 	return;
 }
-
+#endif
 /****************************************************************************
  * master_monitor
  * liushuhe
@@ -204,15 +186,12 @@ int master_monitor(int argc, char *argv[])
 	}
 
 	Init_max31865(fd_max31865_1);
-
 	
 	while(1)
 	{
-		//没有启动信号是否要执行读取,电流、温度,待确定
 		read_DC_I();
-		//if(en_tecpower == 1)
+		if(en_tecpower == 1)
 		{
-			printf("timerInt_action\n");
 			timerInt_action();
 		}
 		usleep(CONFIG_EXAMPLES_TIMER_INTERVAL);

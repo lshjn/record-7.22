@@ -162,14 +162,14 @@ char updata_pidarg_fromflash(PID *pid)
 	char  updata_status = 0;
 	
 	usleep(DELAY);
-	//pid.DC_I_MAX
+	//pid.I_MAX
 	memset(buf,0,sizeof(buf));
-	if(readdata(CONFIG_DEVPATH_PID_DC_I_MAX,buf,sizeof(buf)))
+	if(readdata(CONFIG_DEVPATH_PID_I_MAX,buf,sizeof(buf)))
 	{
 		printf("------------------------\n");
-		printf("|pid.DC_I_MAX=%.2f|\n",atof(buf));
+		printf("|pid.I_MAX=%.2f|\n",atof(buf));
 		printf("------------------------\n");
-		pid->DC_I_MAX = atof(buf);
+		pid->I_MAX = atof(buf);
 		updata_status |= (1<<7);
 	}
 	usleep(DELAY);
@@ -261,10 +261,10 @@ int updata_pidarg_modbusToflash(PID *pid,int cmd_index)
 	char  buf[128];
 	switch(cmd_index)
 	{
-		case CMD_PID_DC_I_MAX:
-			//pid.DC_I_MAX
-			sprintf(buf,"%.2f",pid->DC_I_MAX);
-			writedata(CONFIG_DEVPATH_PID_DC_I_MAX,buf,strlen(buf));
+		case CMD_PID_I_MAX:
+			//pid.I_MAX
+			sprintf(buf,"%.2f",pid->I_MAX);
+			writedata(CONFIG_DEVPATH_PID_I_MAX,buf,strlen(buf));
 			break;
 		case CMD_PID_SV:
 			//pid.Sv
@@ -328,19 +328,19 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 {
 	if(!(updata_status & (1<<7)))
 	{
-		pid->DC_I_MAX = 66;
-		pid_modbus->DC_I_MAX  = pid->DC_I_MAX;
-		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_DC_I_MAX);
+		pid->I_MAX = DEF_I_MAX;
+		pid_modbus->I_MAX  = pid->I_MAX;
+		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_I_MAX);
 	}
 	else
 	{
-		pid_modbus->DC_I_MAX  = pid->DC_I_MAX;
+		pid_modbus->I_MAX  = pid->I_MAX;
 	}
 
 
 	if(!(updata_status & (1<<6)))
 	{
-		pid->Sv = 26.8;
+		pid->Sv = DEF_SV;
 		pid_modbus->Sv  = pid->Sv;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_SV);
 	}
@@ -352,7 +352,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 	
 	if(!(updata_status & (1<<5)))
 	{
-		pid->T = 1000;
+		pid->T = DEF_T;
 		pid_modbus->T  = pid->T;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_T);
 	}
@@ -363,7 +363,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 	
 	if(!(updata_status & (1<<4)))
 	{
-		pid->Kp = 30;
+		pid->Kp = DEF_KP;
 		pid_modbus->Kp  = pid->Kp;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_KP);
 	}
@@ -375,7 +375,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 
 	if(!(updata_status & (1<<3)))
 	{
-		pid->Ti = 5000000;
+		pid->Ti = DEF_TI;
 		pid_modbus->Ti  = pid->Ti;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_TI);
 	}
@@ -386,7 +386,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 	
 	if(!(updata_status & (1<<2)))
 	{
-		pid->Td = 500;
+		pid->Td = DEF_TD;
 		pid_modbus->Td  = pid->Td;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_TD);
 	}
@@ -397,7 +397,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 
 	if(!(updata_status & (1<<1)))
 	{
-		pid->pwmcycle = 1000;
+		pid->pwmcycle = DEF_PWMCYCLE;
 		pid_modbus->pwmcycle  = pid->pwmcycle;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_PWMCYC);
 	}
@@ -408,7 +408,7 @@ void  CheckFlashdata(PID *pid,PID *pid_modbus,char updata_status)
 
 	if(!(updata_status & (1<<0)))
 	{
-		pid->OUT0 = 1;
+		pid->OUT0 = DEF_OUT0;
 		pid_modbus->OUT0  = pid->OUT0;
 		updata_pidarg_modbusToflash(pid_modbus,CMD_PID_OUT0);
 	}
@@ -432,8 +432,8 @@ int master_flash(int argc, char *argv[])
 	updata_status = updata_pidarg_fromflash(&pid);
 	CheckFlashdata(&pid,&pid_modbus,updata_status);
 
-	g_modbus.regholding[0] = ((uint32_t)pid_modbus.DC_I_MAX >> 16)&0xffff ;
-	g_modbus.regholding[1] = (uint32_t)pid_modbus.DC_I_MAX & 0xffff;
+	g_modbus.regholding[0] = ((uint32_t)pid_modbus.I_MAX >> 16)&0xffff ;
+	g_modbus.regholding[1] = (uint32_t)pid_modbus.I_MAX & 0xffff;
 		
 	g_modbus.regholding[2] = ((uint32_t)pid_modbus.Sv >> 16)&0xffff ;
 	g_modbus.regholding[3] = (uint32_t)pid_modbus.Sv & 0xffff;
@@ -487,7 +487,7 @@ int master_flash(int argc, char *argv[])
 			
 			//更新pid数据结构
 
-			pid_modbus.DC_I_MAX		= (g_modbus.regholding[0]<<16)|g_modbus.regholding[1];
+			pid_modbus.I_MAX		= (g_modbus.regholding[0]<<16)|g_modbus.regholding[1];
 			pid_modbus.Sv			= (g_modbus.regholding[2]<<16)|g_modbus.regholding[3];
 			pid_modbus.T			= (g_modbus.regholding[4]<<16)|g_modbus.regholding[5];
 			pid_modbus.Kp			= (g_modbus.regholding[6]<<16)|g_modbus.regholding[7];
@@ -496,7 +496,7 @@ int master_flash(int argc, char *argv[])
 			pid_modbus.pwmcycle		= (g_modbus.regholding[12]<<16)|g_modbus.regholding[13];
 			pid_modbus.OUT0			= (g_modbus.regholding[14]<<16)|g_modbus.regholding[15];
 
-			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_DC_I_MAX);
+			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_I_MAX);
 			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_SV);
 			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_T);
 			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_KP);
