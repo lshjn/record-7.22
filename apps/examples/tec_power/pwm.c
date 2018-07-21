@@ -17,10 +17,10 @@ void	pwm_init(int fd,float pwm_value)
 	int ret;
 	
 	pwmstate.duty        = (uint8_t)(pwm_value);
-	pwmstate.freq        = pid.pwmcycle;
+	pwmstate.freq        = g_pid.pwmcycle;
 	
 	info.frequency = pwmstate.freq;
-	info.duty  = ((uint32_t)pwmstate.duty << 16)/pid.pwmcycle;
+	info.duty  = ((uint32_t)pwmstate.duty << 16)/g_pid.pwmcycle;
 	//set pwm info
 	ret = ioctl(fd, PWMIOC_SETCHARACTERISTICS, (unsigned long)((uintptr_t)&info));
 	if (ret < 0)

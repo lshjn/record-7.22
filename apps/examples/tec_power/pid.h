@@ -16,7 +16,7 @@
 			
 
 #define		DEF_I_MAX		9.5			//用户设定最大电流
-#define		DEF_SV			27			//用户设定温度
+#define		DEF_SV			17			//用户设定温度
 #define		DEF_T			1000		//PID计算周期，采样周期 
 #define		DEF_KP			30			//比例常数
 #define		DEF_TI			5000000		//积分时间常数
@@ -54,13 +54,13 @@ typedef struct pid_t{
 	
 }PID;
 
-extern PID pid; 		//存放PID算法所需要的数据
-extern PID pid_modbus;  //存放modbus设置的数据
+extern PID g_pid; 		//存放PID算法所需要的数据
+extern PID g_pid_modbus;  //存放modbus设置的数据
 
-void PID_Calc(void); //pid计算
-void PID_Init(void);
+void PID_Calc(PID *pid); //pid计算
+void PID_Init(PID *pid);
 void pidctl_tecT(int fd,int dev_num,int *start);
-void pid_exec(void);
+void pid_exec(PID *pid);
 void PID_out(float pwm_value);
 
 

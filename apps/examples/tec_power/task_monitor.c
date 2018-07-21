@@ -53,13 +53,11 @@ void  timerInt_action(void)
  ****************************************************************************/
 void EXTER_CTR_Action(int signo,siginfo_t *siginfo, void *arg)
 {
-	static int timer_status = false;
 	if (signo == SIGUSR1)
 	{
 		printf("start tec ctrl...\n");
 		//Æô¶¯¶¨Ê±Æ÷
 		en_tecpower = 1;
-		timer_status = true;
 	}
 }
 

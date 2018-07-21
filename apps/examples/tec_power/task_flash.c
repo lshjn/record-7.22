@@ -429,32 +429,32 @@ int master_flash(int argc, char *argv[])
 {
 	char updata_status = 0;
 
-	updata_status = updata_pidarg_fromflash(&pid);
-	CheckFlashdata(&pid,&pid_modbus,updata_status);
+	updata_status = updata_pidarg_fromflash(&g_pid);
+	CheckFlashdata(&g_pid,&g_pid_modbus,updata_status);
 
-	g_modbus.regholding[0] = ((uint32_t)pid_modbus.I_MAX >> 16)&0xffff ;
-	g_modbus.regholding[1] = (uint32_t)pid_modbus.I_MAX & 0xffff;
+	g_modbus.regholding[0] = ((uint32_t)g_pid_modbus.I_MAX >> 16)&0xffff ;
+	g_modbus.regholding[1] = (uint32_t)g_pid_modbus.I_MAX & 0xffff;
 		
-	g_modbus.regholding[2] = ((uint32_t)pid_modbus.Sv >> 16)&0xffff ;
-	g_modbus.regholding[3] = (uint32_t)pid_modbus.Sv & 0xffff;
+	g_modbus.regholding[2] = ((uint32_t)g_pid_modbus.Sv >> 16)&0xffff ;
+	g_modbus.regholding[3] = (uint32_t)g_pid_modbus.Sv & 0xffff;
 	
-	g_modbus.regholding[4] = ((uint32_t)pid_modbus.T >> 16)&0xffff ;
-	g_modbus.regholding[5] = (uint32_t)pid_modbus.T & 0xffff;
+	g_modbus.regholding[4] = ((uint32_t)g_pid_modbus.T >> 16)&0xffff ;
+	g_modbus.regholding[5] = (uint32_t)g_pid_modbus.T & 0xffff;
 	
-	g_modbus.regholding[6] = ((uint32_t)pid_modbus.Kp >> 16)&0xffff ;
-	g_modbus.regholding[7] = (uint32_t)pid_modbus.Kp & 0xffff;
+	g_modbus.regholding[6] = ((uint32_t)g_pid_modbus.Kp >> 16)&0xffff ;
+	g_modbus.regholding[7] = (uint32_t)g_pid_modbus.Kp & 0xffff;
 	
-	g_modbus.regholding[8] = ((uint32_t)pid_modbus.Ti >> 16)&0xffff ;
-	g_modbus.regholding[9] = (uint32_t)pid_modbus.Ti & 0xffff;
+	g_modbus.regholding[8] = ((uint32_t)g_pid_modbus.Ti >> 16)&0xffff ;
+	g_modbus.regholding[9] = (uint32_t)g_pid_modbus.Ti & 0xffff;
 	
-	g_modbus.regholding[10] = ((uint32_t)pid_modbus.Td >> 16)&0xffff ;
-	g_modbus.regholding[11] = (uint32_t)pid_modbus.Td & 0xffff;
+	g_modbus.regholding[10] = ((uint32_t)g_pid_modbus.Td >> 16)&0xffff ;
+	g_modbus.regholding[11] = (uint32_t)g_pid_modbus.Td & 0xffff;
 	
-	g_modbus.regholding[12] = ((uint32_t)pid_modbus.pwmcycle >> 16)&0xffff ;
-	g_modbus.regholding[13] = (uint32_t)pid_modbus.pwmcycle & 0xffff;
+	g_modbus.regholding[12] = ((uint32_t)g_pid_modbus.pwmcycle >> 16)&0xffff ;
+	g_modbus.regholding[13] = (uint32_t)g_pid_modbus.pwmcycle & 0xffff;
 	
-	g_modbus.regholding[14] = ((uint32_t)pid_modbus.OUT0 >> 16)&0xffff ;
-	g_modbus.regholding[15] = (uint32_t)pid_modbus.OUT0 & 0xffff;
+	g_modbus.regholding[14] = ((uint32_t)g_pid_modbus.OUT0 >> 16)&0xffff ;
+	g_modbus.regholding[15] = (uint32_t)g_pid_modbus.OUT0 & 0xffff;
 	
 #if 1	
 	printf("g_modbus.regholding[0]=%x\n",g_modbus.regholding[0]);
@@ -487,25 +487,25 @@ int master_flash(int argc, char *argv[])
 			
 			//更新pid数据结构
 
-			pid_modbus.I_MAX		= (g_modbus.regholding[0]<<16)|g_modbus.regholding[1];
-			pid_modbus.Sv			= (g_modbus.regholding[2]<<16)|g_modbus.regholding[3];
-			pid_modbus.T			= (g_modbus.regholding[4]<<16)|g_modbus.regholding[5];
-			pid_modbus.Kp			= (g_modbus.regholding[6]<<16)|g_modbus.regholding[7];
-			pid_modbus.Ti			= (g_modbus.regholding[8]<<16)|g_modbus.regholding[9];
-			pid_modbus.Td			= (g_modbus.regholding[10]<<16)|g_modbus.regholding[11];
-			pid_modbus.pwmcycle		= (g_modbus.regholding[12]<<16)|g_modbus.regholding[13];
-			pid_modbus.OUT0			= (g_modbus.regholding[14]<<16)|g_modbus.regholding[15];
+			g_pid_modbus.I_MAX		= (g_modbus.regholding[0]<<16)|g_modbus.regholding[1];
+			g_pid_modbus.Sv			= (g_modbus.regholding[2]<<16)|g_modbus.regholding[3];
+			g_pid_modbus.T			= (g_modbus.regholding[4]<<16)|g_modbus.regholding[5];
+			g_pid_modbus.Kp			= (g_modbus.regholding[6]<<16)|g_modbus.regholding[7];
+			g_pid_modbus.Ti			= (g_modbus.regholding[8]<<16)|g_modbus.regholding[9];
+			g_pid_modbus.Td			= (g_modbus.regholding[10]<<16)|g_modbus.regholding[11];
+			g_pid_modbus.pwmcycle		= (g_modbus.regholding[12]<<16)|g_modbus.regholding[13];
+			g_pid_modbus.OUT0			= (g_modbus.regholding[14]<<16)|g_modbus.regholding[15];
 
-			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_I_MAX);
-			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_SV);
-			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_T);
-			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_KP);
-			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_TI);
-			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_TD);
-			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_PWMCYC);
-			updata_pidarg_modbusToflash(&pid_modbus,CMD_PID_OUT0);
+			updata_pidarg_modbusToflash(&g_pid_modbus,CMD_PID_I_MAX);
+			updata_pidarg_modbusToflash(&g_pid_modbus,CMD_PID_SV);
+			updata_pidarg_modbusToflash(&g_pid_modbus,CMD_PID_T);
+			updata_pidarg_modbusToflash(&g_pid_modbus,CMD_PID_KP);
+			updata_pidarg_modbusToflash(&g_pid_modbus,CMD_PID_TI);
+			updata_pidarg_modbusToflash(&g_pid_modbus,CMD_PID_TD);
+			updata_pidarg_modbusToflash(&g_pid_modbus,CMD_PID_PWMCYC);
+			updata_pidarg_modbusToflash(&g_pid_modbus,CMD_PID_OUT0);
 			
-			updata_pidarg_fromflash(&pid);	
+			updata_pidarg_fromflash(&g_pid);	
 			
 			pthread_mutex_unlock(&g_FlashMutex);
 		}

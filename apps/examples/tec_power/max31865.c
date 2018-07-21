@@ -77,8 +77,9 @@ uint16_t Init_max31865(int fd)
  * liushuhe
  * 2018.06.29
  ****************************************************************************/
-void Fault_Detect(int fd)
+unsigned int Fault_Detect(int fd)
 {
+	g_fault_status = 0;
 	//短路检测
 	max31856_databuf[0] = ADDR_CONFIGURATION;
 	max31856_databuf[1] = MANUAL_FAULT_DETECT_CLOSE;
@@ -102,10 +103,15 @@ void Fault_Detect(int fd)
 	read_max31865(fd,max31856_databuf,sizeof(max31856_databuf));
 	g_fault_status = max31856_databuf[ADDR_FAULT_STATUS];
 	
+	//重新初始化
+	Init_max31865(fd);
 	//清除故障
 	max31856_databuf[0] = ADDR_CONFIGURATION;
 	max31856_databuf[1] = MODE_AUTO_4WIRE | MANUAL_CLEAR_FAULT;
 	write_max31865(fd,max31856_databuf,2);
+	
+	return g_fault_status;
+	
 }
 
 
@@ -114,12 +120,13 @@ void Fault_Detect(int fd)
  * liushuhe
  * 2018.06.29
  ****************************************************************************/
-void read_temper(int fd,int dev_num)
+int read_temper(int fd,int dev_num)
 {
 	float   AD_MAX81365 = 0;
 	float   TEMPER_MAX81365 = 0;
 	bool	DRDY_PIN_VALUE = DRDY_INVALID;
-
+	unsigned int fault = 0;
+	
 	memset(max31856_databuf,0,sizeof(max31856_databuf));
 
 	start_conversion(fd);
@@ -144,19 +151,21 @@ void read_temper(int fd,int dev_num)
 
 	if((max31856_databuf[ADDR_RTD_LSB]&0x01)==0x01)
 	{
-		Fault_Detect(fd);
+		fault = Fault_Detect(fd);
 		
-		printf("Fault_Detect \n");
+		printf("ERROR:MAX31865 Fault_Detect 0X%X\n",fault);
+		return false;
 	}
 	else
 	{
 		AD_MAX81365 = ((max31856_databuf[ADDR_RTD_MSB]<<8)|max31856_databuf[ADDR_RTD_LSB])>>1;
 		TEMPER_MAX81365 = ((AD_MAX81365/32)-256); 
-		pid.Pv=TEMPER_MAX81365; 
+		g_pid.Pv=TEMPER_MAX81365; 
 		//设置modbus数据结构
-		g_modbus.reginput[0] = pid.Pv;
-		printf("pid.Pv=%.2f \n",pid.Pv);
-		printf("pid.Sv=%.2f \n",pid.Sv);
+		g_modbus.reginput[0] = g_pid.Pv;
+		printf("pid.Pv=%.2f \n",g_pid.Pv);
+		printf("pid.Sv=%.2f \n",g_pid.Sv);
+		return true;
 	}
 }
 

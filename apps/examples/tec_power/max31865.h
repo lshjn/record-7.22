@@ -49,7 +49,7 @@
 #define  MODE_MENUNAL_4WIRE				0x81
 #define  MANUAL_FAULT_DETECT_CLOSE		0x88
 #define  MANUAL_FAULT_DETECT_OPEN		0x8c
-#define  MANUAL_CLEAR_FAULT				(1<<2)
+#define  MANUAL_CLEAR_FAULT				(1<<1)
 #define  D5_SHOT_SET					(1<<5)
 
 //THRESHOLD
@@ -68,8 +68,8 @@ uint16_t Init_max31865(int fd) ;
 uint16_t write_max31865(int fd,char *buf,uint16_t length);  
 uint16_t read_max31865(int fd,char *buf,uint16_t length)  ;
 void start_conversion(int fd) ;
-void Fault_Detect(int fd);
-void read_temper(int fd,int dev_num);
+unsigned int  Fault_Detect(int fd);
+int read_temper(int fd,int dev_num);
 
 
 #ifdef __cplusplus

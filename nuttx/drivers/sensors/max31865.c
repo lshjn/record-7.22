@@ -236,12 +236,12 @@ static ssize_t max31865_write(FAR struct file *filep, FAR const char *buffer,
 	//SPI_SNDBLOCK(priv->spi, &buffer[1], buflen-1);
 	
 	memcpy(temp_buf,buffer,buflen);
+		
+	addr = temp_buf[0] | MAX31865_WRITE;;
 	
-	temp_buf[0] = temp_buf[0] | MAX31865_WRITE;
-	
+	SPI_SEND(priv->spi, addr);
 
-	
-	SPI_SNDBLOCK(priv->spi, &temp_buf[0], buflen);
+	SPI_SNDBLOCK(priv->spi, &temp_buf[1], buflen-1);
 	
 	/* Disable MAX31865's chip select */
 	if(strcmp(inode->i_name,"max31865_1") == 0)

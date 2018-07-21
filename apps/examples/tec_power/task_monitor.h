@@ -18,7 +18,7 @@
  * Private function
  ****************************************************************************/
 #define  CONFIG_EXAMPLES_TIMER_DEVNAME 		"/dev/timer1_pid_samping"
-#define  CONFIG_EXAMPLES_TIMER_INTERVAL 		(pid.T*1000)     //unit us
+#define  CONFIG_EXAMPLES_TIMER_INTERVAL 		(g_pid.T*1000)     //unit us
 #define  CONFIG_EXAMPLES_TIMER_SIGNO 17
 #define  MAX31865_DEV1   1
 #define  MAX31865_DEV2   2

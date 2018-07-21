@@ -16,7 +16,7 @@
 #define BOARD_NGPIOOUT    0 /* Amount of GPIO Output pins */
 #define BOARD_NGPIOINT    1 /* Amount of GPIO Input w/ Interruption pins */
 
-#define	EXTER_CTR_INT			(GPIO_INPUT | GPIO_PULLDOWN  |GPIO_EXTI | GPIO_PORTB | GPIO_PIN12)
+#define	EXTER_CTR_INT			(GPIO_INPUT | GPIO_PULLUP  |GPIO_EXTI | GPIO_PORTB | GPIO_PIN12)
 
 //×¢²ágpioÇý¶¯Éè±¸
 int stm32f407_gpiodev_initialize(void);

@@ -364,7 +364,8 @@ pid.o: pid.c pid.h /work/record-7.22/nuttx/include/stdio.h \
  /work/record-7.22/nuttx/include/nuttx/timers/timer.h \
  /work/record-7.22/nuttx/include/termios.h \
  /work/record-7.22/nuttx/include/nuttx/drivers/pwm.h \
- /work/record-7.22/nuttx/include/fixedmath.h
+ /work/record-7.22/nuttx/include/fixedmath.h max31865.h task_monitor.h \
+ /work/record-7.22/nuttx/include/nuttx/timers/rtc.h task_modbus.h
 pwm.o: pwm.c pwm.h /work/record-7.22/nuttx/include/sys/ioctl.h \
  /work/record-7.22/nuttx/include/nuttx/config.h \
  /work/record-7.22/nuttx/include/nuttx/fs/ioctl.h \

@@ -149,7 +149,7 @@ float CalcSampleData(struct sensor_msg *Sensor_data)
 	AO4485_A = Vin/0.05;
 	printf("------------------------\n");	
 	printf("I_CUR = %.2f\n",AO4485_A);
-	printf("I_MAX = %.2f\n",pid.I_MAX);
+	printf("I_MAX = %.2f\n",g_pid.I_MAX);
 	printf("------------------------\n");	
 	return AO4485_A;
 }
@@ -177,9 +177,9 @@ float read_DC_I(void)
 		
 		if(ret)
 		{
-			pid.I_CUR = CalcSampleData(&SensorDate);
+			g_pid.I_CUR = CalcSampleData(&SensorDate);
 			//设置modbus数据结构
-			g_modbus.reginput[1] = pid.I_CUR;
+			g_modbus.reginput[1] = g_pid.I_CUR;
 		}
 	}
 	else
@@ -189,8 +189,9 @@ float read_DC_I(void)
 	}
 	
 	close(fd_adc);
-	return pid.I_CUR;
+	return g_pid.I_CUR;
 }
+
 
 
 
